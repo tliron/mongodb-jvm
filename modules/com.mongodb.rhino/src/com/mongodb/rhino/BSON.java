@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.List;
 
 import org.bson.BSONObject;
+import org.bson.types.ObjectId;
+import org.bson.types.Symbol;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
@@ -43,7 +45,7 @@ public class BSON
 		for( Object id : ids )
 		{
 			String key = id.toString();
-			Object value = forBson( ScriptableObject.getProperty( object, key ) );
+			Object value = forBson( ScriptableObject.getProperty( object, key ), key );
 			bson.put( key, value );
 		}
 
@@ -81,9 +83,11 @@ public class BSON
 	 * 
 	 * @param object
 	 *        An object
+	 * @param key
+	 *        The key used for the object (optional)
 	 * @return An object ready to be put inside a BSON object
 	 */
-	private static Object forBson( Object object )
+	private static Object forBson( Object object, String key )
 	{
 		if( object instanceof NativeJavaObject )
 		{
@@ -102,7 +106,7 @@ public class BSON
 			List<Object> list = new ArrayList<Object>( length );
 
 			for( int i = 0; i < length; i++ )
-				list.add( forBson( ScriptableObject.getProperty( array, i ) ) );
+				list.add( forBson( ScriptableObject.getProperty( array, i ), null ) );
 
 			return list;
 		}
@@ -122,6 +126,10 @@ public class BSON
 			// Convert
 
 			return to( scriptable );
+		}
+		else if( "_id".equals( key ) )
+		{
+			return new ObjectId( object.toString() );
 		}
 		else
 			return object;
@@ -159,7 +167,7 @@ public class BSON
 		else if( object instanceof Date )
 		{
 			// The NativeDate class is private in Rhino, but we can create
-			// it like a regular object.
+			// it indirectly like a regular object.
 
 			Date date = (Date) object;
 			Context context = Context.getCurrentContext();
@@ -170,6 +178,14 @@ public class BSON
 			} );
 
 			return nativeDate;
+		}
+		else if( object instanceof ObjectId )
+		{
+			return ( (ObjectId) object ).toStringMongod();
+		}
+		else if( object instanceof Symbol )
+		{
+			return ( (Symbol) object ).getSymbol();
 		}
 		else
 			return object;
