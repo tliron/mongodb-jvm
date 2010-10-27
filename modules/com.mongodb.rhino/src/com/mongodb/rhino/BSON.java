@@ -14,6 +14,7 @@ import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 import com.mongodb.BasicDBObject;
 
@@ -126,6 +127,10 @@ public class BSON
 			// Convert
 
 			return to( scriptable );
+		}
+		else if( object instanceof Undefined )
+		{
+			return null;
 		}
 		else if( "_id".equals( key ) )
 		{
