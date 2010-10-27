@@ -54,26 +54,15 @@ public class BSON
 	}
 
 	/**
-	 * Convert from BSON to native Rhino.
+	 * Convert from BSON to a Rhino-compatible object.
 	 * 
 	 * @param bson
 	 *        A BSON object
-	 * @return A Rhino native object
+	 * @return A Rhino-compatible object
 	 */
-	public static NativeObject from( BSONObject bson )
+	public static Object from( BSONObject bson )
 	{
-		if( bson == null )
-			return null;
-
-		NativeObject object = new NativeObject();
-
-		for( String key : bson.keySet() )
-		{
-			Object value = forRhino( bson.get( key ) );
-			ScriptableObject.putProperty( object, key, value );
-		}
-
-		return object;
+		return forRhino( bson );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
@@ -152,9 +141,18 @@ public class BSON
 		// System.out.println( object.getClass() );
 		if( object instanceof BSONObject )
 		{
-			// Convert
+			// Convert BSON object to NativeObject
 
-			return from( (BSONObject) object );
+			BSONObject bsonObject = (BSONObject) object;
+			NativeObject nativeObject = new NativeObject();
+
+			for( String key : bsonObject.keySet() )
+			{
+				Object value = forRhino( bsonObject.get( key ) );
+				ScriptableObject.putProperty( nativeObject, key, value );
+			}
+
+			return nativeObject;
 		}
 		else if( object instanceof List<?> )
 		{
