@@ -17,6 +17,7 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 
 /**
  * Direct conversion between native Rhino objects and BSON.
@@ -38,7 +39,7 @@ public class BSON
 	 *        A Rhino native object
 	 * @return A BSON object
 	 */
-	public static BSONObject to( ScriptableObject object )
+	public static DBObject to( ScriptableObject object )
 	{
 		BasicDBObject bson = new BasicDBObject();
 
