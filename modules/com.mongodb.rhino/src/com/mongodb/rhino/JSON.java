@@ -1,11 +1,20 @@
 package com.mongodb.rhino;
 
-import java.io.StringWriter;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
-import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
+import org.bson.types.ObjectId;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.ScriptRuntime;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+
+import com.mongodb.rhino.util.JSONException;
+import com.mongodb.rhino.util.JSONTokener;
 
 /**
  * Direct conversion between native Rhino objects and JSON.
@@ -21,61 +30,406 @@ public class JSON
 	//
 
 	/**
-	 * Convert from native Rhino to JSON.
+	 * Converts a JSON string into a native Rhino object.
+	 * <p>
+	 * Creates JavaScript objects, arrays and primitives.
 	 * 
 	 * @param object
-	 *        A Rhino native object
-	 * @return A JSON representation
+	 *        The JSON string
+	 * @param convertSpecial
+	 *        Whether to convert special "$" objects
+	 * @return The native Rhino object
+	 * @throws JSONException
 	 */
-	public static String to( ScriptableObject object )
+	public static Object from( String json ) throws JSONException
 	{
-		Object bson = BSON.to( object );
-		if( bson instanceof Iterable<?> )
-		{
-			StringWriter s = new StringWriter();
-			s.write( '[' );
-			for( Iterator<?> i = ( (Iterable<?>) bson ).iterator(); i.hasNext(); )
-			{
-				Object o = i.next();
-
-				if( o instanceof BasicBSONObject )
-				{
-					s.write( o.toString() );
-				}
-				else
-				{
-					s.write( com.mongodb.util.JSON.serialize( o ) );
-				}
-
-				if( i.hasNext() )
-					s.write( ',' );
-			}
-			s.write( ']' );
-			return s.toString();
-		}
-		else
-		{
-			return bson.toString();
-		}
+		return from( json, false );
 	}
 
 	/**
-	 * Convert from JSON to a Rhino-compatible object.
+	 * Converts a JSON string into a native Rhino object.
+	 * <p>
+	 * Creates JavaScript objects, arrays and primitives.
+	 * <p>
+	 * Can also optionally recognize and create JavaScript date and MongoDB
+	 * ObjectId objects.
 	 * 
-	 * @param json
-	 *        A JSON representation
-	 * @return A Rhino-compatible object
+	 * @param object
+	 *        The JSON string
+	 * @param convertSpecial
+	 *        Whether to convert special "$" objects
+	 * @return The native Rhino object
+	 * @throws JSONException
 	 */
-	public static Object from( String json )
+	public static Object from( String json, boolean convertSpecial ) throws JSONException
 	{
-		Object bson = com.mongodb.util.JSON.parse( json );
-		if( bson instanceof BSONObject )
+		JSONTokener tokener = new JSONTokener( json );
+		Object object = tokener.createNative();
+		if( convertSpecial )
 		{
-			return BSON.from( (BSONObject) bson );
+			object = convertSpecial( object );
 		}
-		else
+		return object;
+	}
+
+	/**
+	 * Convert from native Rhino to JSON.
+	 * <p>
+	 * Recognizes JavaScript objects, arrays and primitives.
+	 * <p>
+	 * Special support for JavaScript dates: converts to {"$date": timestamp} in
+	 * JSON.
+	 * <p>
+	 * Special support for MongoDB ObjectId: converts to {"$oid": "objectid"} in
+	 * JSON.
+	 * <p>
+	 * Also recognizes JVM types: java.util.Map, java.util.Collection,
+	 * java.util.Date.
+	 * 
+	 * @param object
+	 *        A Rhino native object
+	 * @return The JSON string
+	 */
+	public static String to( Object object )
+	{
+		return to( object, false );
+	}
+
+	/**
+	 * Convert from native Rhino to JSON.
+	 * <p>
+	 * Recognizes JavaScript objects, arrays and primitives.
+	 * <p>
+	 * Special support for JavaScript dates: converts to {"$date": timestamp} in
+	 * JSON.
+	 * <p>
+	 * Special support for MongoDB ObjectId: converts to {"$oid": "objectid"} in
+	 * JSON.
+	 * <p>
+	 * Also recognizes JVM types: java.util.Map, java.util.Collection,
+	 * java.util.Date.
+	 * 
+	 * @param object
+	 *        A Rhino native object
+	 * @param indent
+	 *        Whether to indent the JSON for human readability
+	 * @return The JSON string
+	 */
+	public static String to( Object object, boolean indent )
+	{
+		StringBuilder s = new StringBuilder();
+		encode( s, object, indent, indent ? 0 : -1 );
+		return s.toString();
+	}
+
+	/**
+	 * Recursively converts special objects.
+	 * <p>
+	 * Converts {$date: timestamp} objects to JavaScript date objects.
+	 * <p>
+	 * Converts {$oid: 'objectid'} objects to MongoDB ObjectId objects.
+	 * 
+	 * @param object
+	 *        A native Rhino object
+	 * @return A native Rhino object
+	 */
+	public static Object convertSpecial( Object object )
+	{
+		if( object instanceof NativeArray )
 		{
-			throw new RuntimeException( "Cannot parse JSON" );
+			NativeArray array = (NativeArray) object;
+			int length = (int) array.getLength();
+
+			for( int i = 0; i < length; i++ )
+			{
+				Object value = ScriptableObject.getProperty( array, i );
+				Object converted = convertSpecial( value );
+				if( converted != value )
+					ScriptableObject.putProperty( array, i, converted );
+			}
 		}
+		else if( object instanceof ScriptableObject )
+		{
+			ScriptableObject scriptable = (ScriptableObject) object;
+
+			Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
+			if( oid != Scriptable.NOT_FOUND )
+			{
+				// Convert special $oid format to MongoDB ObjectId
+
+				return new ObjectId( oid.toString() );
+			}
+
+			Object date = ScriptableObject.getProperty( scriptable, "$date" );
+			if( date != Scriptable.NOT_FOUND )
+			{
+				// Convert special $date format to Rhino date
+
+				// (The NativeDate class is private in Rhino, but we can access
+				// it like a regular object.)
+
+				Context context = Context.getCurrentContext();
+				Scriptable scope = ScriptRuntime.getTopCallScope( context );
+				Scriptable nativeDate = context.newObject( scope, "Date", new Object[]
+				{
+					date
+				} );
+
+				return nativeDate;
+			}
+
+			Object[] ids = scriptable.getAllIds();
+			for( Object id : ids )
+			{
+				String key = id.toString();
+				Object value = ScriptableObject.getProperty( scriptable, key );
+				Object converted = convertSpecial( value );
+				if( converted != value )
+					ScriptableObject.putProperty( scriptable, key, converted );
+			}
+		}
+
+		return object;
+	}
+
+	// //////////////////////////////////////////////////////////////////////////
+	// Private
+
+	private static void encode( StringBuilder s, Object object, boolean indent, int depth )
+	{
+		if( indent )
+			indent( s, depth );
+
+		if( object instanceof Number )
+		{
+			s.append( object );
+		}
+		else if( object instanceof Boolean )
+		{
+			s.append( object );
+		}
+		else if( object instanceof CharSequence )
+		{
+			s.append( '\"' );
+			s.append( escape( object.toString() ) );
+			s.append( '\"' );
+		}
+		else if( object instanceof Date )
+		{
+			HashMap<String, Long> map = new HashMap<String, Long>();
+			map.put( "$date", ( (Date) object ).getTime() );
+			encode( s, map, depth );
+		}
+		else if( object instanceof ObjectId )
+		{
+			HashMap<String, String> map = new HashMap<String, String>();
+			map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
+			encode( s, map, depth );
+		}
+		else if( object instanceof Collection )
+		{
+			encode( s, (Collection<?>) object, depth );
+		}
+		else if( object instanceof Map )
+		{
+			encode( s, (Map<?, ?>) object, depth );
+		}
+		else if( object instanceof NativeArray )
+		{
+			encode( s, (NativeArray) object, depth );
+		}
+		else if( object instanceof ScriptableObject )
+		{
+			ScriptableObject scriptable = (ScriptableObject) object;
+			if( scriptable.getClassName().equals( "Date" ) )
+			{
+				// (The NativeDate class is private in Rhino, but we can access
+				// it like a regular object.)
+
+				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
+				if( time instanceof Number )
+				{
+					encode( s, new Date( ( (Number) time ).longValue() ), false, depth );
+					return;
+				}
+			}
+
+			encode( s, scriptable, depth );
+		}
+	}
+
+	private static void encode( StringBuilder s, Collection<?> collection, int depth )
+	{
+		s.append( '[' );
+
+		Iterator<?> i = collection.iterator();
+		if( i.hasNext() )
+		{
+			if( depth > -1 )
+				s.append( '\n' );
+
+			while( true )
+			{
+				Object value = i.next();
+
+				encode( s, value, true, depth > -1 ? depth + 1 : -1 );
+
+				if( i.hasNext() )
+				{
+					s.append( ',' );
+					if( depth > -1 )
+						s.append( '\n' );
+				}
+				else
+					break;
+			}
+
+			if( depth > -1 )
+				s.append( '\n' );
+		}
+
+		if( depth > -1 )
+			indent( s, depth );
+		s.append( ']' );
+	}
+
+	private static void encode( StringBuilder s, Map<?, ?> map, int depth )
+	{
+		s.append( '{' );
+
+		Iterator<?> i = map.entrySet().iterator();
+		if( i.hasNext() )
+		{
+			if( depth > -1 )
+				s.append( '\n' );
+
+			while( true )
+			{
+				Map.Entry<?, ?> entry = (Map.Entry<?, ?>) i.next();
+				String key = entry.getKey().toString();
+				Object value = entry.getValue();
+
+				if( depth > -1 )
+					indent( s, depth + 1 );
+
+				s.append( '\"' );
+				s.append( escape( key ) );
+				s.append( "\":" );
+
+				if( depth > -1 )
+					s.append( ' ' );
+
+				encode( s, value, false, depth > -1 ? depth + 1 : -1 );
+
+				if( i.hasNext() )
+				{
+					s.append( ',' );
+					if( depth > -1 )
+						s.append( '\n' );
+				}
+				else
+					break;
+			}
+
+			if( depth > -1 )
+				s.append( '\n' );
+		}
+
+		if( depth > -1 )
+			indent( s, depth );
+		s.append( '}' );
+	}
+
+	private static void encode( StringBuilder s, NativeArray array, int depth )
+	{
+		s.append( '[' );
+
+		long length = array.getLength();
+		if( length > 0 )
+		{
+			if( depth > -1 )
+				s.append( '\n' );
+
+			for( int i = 0; i < length; i++ )
+			{
+				Object value = ScriptableObject.getProperty( array, i );
+
+				encode( s, value, true, depth > -1 ? depth + 1 : -1 );
+
+				if( i < length - 1 )
+				{
+					s.append( ',' );
+					if( depth > -1 )
+						s.append( '\n' );
+				}
+			}
+
+			if( depth > -1 )
+				s.append( '\n' );
+		}
+
+		if( depth > -1 )
+			indent( s, depth );
+		s.append( ']' );
+	}
+
+	private static void encode( StringBuilder s, ScriptableObject object, int depth )
+	{
+		s.append( '{' );
+
+		Object[] ids = object.getAllIds();
+		if( ids.length > 0 )
+		{
+			if( depth > -1 )
+				s.append( '\n' );
+
+			int length = ids.length;
+			for( int i = 0; i < length; i++ )
+			{
+				String key = ids[i].toString();
+				Object value = ScriptableObject.getProperty( object, key );
+
+				if( depth > -1 )
+					indent( s, depth + 1 );
+
+				s.append( '\"' );
+				s.append( escape( key ) );
+				s.append( "\":" );
+
+				if( depth > -1 )
+					s.append( ' ' );
+
+				encode( s, value, false, depth > -1 ? depth + 1 : -1 );
+
+				if( i < length - 1 )
+				{
+					s.append( ',' );
+					if( depth > -1 )
+						s.append( '\n' );
+				}
+			}
+
+			if( depth > -1 )
+				s.append( '\n' );
+		}
+
+		if( depth > -1 )
+			indent( s, depth );
+		s.append( '}' );
+	}
+
+	private static void indent( StringBuilder s, int depth )
+	{
+		for( int i = 0; i < depth; i++ )
+			s.append( "  " );
+	}
+
+	private static String escape( String string )
+	{
+		string = string.replaceAll( "\\\\", "\\\\\\" );
+		string = string.replaceAll( "\\n", "\\\\n" );
+		string = string.replaceAll( "\\r", "\\\\r" );
+		string = string.replaceAll( "\\\"", "\\\\\"" );
+		return string;
 	}
 }

@@ -32,64 +32,18 @@ public class BSON
 	//
 
 	/**
-	 * Convert from native Rhino to BSON.
+	 * Convert from native Rhino to a BSON-compatible object.
+	 * <p>
+	 * Recognizes JavaScript objects, arrays and dates.
+	 * <p>
+	 * Recognizes the special {$oid:'objectid'} object, converting it to a BSON
+	 * ObjectId.
 	 * 
 	 * @param object
 	 *        A Rhino native object
 	 * @return A BSON-compatible object
 	 */
-	public static Object to( ScriptableObject object )
-	{
-		if( object instanceof NativeArray )
-		{
-			NativeArray array = (NativeArray) object;
-			int length = (int) array.getLength();
-			ArrayList<Object> bson = new ArrayList<Object>( length );
-
-			for( int i = 0; i < length; i++ )
-				bson.add( forBson( ScriptableObject.getProperty( array, i ) ) );
-
-			return bson;
-		}
-		else
-		{
-			BasicDBObject bson = new BasicDBObject();
-
-			Object[] ids = object.getAllIds();
-			for( Object id : ids )
-			{
-				String key = id.toString();
-				Object value = forBson( ScriptableObject.getProperty( object, key ) );
-				bson.put( key, value );
-			}
-
-			return bson;
-		}
-	}
-
-	/**
-	 * Convert from BSON to a Rhino-compatible object.
-	 * 
-	 * @param bson
-	 *        A BSON object
-	 * @return A Rhino-compatible object
-	 */
-	public static Object from( BSONObject bson )
-	{
-		return forRhino( bson );
-	}
-
-	// //////////////////////////////////////////////////////////////////////////
-	// Private
-
-	/**
-	 * If necessary, convert from native Rhino to a type supported by BSON.
-	 * 
-	 * @param object
-	 *        An object
-	 * @return An object ready to be put inside a BSON object
-	 */
-	private static Object forBson( Object object )
+	public static Object to( Object object )
 	{
 		if( object instanceof NativeJavaObject )
 		{
@@ -103,7 +57,14 @@ public class BSON
 		{
 			// Convert Rhino array to list
 
-			return to( (NativeArray) object );
+			NativeArray array = (NativeArray) object;
+			int length = (int) array.getLength();
+			ArrayList<Object> bson = new ArrayList<Object>( length );
+
+			for( int i = 0; i < length; i++ )
+				bson.add( to( ScriptableObject.getProperty( array, i ) ) );
+
+			return bson;
 		}
 		else if( object instanceof ScriptableObject )
 		{
@@ -112,22 +73,36 @@ public class BSON
 			Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
 			if( oid != Scriptable.NOT_FOUND )
 			{
+				// Convert special $oid format to MongoDB ObjectId
+
 				return new ObjectId( oid.toString() );
 			}
 
 			if( scriptable.getClassName().equals( "Date" ) )
 			{
-				// The NativeDate class is private in Rhino, but we can access
-				// it like a regular object.
+				// Convert NativeDate to Date
+
+				// (The NativeDate class is private in Rhino, but we can access
+				// it like a regular object.)
 
 				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
 				if( time instanceof Number )
 					return new Date( ( (Number) time ).longValue() );
 			}
 
-			// Convert
+			// Convert regular Rhino object
 
-			return to( scriptable );
+			BasicDBObject bson = new BasicDBObject();
+
+			Object[] ids = scriptable.getAllIds();
+			for( Object id : ids )
+			{
+				String key = id.toString();
+				Object value = to( ScriptableObject.getProperty( scriptable, key ) );
+				bson.put( key, value );
+			}
+
+			return bson;
 		}
 		else if( object instanceof Undefined )
 		{
@@ -138,13 +113,17 @@ public class BSON
 	}
 
 	/**
-	 * If necessary, convert from BSON to a type supported by Rhino.
+	 * Convert from BSON to a Rhino-compatible object.
+	 * <p>
+	 * Converts to JavaScript objects, arrays and dates.
+	 * <p>
+	 * Converts BSON ObjectId to a special {$oid:'objectid'} object.
 	 * 
-	 * @param object
-	 *        An object
-	 * @return An object ready to be put inside a Rhino object
+	 * @param bson
+	 *        A BSON object
+	 * @return A Rhino-compatible object
 	 */
-	private static Object forRhino( Object object )
+	public static Object from( Object object )
 	{
 		if( object instanceof List<?> )
 		{
@@ -155,7 +134,7 @@ public class BSON
 
 			int index = 0;
 			for( Object item : list )
-				ScriptableObject.putProperty( array, index++, forRhino( item ) );
+				ScriptableObject.putProperty( array, index++, from( item ) );
 
 			return array;
 		}
@@ -168,7 +147,7 @@ public class BSON
 
 			for( String key : bsonObject.keySet() )
 			{
-				Object value = forRhino( bsonObject.get( key ) );
+				Object value = from( bsonObject.get( key ) );
 				ScriptableObject.putProperty( nativeObject, key, value );
 			}
 
@@ -176,8 +155,10 @@ public class BSON
 		}
 		else if( object instanceof Date )
 		{
-			// The NativeDate class is private in Rhino, but we can create
-			// it indirectly like a regular object.
+			// Convert Date to NativeDate
+
+			// (The NativeDate class is private in Rhino, but we can create
+			// it indirectly like a regular object.)
 
 			Date date = (Date) object;
 			Context context = Context.getCurrentContext();
@@ -191,6 +172,8 @@ public class BSON
 		}
 		else if( object instanceof ObjectId )
 		{
+			// Convert MongoDB ObjectId to special $oid format
+
 			NativeObject nativeObject = new NativeObject();
 			ScriptableObject.putProperty( nativeObject, "$oid", ( (ObjectId) object ).toStringMongod() );
 			return nativeObject;
