@@ -119,7 +119,7 @@ public class BSON
 	 * <p>
 	 * Converts BSON ObjectId to a special {$oid:'objectid'} object.
 	 * 
-	 * @param bson
+	 * @param object
 	 *        A BSON object
 	 * @return A Rhino-compatible object
 	 */

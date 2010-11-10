@@ -31,6 +31,10 @@
 			<bottom>
 				<![CDATA[<i>Copyright &#169; 2009-2010 <a target="_top" href="http://threecrickets.com/">Three Crickets LLC</a>.</i>]]>
 			</bottom>
+			<classpath>
+				<fileset dir="${lib}/mongo-java-driver/lib" />
+				<fileset dir="${lib}/rhino/lib" />
+			</classpath>
 		</javadoc>
 	</target>
 	
