@@ -34,10 +34,8 @@ public class JSON
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * 
-	 * @param object
+	 * @param json
 	 *        The JSON string
-	 * @param convertSpecial
-	 *        Whether to convert special "$" objects
 	 * @return The native Rhino object
 	 * @throws JSONException
 	 */
@@ -54,7 +52,7 @@ public class JSON
 	 * Can also optionally recognize and create JavaScript date and MongoDB
 	 * ObjectId objects.
 	 * 
-	 * @param object
+	 * @param json
 	 *        The JSON string
 	 * @param convertSpecial
 	 *        Whether to convert special "$" objects
@@ -89,6 +87,7 @@ public class JSON
 	 * @param object
 	 *        A Rhino native object
 	 * @return The JSON string
+	 * @see JSON#convertSpecial(Object)
 	 */
 	public static String to( Object object )
 	{
