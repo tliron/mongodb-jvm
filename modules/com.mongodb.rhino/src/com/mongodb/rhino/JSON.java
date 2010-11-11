@@ -199,19 +199,17 @@ public class JSON
 		if( indent )
 			indent( s, depth );
 
-		if( object instanceof Number )
+		if( object == null )
+		{
+			s.append( "null" );
+		}
+		else if( object instanceof Number )
 		{
 			s.append( object );
 		}
 		else if( object instanceof Boolean )
 		{
 			s.append( object );
-		}
-		else if( object instanceof CharSequence )
-		{
-			s.append( '\"' );
-			s.append( escape( object.toString() ) );
-			s.append( '\"' );
 		}
 		else if( object instanceof Date )
 		{
@@ -254,6 +252,12 @@ public class JSON
 			}
 
 			encode( s, scriptable, depth );
+		}
+		else
+		{
+			s.append( '\"' );
+			s.append( escape( object.toString() ) );
+			s.append( '\"' );
 		}
 	}
 
