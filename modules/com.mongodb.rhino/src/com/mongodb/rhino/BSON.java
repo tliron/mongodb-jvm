@@ -34,7 +34,7 @@ public class BSON
 	/**
 	 * Recursively convert from native Rhino to BSON-compatible types.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays and dates.
+	 * Recognizes JavaScript objects, arrays, dates and primitives.
 	 * <p>
 	 * Recognizes the special {$oid:'objectid'} object, converting it to a BSON
 	 * ObjectId.
@@ -115,8 +115,8 @@ public class BSON
 	/**
 	 * Recursively convert from BSON to native Rhino types.
 	 * <p>
-	 * Converts to JavaScript objects, arrays and dates. The result is
-	 * JSON-compatible.
+	 * Converts to JavaScript objects, arrays, dates, strings and primitives.
+	 * The result is JSON-compatible.
 	 * <p>
 	 * Converts BSON ObjectId to a special {$oid:'objectid'} JavaScript object.
 	 * 
@@ -126,7 +126,21 @@ public class BSON
 	 */
 	public static Object from( Object object )
 	{
-		if( object instanceof List<?> )
+		if( object instanceof CharSequence )
+		{
+			// (The NativeString class is private in Rhino, but we can access
+			// it like a regular object.)
+
+			Context context = Context.getCurrentContext();
+			Scriptable scope = ScriptRuntime.getTopCallScope( context );
+			Scriptable nativeString = context.newObject( scope, "String", new Object[]
+			{
+				object.toString()
+			} );
+
+			return nativeString;
+		}
+		else if( object instanceof List<?> )
 		{
 			// Convert list to NativeArray
 
