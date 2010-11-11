@@ -30,13 +30,13 @@ public class JSON
 	//
 
 	/**
-	 * Converts a JSON string into a native Rhino object.
+	 * Recursively convert from JSON into native Rhino types.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * 
 	 * @param json
 	 *        The JSON string
-	 * @return The native Rhino object
+	 * @return A Rhino object or array
 	 * @throws JSONException
 	 */
 	public static Object from( String json ) throws JSONException
@@ -45,7 +45,7 @@ public class JSON
 	}
 
 	/**
-	 * Converts a JSON string into a native Rhino object.
+	 * Recursively convert from JSON into native Rhino types.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * <p>
@@ -56,7 +56,7 @@ public class JSON
 	 *        The JSON string
 	 * @param convertSpecial
 	 *        Whether to convert special "$" objects
-	 * @return The native Rhino object
+	 * @return A Rhino object or array
 	 * @throws JSONException
 	 */
 	public static Object from( String json, boolean convertSpecial ) throws JSONException
@@ -71,7 +71,7 @@ public class JSON
 	}
 
 	/**
-	 * Convert from native Rhino to JSON.
+	 * Recursively convert from native Rhino to JSON.
 	 * <p>
 	 * Recognizes JavaScript objects, arrays and primitives.
 	 * <p>
@@ -95,7 +95,7 @@ public class JSON
 	}
 
 	/**
-	 * Convert from native Rhino to JSON.
+	 * Recursively convert from native Rhino to JSON.
 	 * <p>
 	 * Recognizes JavaScript objects, arrays and primitives.
 	 * <p>
@@ -122,15 +122,15 @@ public class JSON
 	}
 
 	/**
-	 * Recursively converts special objects.
+	 * Recursively converts special JavaScript objects.
 	 * <p>
 	 * Converts {$date: timestamp} objects to JavaScript date objects.
 	 * <p>
 	 * Converts {$oid: 'objectid'} objects to MongoDB ObjectId objects.
 	 * 
 	 * @param object
-	 *        A native Rhino object
-	 * @return A native Rhino object
+	 *        A native Rhino object or array
+	 * @return The converted object or the original
 	 */
 	public static Object convertSpecial( Object object )
 	{

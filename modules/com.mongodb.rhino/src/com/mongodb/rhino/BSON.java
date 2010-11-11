@@ -32,7 +32,7 @@ public class BSON
 	//
 
 	/**
-	 * Convert from native Rhino to a BSON-compatible object.
+	 * Recursively convert from native Rhino to BSON-compatible types.
 	 * <p>
 	 * Recognizes JavaScript objects, arrays and dates.
 	 * <p>
@@ -113,15 +113,16 @@ public class BSON
 	}
 
 	/**
-	 * Convert from BSON to a Rhino-compatible object.
+	 * Recursively convert from BSON to native Rhino types.
 	 * <p>
-	 * Converts to JavaScript objects, arrays and dates.
+	 * Converts to JavaScript objects, arrays and dates. The result is
+	 * JSON-compatible.
 	 * <p>
-	 * Converts BSON ObjectId to a special {$oid:'objectid'} object.
+	 * Converts BSON ObjectId to a special {$oid:'objectid'} JavaScript object.
 	 * 
 	 * @param object
 	 *        A BSON object
-	 * @return A Rhino-compatible object
+	 * @return A JSON-compatible Rhino object
 	 */
 	public static Object from( Object object )
 	{
