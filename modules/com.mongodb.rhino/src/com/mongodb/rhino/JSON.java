@@ -9,6 +9,7 @@ import java.util.Map;
 import org.bson.types.ObjectId;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -222,6 +223,14 @@ public class JSON
 			HashMap<String, String> map = new HashMap<String, String>();
 			map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
 			encode( s, map, depth );
+		}
+		else if( object instanceof NativeJavaObject )
+		{
+			// This happens either because the developer purposely creates a
+			// Java object, or because it was returned from a Java call and
+			// wrapped by Rhino.
+
+			encode( s, ( (NativeJavaObject) object ).unwrap(), false, depth );
 		}
 		else if( object instanceof Collection )
 		{
