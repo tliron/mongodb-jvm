@@ -248,7 +248,8 @@ public class JSON
 		else if( object instanceof ScriptableObject )
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
-			if( scriptable.getClassName().equals( "Date" ) )
+			String className = scriptable.getClassName();
+			if( className.equals( "Date" ) )
 			{
 				// (The NativeDate class is private in Rhino, but we can access
 				// it like a regular object.)
@@ -260,8 +261,18 @@ public class JSON
 					return;
 				}
 			}
+			else if( className.equals( "String" ) )
+			{
+				// Unpack NativeString
 
-			encode( s, scriptable, depth );
+				s.append( '\"' );
+				s.append( escape( object.toString() ) );
+				s.append( '\"' );
+			}
+			else
+			{
+				encode( s, scriptable, depth );
+			}
 		}
 		else
 		{

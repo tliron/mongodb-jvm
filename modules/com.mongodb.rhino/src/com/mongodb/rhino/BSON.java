@@ -78,7 +78,8 @@ public class BSON
 				return new ObjectId( oid.toString() );
 			}
 
-			if( scriptable.getClassName().equals( "Date" ) )
+			String className = scriptable.getClassName();
+			if( className.equals( "Date" ) )
 			{
 				// Convert NativeDate to Date
 
@@ -88,6 +89,12 @@ public class BSON
 				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
 				if( time instanceof Number )
 					return new Date( ( (Number) time ).longValue() );
+			}
+			else if( className.equals( "String" ) )
+			{
+				// Unpack NativeString
+
+				return object.toString();
 			}
 
 			// Convert regular Rhino object
