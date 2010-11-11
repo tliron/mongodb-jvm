@@ -5,11 +5,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptRuntime;
-import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -251,17 +248,7 @@ public class JSONTokener
 			}
 		}
 
-		// (The NativeString class is private in Rhino, but we can access
-		// it like a regular object.)
-
-		Context context = Context.getCurrentContext();
-		Scriptable scope = ScriptRuntime.getTopCallScope( context );
-		Scriptable nativeString = context.newObject( scope, "String", new Object[]
-		{
-			s
-		} );
-
-		return nativeString;
+		return s;
 	}
 
 	private int character;

@@ -87,10 +87,10 @@ public class JSON
 	 * 
 	 * @param object
 	 *        A Rhino native object
-	 * @return The JSON string (native Rhino string)
+	 * @return The JSON string
 	 * @see JSON#convertSpecial(Object)
 	 */
-	public static Scriptable to( Object object )
+	public static String to( Object object )
 	{
 		return to( object, false );
 	}
@@ -113,24 +113,14 @@ public class JSON
 	 *        A Rhino native object
 	 * @param indent
 	 *        Whether to indent the JSON for human readability
-	 * @return The JSON string (native Rhino string)
+	 * @return The JSON string
 	 */
-	public static Scriptable to( Object object, boolean indent )
+	public static String to( Object object, boolean indent )
 	{
 		StringBuilder s = new StringBuilder();
 		encode( s, object, indent, indent ? 0 : -1 );
 
-		// (The NativeString class is private in Rhino, but we can access
-		// it like a regular object.)
-
-		Context context = Context.getCurrentContext();
-		Scriptable scope = ScriptRuntime.getTopCallScope( context );
-		Scriptable nativeString = context.newObject( scope, "String", new Object[]
-		{
-			s.toString()
-		} );
-
-		return nativeString;
+		return s.toString();
 	}
 
 	/**
