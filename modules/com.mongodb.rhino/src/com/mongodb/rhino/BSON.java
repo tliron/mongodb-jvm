@@ -125,13 +125,37 @@ public class BSON
 	 * Converts to JavaScript objects, arrays, dates and primitives. The result
 	 * is JSON-compatible.
 	 * <p>
-	 * Converts BSON ObjectId to a special {$oid:'objectid'} JavaScript object.
+	 * Note that even MongoDB ObjectIds are not converted, but
+	 * {@link JSON#to(Object)} recognizes them, and thus they can still be
+	 * considered JSON-compatible in this limited sense.
 	 * 
 	 * @param object
 	 *        A BSON object
 	 * @return A JSON-compatible Rhino object
 	 */
 	public static Object from( Object object )
+	{
+		return from( object, false );
+	}
+
+	/**
+	 * Recursively convert from BSON to native Rhino types.
+	 * <p>
+	 * Converts to JavaScript objects, arrays, dates and primitives. The result
+	 * is JSON-compatible.
+	 * <p>
+	 * Optionally converts MongoDB ObjectId to a special {$oid:'objectid'}
+	 * JavaScript object. Note that even if they are not converted,
+	 * {@link JSON#to(Object)} recognizes them, and thus they can still be
+	 * considered JSON-compatible in this limited sense.
+	 * 
+	 * @param object
+	 *        A BSON object
+	 * @param convertSpecial
+	 *        Whether to convert special "$" objects
+	 * @return A JSON-compatible Rhino object
+	 */
+	public static Object from( Object object, boolean convertSpecial )
 	{
 		if( object instanceof List<?> )
 		{
@@ -142,7 +166,7 @@ public class BSON
 
 			int index = 0;
 			for( Object item : list )
-				ScriptableObject.putProperty( array, index++, from( item ) );
+				ScriptableObject.putProperty( array, index++, from( item, convertSpecial ) );
 
 			return array;
 		}
@@ -155,7 +179,7 @@ public class BSON
 
 			for( String key : bsonObject.keySet() )
 			{
-				Object value = from( bsonObject.get( key ) );
+				Object value = from( bsonObject.get( key ), convertSpecial );
 				ScriptableObject.putProperty( nativeObject, key, value );
 			}
 
@@ -178,7 +202,7 @@ public class BSON
 
 			return nativeDate;
 		}
-		else if( object instanceof ObjectId )
+		else if( ( object instanceof ObjectId ) && convertSpecial )
 		{
 			// Convert MongoDB ObjectId to special $oid format
 
