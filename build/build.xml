@@ -55,7 +55,7 @@
 			<fileset dir="${lib}/mongo-java-driver/lib" />
 			<fileset dir="${prudence}" />
 		</copy>
-		<copy todir="${content}/libraries">
+		<copy todir="${content}/lib">
 			<fileset dir="${lib}" includes="*.txt" />
 		</copy>
 	</target>
