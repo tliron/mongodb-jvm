@@ -55,6 +55,9 @@
 			<fileset dir="${lib}/mongo-java-driver/lib" />
 			<fileset dir="${prudence}" />
 		</copy>
+		<copy todir="${content}/libraries">
+			<fileset dir="${lib}" includes="*.txt" />
+		</copy>
 	</target>
 	
 	<target name="src" description="Fetch MongoDB Rhino source">
