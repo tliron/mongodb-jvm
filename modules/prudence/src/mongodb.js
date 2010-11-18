@@ -1,7 +1,16 @@
 //
 // MongoDB API for Prudence
+// Version 1.10
 //
-// Version 1.9
+// Copyright 2010 Three Crickets LLC.
+//
+// The contents of this file are subject to the terms of either the MPL version
+// 1.1 or the GPL version 2.0: http://www.opensource.org/licenses/mozilla1.1.php
+// http://www.opensource.org/licenses/gpl-license.html
+//
+// Alternatively, you can obtain a royalty free commercial license with less
+// limitations, transferable or non-transferable, directly from Three Crickets
+// at http://threecrickets.com/
 //
 
 importClass(com.mongodb.rhino.BSON, com.mongodb.rhino.JSON)

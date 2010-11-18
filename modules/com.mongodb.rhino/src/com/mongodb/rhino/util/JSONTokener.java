@@ -1,19 +1,4 @@
-package com.mongodb.rhino.util;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptableObject;
-
 /**
- * A JSONTokener takes a source string and extracts characters and tokens from
- * it. It is used by the JSONObject and JSONArray constructors to parse JSON
- * source strings.
- * <p>
  * Based on code from JSON.org, modified to support Rhino. The original code
  * came with the following notice:
  * <p>
@@ -38,6 +23,24 @@ import org.mozilla.javascript.ScriptableObject;
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+
+package com.mongodb.rhino.util;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptableObject;
+
+/**
+ * A JSONTokener takes a source string and extracts characters and tokens from
+ * it. It is used by the JSONObject and JSONArray constructors to parse JSON
+ * source strings.
+ * <p>
  */
 public class JSONTokener
 {
