@@ -321,11 +321,12 @@ public class JSON
 			}
 
 			if( depth > -1 )
+			{
 				s.append( '\n' );
+				indent( s, depth );
+			}
 		}
 
-		if( depth > -1 )
-			indent( s, depth );
 		s.append( ']' );
 	}
 
@@ -368,11 +369,12 @@ public class JSON
 			}
 
 			if( depth > -1 )
+			{
 				s.append( '\n' );
+				indent( s, depth );
+			}
 		}
 
-		if( depth > -1 )
-			indent( s, depth );
 		s.append( '}' );
 	}
 
@@ -401,11 +403,12 @@ public class JSON
 			}
 
 			if( depth > -1 )
+			{
 				s.append( '\n' );
+				indent( s, depth );
+			}
 		}
 
-		if( depth > -1 )
-			indent( s, depth );
 		s.append( ']' );
 	}
 
@@ -414,12 +417,12 @@ public class JSON
 		s.append( '{' );
 
 		Object[] ids = object.getAllIds();
-		if( ids.length > 0 )
+		int length = ids.length;
+		if( length > 0 )
 		{
 			if( depth > -1 )
 				s.append( '\n' );
 
-			int length = ids.length;
 			for( int i = 0; i < length; i++ )
 			{
 				String key = ids[i].toString();
@@ -446,11 +449,12 @@ public class JSON
 			}
 
 			if( depth > -1 )
+			{
 				s.append( '\n' );
+				indent( s, depth );
+			}
 		}
 
-		if( depth > -1 )
-			indent( s, depth );
 		s.append( '}' );
 	}
 
