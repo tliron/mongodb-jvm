@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.10
+// Version 1.11
 //
 // Copyright 2010 Three Crickets LLC.
 //
@@ -110,6 +110,10 @@ var Mongo = Mongo || function() {
 					}
 				}
 				return array
+			}
+			
+			this.count = function() {
+				return this.cursor.count()
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
