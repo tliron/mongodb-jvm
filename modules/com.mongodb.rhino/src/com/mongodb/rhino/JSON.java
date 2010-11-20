@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.bson.types.ObjectId;
 import org.mozilla.javascript.Context;
@@ -463,12 +464,20 @@ public class JSON
 			s.append( "  " );
 	}
 
+	private static Pattern[] ESCAPE_PATTERNS = new Pattern[]
+	{
+		Pattern.compile( "\\\\" ), Pattern.compile( "\\n" ), Pattern.compile( "\\r" ), Pattern.compile( "\\t" ), Pattern.compile( "\\f" ), Pattern.compile( "\\\"" )
+	};
+
+	private static String[] ESCAPE_REPLACEMENTS = new String[]
+	{
+		"\\\\\\", "\\\\n", "\\\\r", "\\\\t", "\\\\f", "\\\\\""
+	};
+
 	private static String escape( String string )
 	{
-		string = string.replaceAll( "\\\\", "\\\\\\" );
-		string = string.replaceAll( "\\n", "\\\\n" );
-		string = string.replaceAll( "\\r", "\\\\r" );
-		string = string.replaceAll( "\\\"", "\\\\\"" );
+		for( int i = 0; i < ESCAPE_PATTERNS.length; i++ )
+			string = ESCAPE_PATTERNS[i].matcher( string ).replaceAll( ESCAPE_REPLACEMENTS[i] );
 		return string;
 	}
 }
