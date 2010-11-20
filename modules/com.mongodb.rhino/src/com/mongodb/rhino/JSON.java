@@ -460,7 +460,7 @@ public class JSON
 
 	private static void indent( StringBuilder s, int depth )
 	{
-		for( int i = 0; i < depth; i++ )
+		for( int i = depth - 1; i >= 0; i-- )
 			s.append( "  " );
 	}
 
@@ -476,7 +476,7 @@ public class JSON
 
 	private static String escape( String string )
 	{
-		for( int i = ESCAPE_PATTERNS.length - 1; i >= 0; i-- )
+		for( int i = 0, length = ESCAPE_PATTERNS.length; i < length; i++ )
 			string = ESCAPE_PATTERNS[i].matcher( string ).replaceAll( ESCAPE_REPLACEMENTS[i] );
 		return string;
 	}
