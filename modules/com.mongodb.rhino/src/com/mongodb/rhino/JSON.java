@@ -476,7 +476,7 @@ public class JSON
 
 	private static String escape( String string )
 	{
-		for( int i = 0; i < ESCAPE_PATTERNS.length; i++ )
+		for( int i = ESCAPE_PATTERNS.length - 1; i >= 0; i-- )
 			string = ESCAPE_PATTERNS[i].matcher( string ).replaceAll( ESCAPE_REPLACEMENTS[i] );
 		return string;
 	}
