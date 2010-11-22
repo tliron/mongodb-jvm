@@ -44,229 +44,9 @@ import org.mozilla.javascript.ScriptableObject;
  */
 public class JSONTokener
 {
-	public Object createNative() throws JSONException
-	{
-		char next = nextClean();
-		if( next == '{' )
-		{
-			back();
-			return createNativeObject();
-		}
-		else if( next == '[' )
-		{
-			back();
-			return createNativeArray();
-		}
-		else
-		{
-			throw syntaxError( "JSON text must begin with either a '{' or a '['" );
-		}
-	}
-
-	public NativeObject createNativeObject() throws JSONException
-	{
-		NativeObject nativeObject = new NativeObject();
-		char c;
-		String key;
-
-		if( nextClean() != '{' )
-		{
-			throw syntaxError( "A JSONObject text must begin with '{'" );
-		}
-		for( ;; )
-		{
-			c = nextClean();
-			switch( c )
-			{
-				case 0:
-					throw syntaxError( "A JSONObject text must end with '}'" );
-				case '}':
-					return nativeObject;
-				default:
-					back();
-					key = nextValue().toString();
-			}
-
-			/*
-			 * The key is followed by ':'. We will also tolerate '=' or '=>'.
-			 */
-
-			c = nextClean();
-			if( c == '=' )
-			{
-				if( next() != '>' )
-				{
-					back();
-				}
-			}
-			else if( c != ':' )
-			{
-				throw syntaxError( "Expected a ':' after a key" );
-			}
-			ScriptableObject.putProperty( nativeObject, key, nextValue() );
-
-			/*
-			 * Pairs are separated by ','. We will also tolerate ';'.
-			 */
-
-			switch( nextClean() )
-			{
-				case ';':
-				case ',':
-					if( nextClean() == '}' )
-					{
-						return nativeObject;
-					}
-					back();
-					break;
-				case '}':
-					return nativeObject;
-				default:
-					throw syntaxError( "Expected a ',' or '}'" );
-			}
-		}
-	}
-
-	public NativeArray createNativeArray() throws JSONException
-	{
-		NativeArray nativeArray = new NativeArray( 0 );
-		int arrayIndex = 0;
-		char c = nextClean();
-		char q;
-
-		if( c == '[' )
-		{
-			q = ']';
-		}
-		else if( c == '(' )
-		{
-			q = ')';
-		}
-		else
-		{
-			throw syntaxError( "A JSONArray text must start with '['" );
-		}
-		if( nextClean() == ']' )
-		{
-			return nativeArray;
-		}
-		back();
-		for( ;; )
-		{
-			if( nextClean() == ',' )
-			{
-				back();
-				ScriptableObject.putProperty( nativeArray, arrayIndex++, null );
-			}
-			else
-			{
-				back();
-				ScriptableObject.putProperty( nativeArray, arrayIndex++, nextValue() );
-			}
-			c = nextClean();
-			switch( c )
-			{
-				case ';':
-				case ',':
-					if( nextClean() == ']' )
-					{
-						return nativeArray;
-					}
-					back();
-					break;
-				case ']':
-				case ')':
-					if( q != c )
-					{
-						throw syntaxError( "Expected a '" + new Character( q ) + "'" );
-					}
-					return nativeArray;
-				default:
-					throw syntaxError( "Expected a ',' or ']'" );
-			}
-		}
-	}
-
-	public static Object stringToValue( String s )
-	{
-		if( s.equals( "" ) )
-		{
-			return s;
-		}
-		if( s.equalsIgnoreCase( "true" ) )
-		{
-			return Boolean.TRUE;
-		}
-		if( s.equalsIgnoreCase( "false" ) )
-		{
-			return Boolean.FALSE;
-		}
-		if( s.equalsIgnoreCase( "null" ) )
-		{
-			return null;
-		}
-
-		/*
-		 * If it might be a number, try converting it. We support the
-		 * non-standard 0x- convention. If a number cannot be produced, then the
-		 * value will just be a string. Note that the 0x-, plus, and implied
-		 * string conventions are non-standard. A JSON parser may accept
-		 * non-JSON forms as long as it accepts all correct JSON forms.
-		 */
-
-		char b = s.charAt( 0 );
-		if( ( b >= '0' && b <= '9' ) || b == '.' || b == '-' || b == '+' )
-		{
-			if( b == '0' && s.length() > 2 && ( s.charAt( 1 ) == 'x' || s.charAt( 1 ) == 'X' ) )
-			{
-				try
-				{
-					return new Integer( Integer.parseInt( s.substring( 2 ), 16 ) );
-				}
-				catch( Exception ignore )
-				{
-				}
-			}
-			try
-			{
-				if( s.indexOf( '.' ) > -1 || s.indexOf( 'e' ) > -1 || s.indexOf( 'E' ) > -1 )
-				{
-					return Double.valueOf( s );
-				}
-				else
-				{
-					Long myLong = new Long( s );
-					if( myLong.longValue() == myLong.intValue() )
-					{
-						return new Integer( myLong.intValue() );
-					}
-					else
-					{
-						return myLong;
-					}
-				}
-			}
-			catch( Exception ignore )
-			{
-			}
-		}
-
-		return s;
-	}
-
-	private int character;
-
-	private boolean eof;
-
-	private int index;
-
-	private int line;
-
-	private char previous;
-
-	private Reader reader;
-
-	private boolean usePrevious;
+	//
+	// Construction
+	//
 
 	/**
 	 * Construct a JSONTokener from a reader.
@@ -296,47 +76,9 @@ public class JSONTokener
 		this( new StringReader( s ) );
 	}
 
-	/**
-	 * Back up one character. This provides a sort of lookahead capability, so
-	 * that you can test for a digit or letter before attempting to parse the
-	 * next number or identifier.
-	 */
-	public void back() throws JSONException
-	{
-		if( usePrevious || index <= 0 )
-		{
-			throw new JSONException( "Stepping back two steps is not supported" );
-		}
-		this.index -= 1;
-		this.character -= 1;
-		this.usePrevious = true;
-		this.eof = false;
-	}
-
-	/**
-	 * Get the hex value of a character (base16).
-	 * 
-	 * @param c
-	 *        A character between '0' and '9' or between 'A' and 'F' or between
-	 *        'a' and 'f'.
-	 * @return An int between 0 and 15, or -1 if c was not a hex digit.
-	 */
-	public static int dehexchar( char c )
-	{
-		if( c >= '0' && c <= '9' )
-		{
-			return c - '0';
-		}
-		if( c >= 'A' && c <= 'F' )
-		{
-			return c - ( 'A' - 10 );
-		}
-		if( c >= 'a' && c <= 'f' )
-		{
-			return c - ( 'a' - 10 );
-		}
-		return -1;
-	}
+	//
+	// Attributes
+	//
 
 	public boolean end()
 	{
@@ -358,6 +100,27 @@ public class JSONTokener
 		}
 		back();
 		return true;
+	}
+
+	//
+	// Operations
+	//
+
+	/**
+	 * Back up one character. This provides a sort of lookahead capability, so
+	 * that you can test for a digit or letter before attempting to parse the
+	 * next number or identifier.
+	 */
+	public void back() throws JSONException
+	{
+		if( usePrevious || index <= 0 )
+		{
+			throw new JSONException( "Stepping back two steps is not supported" );
+		}
+		this.index -= 1;
+		this.character -= 1;
+		this.usePrevious = true;
+		this.eof = false;
 	}
 
 	/**
@@ -705,6 +468,171 @@ public class JSONTokener
 	}
 
 	/**
+	 * Create a native Rhino object as appropriate.
+	 * 
+	 * @return A NativeObject or a NativeArray
+	 * @throws JSONException
+	 */
+	public Object createNative() throws JSONException
+	{
+		char next = nextClean();
+		if( next == '{' )
+		{
+			back();
+			return createNativeObject();
+		}
+		else if( next == '[' )
+		{
+			back();
+			return createNativeArray();
+		}
+		else
+		{
+			throw syntaxError( "JSON text must begin with either a '{' or a '['" );
+		}
+	}
+
+	/**
+	 * Create a Rhino NativeObject.
+	 * 
+	 * @return A NativeObject
+	 * @throws JSONException
+	 */
+	public NativeObject createNativeObject() throws JSONException
+	{
+		NativeObject nativeObject = new NativeObject();
+		char c;
+		String key;
+
+		if( nextClean() != '{' )
+		{
+			throw syntaxError( "A JSON object text must begin with '{'" );
+		}
+		for( ;; )
+		{
+			c = nextClean();
+			switch( c )
+			{
+				case 0:
+					throw syntaxError( "A JSON object text must end with '}'" );
+				case '}':
+					return nativeObject;
+				default:
+					back();
+					key = nextValue().toString();
+			}
+
+			/*
+			 * The key is followed by ':'. We will also tolerate '=' or '=>'.
+			 */
+
+			c = nextClean();
+			if( c == '=' )
+			{
+				if( next() != '>' )
+				{
+					back();
+				}
+			}
+			else if( c != ':' )
+			{
+				throw syntaxError( "Expected a ':' after a key" );
+			}
+			ScriptableObject.putProperty( nativeObject, key, nextValue() );
+
+			/*
+			 * Pairs are separated by ','. We will also tolerate ';'.
+			 */
+
+			switch( nextClean() )
+			{
+				case ';':
+				case ',':
+					if( nextClean() == '}' )
+					{
+						return nativeObject;
+					}
+					back();
+					break;
+				case '}':
+					return nativeObject;
+				default:
+					throw syntaxError( "Expected a ',' or '}'" );
+			}
+		}
+	}
+
+	/**
+	 * Create a Rhino NativeArray.
+	 * 
+	 * @return A NativeArray
+	 * @throws JSONException
+	 */
+	public NativeArray createNativeArray() throws JSONException
+	{
+		NativeArray nativeArray = new NativeArray( 0 );
+		int arrayIndex = 0;
+		char c = nextClean();
+		char q;
+
+		if( c == '[' )
+		{
+			q = ']';
+		}
+		else if( c == '(' )
+		{
+			q = ')';
+		}
+		else
+		{
+			throw syntaxError( "A JSON array text must start with '['" );
+		}
+		if( nextClean() == ']' )
+		{
+			return nativeArray;
+		}
+		back();
+		for( ;; )
+		{
+			if( nextClean() == ',' )
+			{
+				back();
+				ScriptableObject.putProperty( nativeArray, arrayIndex++, null );
+			}
+			else
+			{
+				back();
+				ScriptableObject.putProperty( nativeArray, arrayIndex++, nextValue() );
+			}
+			c = nextClean();
+			switch( c )
+			{
+				case ';':
+				case ',':
+					if( nextClean() == ']' )
+					{
+						return nativeArray;
+					}
+					back();
+					break;
+				case ']':
+				case ')':
+					if( q != c )
+					{
+						throw syntaxError( "Expected a '" + new Character( q ) + "'" );
+					}
+					return nativeArray;
+				default:
+					throw syntaxError( "Expected a ',' or ']'" );
+			}
+		}
+	}
+
+	//
+	// Object
+	//
+
+	/**
 	 * Make a printable string of this JSONTokener.
 	 * 
 	 * @return " at {index} [character {character} line {line}]"
@@ -713,5 +641,89 @@ public class JSONTokener
 	public String toString()
 	{
 		return " at " + index + " [character " + this.character + " line " + this.line + "]";
+	}
+
+	// //////////////////////////////////////////////////////////////////////////
+	// Private
+
+	private int character;
+
+	private boolean eof;
+
+	private int index;
+
+	private int line;
+
+	private char previous;
+
+	private Reader reader;
+
+	private boolean usePrevious;
+
+	private static Object stringToValue( String s )
+	{
+		if( s.equals( "" ) )
+		{
+			return s;
+		}
+		if( s.equalsIgnoreCase( "true" ) )
+		{
+			return Boolean.TRUE;
+		}
+		if( s.equalsIgnoreCase( "false" ) )
+		{
+			return Boolean.FALSE;
+		}
+		if( s.equalsIgnoreCase( "null" ) )
+		{
+			return null;
+		}
+
+		/*
+		 * If it might be a number, try converting it. We support the
+		 * non-standard 0x- convention. If a number cannot be produced, then the
+		 * value will just be a string. Note that the 0x-, plus, and implied
+		 * string conventions are non-standard. A JSON parser may accept
+		 * non-JSON forms as long as it accepts all correct JSON forms.
+		 */
+
+		char b = s.charAt( 0 );
+		if( ( b >= '0' && b <= '9' ) || b == '.' || b == '-' || b == '+' )
+		{
+			if( b == '0' && s.length() > 2 && ( s.charAt( 1 ) == 'x' || s.charAt( 1 ) == 'X' ) )
+			{
+				try
+				{
+					return new Integer( Integer.parseInt( s.substring( 2 ), 16 ) );
+				}
+				catch( Exception ignore )
+				{
+				}
+			}
+			try
+			{
+				if( s.indexOf( '.' ) > -1 || s.indexOf( 'e' ) > -1 || s.indexOf( 'E' ) > -1 )
+				{
+					return Double.valueOf( s );
+				}
+				else
+				{
+					Long myLong = new Long( s );
+					if( myLong.longValue() == myLong.intValue() )
+					{
+						return new Integer( myLong.intValue() );
+					}
+					else
+					{
+						return myLong;
+					}
+				}
+			}
+			catch( Exception ignore )
+			{
+			}
+		}
+
+		return s;
 	}
 }

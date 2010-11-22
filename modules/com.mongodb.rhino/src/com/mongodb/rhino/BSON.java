@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.bson.BSONObject;
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.Context;
@@ -28,6 +29,8 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBRefBase;
+import com.mongodb.rhino.util.Base64;
 
 /**
  * Direct conversion between native Rhino objects and BSON.
@@ -43,12 +46,16 @@ public class BSON
 	//
 
 	/**
-	 * Recursively convert from native Rhino to BSON-compatible types.
+	 * Recursively convert from native JavaScript to BSON-compatible types.
 	 * <p>
 	 * Recognizes JavaScript objects, arrays, dates and primitives.
 	 * <p>
-	 * Recognizes the special {$oid:'objectid'} object, converting it to a BSON
-	 * ObjectId.
+	 * Also recognizes JavaScript objects adhering to MongoDB's extended JSON,
+	 * converting them to BSON types: {$oid:'objectid'},
+	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
+	 * <p>
+	 * Note that the {$date:timestamp} extended JSON format is supported as well
+	 * as native JavaScript date objects.
 	 * 
 	 * @param object
 	 *        A Rhino native object
@@ -81,13 +88,9 @@ public class BSON
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
 
-			Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
-			if( oid != Scriptable.NOT_FOUND )
-			{
-				// Convert special $oid format to MongoDB ObjectId
-
-				return new ObjectId( oid.toString() );
-			}
+			Object r = ExtendedJSON.fromExtendedJSON( scriptable, false );
+			if( r != null )
+				return r;
 
 			String className = scriptable.getClassName();
 			if( className.equals( "Date" ) )
@@ -105,7 +108,7 @@ public class BSON
 			{
 				// Unpack NativeString
 
-				return object.toString();
+				return scriptable.toString();
 			}
 
 			// Convert regular Rhino object
@@ -131,14 +134,16 @@ public class BSON
 	}
 
 	/**
-	 * Recursively convert from BSON to native Rhino types.
+	 * Recursively convert from BSON to native JavaScript types.
 	 * <p>
 	 * Converts to JavaScript objects, arrays, dates and primitives. The result
 	 * is JSON-compatible.
 	 * <p>
-	 * Note that even MongoDB ObjectIds are not converted, but
-	 * {@link JSON#to(Object)} recognizes them, and thus they can still be
-	 * considered JSON-compatible in this limited sense.
+	 * Note that special MongoDB types (ObjectIds, Binary and DBRef) are not
+	 * converted, but {@link JSON#to(Object)} recognizes them, so they can still
+	 * be considered JSON-compatible in this limited sense. Use
+	 * {@link #from(Object, boolean)} if you want to convert them MongoDB's
+	 * extended JSON.
 	 * 
 	 * @param object
 	 *        A BSON object
@@ -150,23 +155,26 @@ public class BSON
 	}
 
 	/**
-	 * Recursively convert from BSON to native Rhino types.
+	 * Recursively convert from BSON to native JavaScript types.
 	 * <p>
 	 * Converts to JavaScript objects, arrays, dates and primitives. The result
 	 * is JSON-compatible.
 	 * <p>
-	 * Optionally converts MongoDB ObjectId to a special {$oid:'objectid'}
-	 * JavaScript object. Note that even if they are not converted,
-	 * {@link JSON#to(Object)} recognizes them, and thus they can still be
-	 * considered JSON-compatible in this limited sense.
+	 * Can optionally convert MongoDB's types to extended JSON:
+	 * {$oid:'objectid'}, {$binary:'base64',$type:'hex'},
+	 * {$ref:'collection',$id:'objectid'}.
+	 * <p>
+	 * Note that even if they are not converted, {@link JSON#to(Object)}
+	 * recognizes them, so they can still be considered JSON-compatible in this
+	 * limited sense.
 	 * 
 	 * @param object
 	 *        A BSON object
-	 * @param convertSpecial
-	 *        Whether to convert special "$" objects
+	 * @param extendedJSON
+	 *        Whether to convert extended JSON objects
 	 * @return A JSON-compatible Rhino object
 	 */
-	public static Object from( Object object, boolean convertSpecial )
+	public static Object from( Object object, boolean extendedJSON )
 	{
 		if( object instanceof List<?> )
 		{
@@ -177,7 +185,7 @@ public class BSON
 
 			int index = 0;
 			for( Object item : list )
-				ScriptableObject.putProperty( array, index++, from( item, convertSpecial ) );
+				ScriptableObject.putProperty( array, index++, from( item, extendedJSON ) );
 
 			return array;
 		}
@@ -190,7 +198,7 @@ public class BSON
 
 			for( String key : bsonObject.keySet() )
 			{
-				Object value = from( bsonObject.get( key ), convertSpecial );
+				Object value = from( bsonObject.get( key ), extendedJSON );
 				ScriptableObject.putProperty( nativeObject, key, value );
 			}
 
@@ -213,12 +221,40 @@ public class BSON
 
 			return nativeDate;
 		}
-		else if( ( object instanceof ObjectId ) && convertSpecial )
+		else if( ( object instanceof ObjectId ) && extendedJSON )
 		{
-			// Convert MongoDB ObjectId to special $oid format
+			// Convert MongoDB ObjectId to extended JSON $oid format
 
 			NativeObject nativeObject = new NativeObject();
 			ScriptableObject.putProperty( nativeObject, "$oid", ( (ObjectId) object ).toStringMongod() );
+			return nativeObject;
+		}
+		else if( ( object instanceof DBRefBase ) && extendedJSON )
+		{
+			// Convert MongoDB ref to extended JSON $ref format
+
+			DBRefBase ref = (DBRefBase) object;
+			NativeObject nativeObject = new NativeObject();
+			ScriptableObject.putProperty( nativeObject, "$ref", ref.getRef() );
+
+			Object id = from( ref.getId(), true );
+			if( id instanceof ObjectId )
+				ScriptableObject.putProperty( nativeObject, "$id", ( (ObjectId) id ).toStringMongod() );
+			else
+				// Seems like this will break for aggregate _ids, but this is
+				// what the MongoDB documentation says!
+				ScriptableObject.putProperty( nativeObject, "$id", id.toString() );
+
+			return nativeObject;
+		}
+		else if( ( object instanceof Binary ) && extendedJSON )
+		{
+			// Convert MongoDB Binary to extended JSON $binary format
+
+			Binary binary = (Binary) object;
+			NativeObject nativeObject = new NativeObject();
+			ScriptableObject.putProperty( nativeObject, "$binary", Base64.encodeToString( binary.getData(), false ) );
+			ScriptableObject.putProperty( nativeObject, "$type", Integer.toHexString( binary.getType() ) );
 			return nativeObject;
 		}
 		else if( object instanceof Symbol )

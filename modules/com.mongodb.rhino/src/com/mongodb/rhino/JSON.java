@@ -18,14 +18,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.bson.types.Binary;
 import org.bson.types.ObjectId;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.ScriptRuntime;
-import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
+import com.mongodb.DBRefBase;
+import com.mongodb.rhino.util.Base64;
 import com.mongodb.rhino.util.JSONException;
 import com.mongodb.rhino.util.JSONTokener;
 
@@ -43,13 +43,13 @@ public class JSON
 	//
 
 	/**
-	 * Recursively convert from JSON into native Rhino types.
+	 * Recursively convert from JSON into native JavaScript types.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * 
 	 * @param json
 	 *        The JSON string
-	 * @return A Rhino object or array
+	 * @return A JavaScript object or array
 	 * @throws JSONException
 	 */
 	public static Object from( String json ) throws JSONException
@@ -58,49 +58,45 @@ public class JSON
 	}
 
 	/**
-	 * Recursively convert from JSON into native Rhino types.
+	 * Recursively convert from JSON into native JavaScript types.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * <p>
-	 * Can also optionally recognize and create JavaScript date and MongoDB
-	 * ObjectId objects.
+	 * Can optionally recognize MongoDB's extended JSON: {$oid:'objectid'},
+	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'},
+	 * {$date:timestamp}.
 	 * 
 	 * @param json
 	 *        The JSON string
-	 * @param convertSpecial
+	 * @param extendedJSON
 	 *        Whether to convert special "$" objects
-	 * @return A Rhino object or array
+	 * @return A JavaScript object or array
 	 * @throws JSONException
 	 */
-	public static Object from( String json, boolean convertSpecial ) throws JSONException
+	public static Object from( String json, boolean extendedJSON ) throws JSONException
 	{
 		JSONTokener tokener = new JSONTokener( json );
 		Object object = tokener.createNative();
-		if( convertSpecial )
-		{
-			object = convertSpecial( object );
-		}
+		if( extendedJSON )
+			object = fromExtendedJSON( object );
 		return object;
 	}
 
 	/**
-	 * Recursively convert from native Rhino to JSON.
+	 * Recursively convert from native JavaScript, a few JVM types and BSON
+	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays and primitives.
+	 * Recognizes JavaScript objects, arrays, dates and primitives.
 	 * <p>
-	 * Special support for JavaScript dates: converts to {"$date": timestamp} in
-	 * JSON.
-	 * <p>
-	 * Special support for MongoDB ObjectId: converts to {"$oid": "objectid"} in
-	 * JSON.
-	 * <p>
-	 * Also recognizes JVM types: java.util.Map, java.util.Collection,
+	 * Recognizes JVM types: java.util.Map, java.util.Collection,
 	 * java.util.Date.
+	 * <p>
+	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * 
 	 * @param object
-	 *        A Rhino native object
+	 *        A native JavaScript object
 	 * @return The JSON string
-	 * @see JSON#convertSpecial(Object)
+	 * @see #fromExtendedJSON(Object)
 	 */
 	public static String to( Object object )
 	{
@@ -108,45 +104,45 @@ public class JSON
 	}
 
 	/**
-	 * Recursively convert from native Rhino to JSON.
+	 * Recursively convert from native JavaScript, a few JVM types and BSON
+	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays and primitives.
+	 * Recognizes JavaScript objects, arrays, dates and primitives.
 	 * <p>
-	 * Special support for JavaScript dates: converts to {"$date": timestamp} in
-	 * JSON.
-	 * <p>
-	 * Special support for MongoDB ObjectId: converts to {"$oid": "objectid"} in
-	 * JSON.
-	 * <p>
-	 * Also recognizes JVM types: java.util.Map, java.util.Collection,
+	 * Recognizes JVM types: java.util.Map, java.util.Collection,
 	 * java.util.Date.
+	 * <p>
+	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * 
 	 * @param object
-	 *        A Rhino native object
+	 *        A native JavaScript object
 	 * @param indent
 	 *        Whether to indent the JSON for human readability
 	 * @return The JSON string
+	 * @see #fromExtendedJSON(Object)
 	 */
 	public static String to( Object object, boolean indent )
 	{
 		StringBuilder s = new StringBuilder();
 		encode( s, object, indent, indent ? 0 : -1 );
-
 		return s.toString();
 	}
 
 	/**
-	 * Recursively converts special JavaScript objects.
+	 * Recursively converts MongoDB's extended JSON to native JavaScript or
+	 * native BSON types.
 	 * <p>
-	 * Converts {$date: timestamp} objects to JavaScript date objects.
+	 * Converts {$date:timestamp} objects to JavaScript date objects.
 	 * <p>
-	 * Converts {$oid: 'objectid'} objects to MongoDB ObjectId objects.
+	 * The following BSON types are supported: {$oid:'objectid'},
+	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
 	 * 
 	 * @param object
-	 *        A native Rhino object or array
+	 *        A native JavaScript object or array
 	 * @return The converted object or the original
+	 * @see ExtendedJSON#fromExtendedJSON(ScriptableObject, boolean)
 	 */
-	public static Object convertSpecial( Object object )
+	public static Object fromExtendedJSON( Object object )
 	{
 		if( object instanceof NativeArray )
 		{
@@ -156,7 +152,7 @@ public class JSON
 			for( int i = 0; i < length; i++ )
 			{
 				Object value = ScriptableObject.getProperty( array, i );
-				Object converted = convertSpecial( value );
+				Object converted = fromExtendedJSON( value );
 				if( converted != value )
 					ScriptableObject.putProperty( array, i, converted );
 			}
@@ -165,38 +161,18 @@ public class JSON
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
 
-			Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
-			if( oid != Scriptable.NOT_FOUND )
-			{
-				// Convert special $oid format to MongoDB ObjectId
+			Object r = ExtendedJSON.fromExtendedJSON( scriptable, true );
+			if( r != null )
+				return r;
 
-				return new ObjectId( oid.toString() );
-			}
-
-			Object date = ScriptableObject.getProperty( scriptable, "$date" );
-			if( date != Scriptable.NOT_FOUND )
-			{
-				// Convert special $date format to Rhino date
-
-				// (The NativeDate class is private in Rhino, but we can access
-				// it like a regular object.)
-
-				Context context = Context.getCurrentContext();
-				Scriptable scope = ScriptRuntime.getTopCallScope( context );
-				Scriptable nativeDate = context.newObject( scope, "Date", new Object[]
-				{
-					date
-				} );
-
-				return nativeDate;
-			}
+			// Convert regular Rhino object
 
 			Object[] ids = scriptable.getAllIds();
 			for( Object id : ids )
 			{
 				String key = id.toString();
 				Object value = ScriptableObject.getProperty( scriptable, key );
-				Object converted = convertSpecial( value );
+				Object converted = fromExtendedJSON( value );
 				if( converted != value )
 					ScriptableObject.putProperty( scriptable, key, converted );
 			}
@@ -235,6 +211,30 @@ public class JSON
 		{
 			HashMap<String, String> map = new HashMap<String, String>();
 			map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
+			encode( s, map, depth );
+		}
+		else if( object instanceof Binary )
+		{
+			Binary binary = (Binary) object;
+			HashMap<String, String> map = new HashMap<String, String>();
+			map.put( "$binary", Base64.encodeToString( binary.getData(), false ) );
+			map.put( "$type", Integer.toHexString( binary.getType() ) );
+			encode( s, map, depth );
+		}
+		else if( object instanceof DBRefBase )
+		{
+			HashMap<String, String> map = new HashMap<String, String>();
+			DBRefBase ref = (DBRefBase) object;
+			map.put( "$ref", ref.getRef() );
+
+			Object id = BSON.from( ref.getId(), true );
+			if( id instanceof ObjectId )
+				map.put( "$id", ( (ObjectId) id ).toStringMongod() );
+			else
+				// Seems like this will break for aggregate _ids, but this is
+				// what the MongoDB documentation says!
+				map.put( "$id", id.toString() );
+
 			encode( s, map, depth );
 		}
 		else if( object instanceof NativeJavaObject )
