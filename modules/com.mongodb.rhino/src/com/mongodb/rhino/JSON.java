@@ -12,20 +12,15 @@
 package com.mongodb.rhino;
 
 import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.bson.types.Binary;
-import org.bson.types.ObjectId;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
-import com.mongodb.DBRefBase;
-import com.mongodb.rhino.util.Base64;
 import com.mongodb.rhino.util.JSONException;
 import com.mongodb.rhino.util.JSONTokener;
 
@@ -43,7 +38,7 @@ public class JSON
 	//
 
 	/**
-	 * Recursively convert from JSON into native JavaScript types.
+	 * Recursively convert from JSON into native JavaScript values.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * 
@@ -58,18 +53,18 @@ public class JSON
 	}
 
 	/**
-	 * Recursively convert from JSON into native JavaScript types.
+	 * Recursively convert from JSON into native JavaScript values.
 	 * <p>
 	 * Creates JavaScript objects, arrays and primitives.
 	 * <p>
 	 * Can optionally recognize MongoDB's extended JSON: {$oid:'objectid'},
 	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'},
-	 * {$date:timestamp}.
+	 * {$date:timestamp} and {$regex:'pattern',$options:'options'}.
 	 * 
 	 * @param json
 	 *        The JSON string
 	 * @param extendedJSON
-	 *        Whether to convert special "$" objects
+	 *        Whether to convert extended JSON objects
 	 * @return A JavaScript object or array
 	 * @throws JSONException
 	 */
@@ -86,10 +81,11 @@ public class JSON
 	 * Recursively convert from native JavaScript, a few JVM types and BSON
 	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays, dates and primitives.
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
+	 * primitives.
 	 * <p>
-	 * Recognizes JVM types: java.util.Map, java.util.Collection,
-	 * java.util.Date.
+	 * Recognizes JVM types: java.util.Map, java.util.Collection, java.util.Date
+	 * and java.util.regex.Pattern.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * 
@@ -107,10 +103,11 @@ public class JSON
 	 * Recursively convert from native JavaScript, a few JVM types and BSON
 	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays, dates and primitives.
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
+	 * primitives.
 	 * <p>
-	 * Recognizes JVM types: java.util.Map, java.util.Collection,
-	 * java.util.Date.
+	 * Recognizes JVM types: java.util.Map, java.util.Collection, java.util.Date
+	 * and java.util.regex.Pattern.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * 
@@ -132,15 +129,16 @@ public class JSON
 	 * Recursively converts MongoDB's extended JSON to native JavaScript or
 	 * native BSON types.
 	 * <p>
-	 * Converts {$date:timestamp} objects to JavaScript date objects.
+	 * Converts {$date:timestamp} objects to JavaScript Date objects and
+	 * {$regex:'pattern',$options:'options'} to JavaScript RegExp objects.
 	 * <p>
 	 * The following BSON types are supported: {$oid:'objectid'},
-	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
+	 * {$binary:'base64',$type:'hex'} and {$ref:'collection',$id:'objectid'}.
 	 * 
 	 * @param object
 	 *        A native JavaScript object or array
 	 * @return The converted object or the original
-	 * @see ExtendedJSON#fromExtendedJSON(ScriptableObject, boolean)
+	 * @see ExtendedJSON#from(ScriptableObject, boolean)
 	 */
 	public static Object fromExtendedJSON( Object object )
 	{
@@ -161,7 +159,7 @@ public class JSON
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
 
-			Object r = ExtendedJSON.fromExtendedJSON( scriptable, true );
+			Object r = ExtendedJSON.from( scriptable, true );
 			if( r != null )
 				return r;
 
@@ -189,53 +187,13 @@ public class JSON
 		if( indent )
 			indent( s, depth );
 
-		if( object == null )
+		if( ( object == null ) || ( object instanceof Undefined ) )
 		{
 			s.append( "null" );
 		}
-		else if( object instanceof Number )
+		else if( ( object instanceof Number ) || ( object instanceof Boolean ) )
 		{
 			s.append( object );
-		}
-		else if( object instanceof Boolean )
-		{
-			s.append( object );
-		}
-		else if( object instanceof Date )
-		{
-			HashMap<String, Long> map = new HashMap<String, Long>();
-			map.put( "$date", ( (Date) object ).getTime() );
-			encode( s, map, depth );
-		}
-		else if( object instanceof ObjectId )
-		{
-			HashMap<String, String> map = new HashMap<String, String>();
-			map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
-			encode( s, map, depth );
-		}
-		else if( object instanceof Binary )
-		{
-			Binary binary = (Binary) object;
-			HashMap<String, String> map = new HashMap<String, String>();
-			map.put( "$binary", Base64.encodeToString( binary.getData(), false ) );
-			map.put( "$type", Integer.toHexString( binary.getType() ) );
-			encode( s, map, depth );
-		}
-		else if( object instanceof DBRefBase )
-		{
-			HashMap<String, String> map = new HashMap<String, String>();
-			DBRefBase ref = (DBRefBase) object;
-			map.put( "$ref", ref.getRef() );
-
-			Object id = BSON.from( ref.getId(), true );
-			if( id instanceof ObjectId )
-				map.put( "$id", ( (ObjectId) id ).toStringMongod() );
-			else
-				// Seems like this will break for aggregate _ids, but this is
-				// what the MongoDB documentation says!
-				map.put( "$id", id.toString() );
-
-			encode( s, map, depth );
 		}
 		else if( object instanceof NativeJavaObject )
 		{
@@ -261,19 +219,7 @@ public class JSON
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
 			String className = scriptable.getClassName();
-			if( className.equals( "Date" ) )
-			{
-				// (The NativeDate class is private in Rhino, but we can access
-				// it like a regular object.)
-
-				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
-				if( time instanceof Number )
-				{
-					encode( s, new Date( ( (Number) time ).longValue() ), false, depth );
-					return;
-				}
-			}
-			else if( className.equals( "String" ) )
+			if( className.equals( "String" ) )
 			{
 				// Unpack NativeString
 
@@ -283,14 +229,24 @@ public class JSON
 			}
 			else
 			{
-				encode( s, scriptable, depth );
+				Object r = ExtendedJSON.to( object, false );
+				if( r != null )
+					encode( s, r, indent, depth );
+				else
+					encode( s, scriptable, depth );
 			}
 		}
 		else
 		{
-			s.append( '\"' );
-			s.append( escape( object.toString() ) );
-			s.append( '\"' );
+			Object r = ExtendedJSON.to( object, false );
+			if( r != null )
+				encode( s, r, indent, depth );
+			else
+			{
+				s.append( '\"' );
+				s.append( escape( object.toString() ) );
+				s.append( '\"' );
+			}
 		}
 	}
 

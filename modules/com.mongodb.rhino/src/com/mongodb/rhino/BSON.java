@@ -14,10 +14,9 @@ package com.mongodb.rhino;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.bson.BSONObject;
-import org.bson.types.Binary;
-import org.bson.types.ObjectId;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
@@ -27,10 +26,9 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBRefBase;
-import com.mongodb.rhino.util.Base64;
 
 /**
  * Direct conversion between native Rhino objects and BSON.
@@ -48,14 +46,16 @@ public class BSON
 	/**
 	 * Recursively convert from native JavaScript to BSON-compatible types.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays, dates and primitives.
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
+	 * primitives.
 	 * <p>
 	 * Also recognizes JavaScript objects adhering to MongoDB's extended JSON,
 	 * converting them to BSON types: {$oid:'objectid'},
 	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
 	 * <p>
-	 * Note that the {$date:timestamp} extended JSON format is supported as well
-	 * as native JavaScript date objects.
+	 * Note that the {$date:timestamp} and {$regex:'pattern',$options:'options'}
+	 * extended JSON formats are recognized as well as native JavaScript Date
+	 * and RegExp objects.
 	 * 
 	 * @param object
 	 *        A Rhino native object
@@ -70,6 +70,22 @@ public class BSON
 			// wrapped by Rhino.
 
 			return ( (NativeJavaObject) object ).unwrap();
+		}
+		else if( object instanceof NativeRegExp )
+		{
+			NativeRegExp regExp = (NativeRegExp) object;
+			Object source = ScriptableObject.getProperty( regExp, "source" );
+			// TODO: unclear how to handle the JavaScript global flag in JVM
+			// Object isGlobal = ScriptableObject.getProperty( regExp, "global"
+			// );
+			Object isIgnoreCase = ScriptableObject.getProperty( regExp, "ignoreCase" );
+			Object isMultiLine = ScriptableObject.getProperty( regExp, "multiline" );
+			int flags = 0;
+			if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
+				flags |= Pattern.CASE_INSENSITIVE;
+			if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
+				flags |= Pattern.MULTILINE;
+			return Pattern.compile( source.toString(), flags );
 		}
 		else if( object instanceof NativeArray )
 		{
@@ -88,7 +104,8 @@ public class BSON
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
 
-			Object r = ExtendedJSON.fromExtendedJSON( scriptable, false );
+			// Is it in extended JSON format?
+			Object r = ExtendedJSON.from( scriptable, false );
 			if( r != null )
 				return r;
 
@@ -130,19 +147,21 @@ public class BSON
 			return null;
 		}
 		else
+		{
 			return object;
+		}
 	}
 
 	/**
-	 * Recursively convert from BSON to native JavaScript types.
+	 * Recursively convert from BSON to native JavaScript values.
 	 * <p>
-	 * Converts to JavaScript objects, arrays, dates and primitives. The result
-	 * is JSON-compatible.
+	 * Converts to JavaScript objects, arrays, Date objectss and primitives. The
+	 * result is JSON-compatible.
 	 * <p>
 	 * Note that special MongoDB types (ObjectIds, Binary and DBRef) are not
 	 * converted, but {@link JSON#to(Object)} recognizes them, so they can still
 	 * be considered JSON-compatible in this limited sense. Use
-	 * {@link #from(Object, boolean)} if you want to convert them MongoDB's
+	 * {@link #from(Object, boolean)} if you want to convert them to MongoDB's
 	 * extended JSON.
 	 * 
 	 * @param object
@@ -155,10 +174,10 @@ public class BSON
 	}
 
 	/**
-	 * Recursively convert from BSON to native JavaScript types.
+	 * Recursively convert from BSON to native JavaScript values.
 	 * <p>
-	 * Converts to JavaScript objects, arrays, dates and primitives. The result
-	 * is JSON-compatible.
+	 * Converts to JavaScript objects, arrays, Date objects, RegExp objects and
+	 * primitives. The result is JSON-compatible.
 	 * <p>
 	 * Can optionally convert MongoDB's types to extended JSON:
 	 * {$oid:'objectid'}, {$binary:'base64',$type:'hex'},
@@ -204,6 +223,10 @@ public class BSON
 
 			return nativeObject;
 		}
+		else if( object instanceof Symbol )
+		{
+			return ( (Symbol) object ).getSymbol();
+		}
 		else if( object instanceof Date )
 		{
 			// Convert Date to NativeDate
@@ -221,47 +244,40 @@ public class BSON
 
 			return nativeDate;
 		}
-		else if( ( object instanceof ObjectId ) && extendedJSON )
+		else if( object instanceof Pattern )
 		{
-			// Convert MongoDB ObjectId to extended JSON $oid format
+			// Convert Pattern to NativeRegExp
 
-			NativeObject nativeObject = new NativeObject();
-			ScriptableObject.putProperty( nativeObject, "$oid", ( (ObjectId) object ).toStringMongod() );
-			return nativeObject;
-		}
-		else if( ( object instanceof DBRefBase ) && extendedJSON )
-		{
-			// Convert MongoDB ref to extended JSON $ref format
+			Pattern pattern = (Pattern) object;
+			String regex = pattern.toString();
+			int flags = pattern.flags();
+			String options = "";
+			if( ( flags & Pattern.CASE_INSENSITIVE ) != 0 )
+				options += 'i';
+			if( ( flags & Pattern.MULTILINE ) != 0 )
+				options += 'm';
+			// TODO: unclear how to handle the JavaScript global flag from JVM
+			// pattern
 
-			DBRefBase ref = (DBRefBase) object;
-			NativeObject nativeObject = new NativeObject();
-			ScriptableObject.putProperty( nativeObject, "$ref", ref.getRef() );
+			Context context = Context.getCurrentContext();
+			Scriptable scope = ScriptRuntime.getTopCallScope( context );
+			Scriptable nativeRegExp = context.newObject( scope, "RegExp", new Object[]
+			{
+				regex, options
+			} );
 
-			Object id = from( ref.getId(), true );
-			if( id instanceof ObjectId )
-				ScriptableObject.putProperty( nativeObject, "$id", ( (ObjectId) id ).toStringMongod() );
-			else
-				// Seems like this will break for aggregate _ids, but this is
-				// what the MongoDB documentation says!
-				ScriptableObject.putProperty( nativeObject, "$id", id.toString() );
-
-			return nativeObject;
-		}
-		else if( ( object instanceof Binary ) && extendedJSON )
-		{
-			// Convert MongoDB Binary to extended JSON $binary format
-
-			Binary binary = (Binary) object;
-			NativeObject nativeObject = new NativeObject();
-			ScriptableObject.putProperty( nativeObject, "$binary", Base64.encodeToString( binary.getData(), false ) );
-			ScriptableObject.putProperty( nativeObject, "$type", Integer.toHexString( binary.getType() ) );
-			return nativeObject;
-		}
-		else if( object instanceof Symbol )
-		{
-			return ( (Symbol) object ).getSymbol();
+			return nativeRegExp;
 		}
 		else
+		{
+			if( extendedJSON )
+			{
+				Object r = ExtendedJSON.to( object, true );
+				if( r != null )
+					return r;
+			}
+
 			return object;
+		}
 	}
 }

@@ -29,7 +29,7 @@ public class Test
 	public static void main( String[] arguments )
 	{
 		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date()]";
-		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}}";
+		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi}";
 		toJSON( array );
 		toJSON( object );
 		fromJSON( object, ".children[3].name" );
@@ -38,6 +38,7 @@ public class Test
 		toBSON( array, "get(4).getClass()" );
 		toBSON( array, "get(5).getClass()" );
 		toBSON( object, "get('children').getClass()" );
+		toBSON( object, "get('regular')" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
