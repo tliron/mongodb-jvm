@@ -75,17 +75,37 @@ public class BSON
 		{
 			NativeRegExp regExp = (NativeRegExp) object;
 			Object source = ScriptableObject.getProperty( regExp, "source" );
-			// TODO: unclear how to handle the JavaScript global flag in JVM
-			// Object isGlobal = ScriptableObject.getProperty( regExp, "global"
-			// );
+
+			Object isGlobal = ScriptableObject.getProperty( regExp, "global" );
 			Object isIgnoreCase = ScriptableObject.getProperty( regExp, "ignoreCase" );
 			Object isMultiLine = ScriptableObject.getProperty( regExp, "multiline" );
-			int flags = 0;
+
+			// Note: JVM pattern does not support a "g" flag. Also, compiling
+			// the pattern here is a waste of time. In short, better to use a
+			// DBObject than a Pattern, even though the MongoDB driver supports
+			// Pattern instances:
+			//
+			// int flags = 0;
+			// if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean)
+			// isIgnoreCase ).booleanValue() ) )
+			// flags |= Pattern.CASE_INSENSITIVE;
+			// if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean)
+			// isMultiLine ).booleanValue() ) )
+			// flags |= Pattern.MULTILINE;
+			// return Pattern.compile( source.toString(), flags );
+
+			String options = "";
+			if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
+				options += "g";
 			if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
-				flags |= Pattern.CASE_INSENSITIVE;
+				options += "i";
 			if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
-				flags |= Pattern.MULTILINE;
-			return Pattern.compile( source.toString(), flags );
+				options += "m";
+
+			BasicDBObject bson = new BasicDBObject();
+			bson.put( "$regex", source.toString() );
+			bson.put( "$options", source.toString() );
+			return bson;
 		}
 		else if( object instanceof NativeArray )
 		{
@@ -256,8 +276,8 @@ public class BSON
 				options += 'i';
 			if( ( flags & Pattern.MULTILINE ) != 0 )
 				options += 'm';
-			// TODO: unclear how to handle the JavaScript global flag from JVM
-			// pattern
+
+			// Note: JVM pattern does not support a "g" flag
 
 			Context context = Context.getCurrentContext();
 			Scriptable scope = ScriptRuntime.getTopCallScope( context );
