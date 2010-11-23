@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.12
+// Version 1.13
 //
 // Copyright 2010 Three Crickets LLC.
 //
@@ -101,10 +101,10 @@ var Mongo = Mongo || function() {
 				var index = 0
 				while (this.hasNext()) {
 					var doc = this.next()
-					if ((start != null) && (index++ >= start)) {
+					if ((start == null) || (index++ >= start)) {
 						array.push(doc)
 					}
-					if (array.length == limit) {
+					if (array.length === limit) {
 						break
 					}
 				}
