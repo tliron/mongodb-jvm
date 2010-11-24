@@ -41,12 +41,18 @@ public class ExtendedJSON
 	//
 
 	/**
-	 * Converts JavaScript objects adhering to MongoDB's extended JSON to BSON
-	 * types: {$oid:'objectid'}, {$binary:'base64',$type:'hex'},
+	 * Converts JavaScript objects adhering to MongoDB's extended JSON to
+	 * JavaScript and BSON types.
+	 * <p>
+	 * BSON types: {$oid:'objectid'}, {$binary:'base64',$type:'hex'}, and
 	 * {$ref:'collection',$id:'objectid'}.
 	 * <p>
 	 * The {$date:timestamp} extended JSON format can be converted to either a
-	 * JavaScript Date object or a java.util.Date object.
+	 * JavaScript Date object or a java.util.Date object, according to the
+	 * javaScript argument.
+	 * <p>
+	 * The {$regex:'pattern',$options:'options'} extended JSON format is
+	 * converted to a JavaScript RegExp object.
 	 * 
 	 * @param scriptable
 	 *        The JavaScript object
@@ -225,6 +231,8 @@ public class ExtendedJSON
 			String className = scriptable.getClassName();
 			if( className.equals( "Date" ) )
 			{
+				// Convert NativeDate to extended JSON $date format
+
 				// (The NativeDate class is private in Rhino, but we can access
 				// it like a regular object.)
 
@@ -251,6 +259,10 @@ public class ExtendedJSON
 		{
 			// Convert Pattern to extended JSON $regex format
 
+			// (Note: Pattern does not support JavaScript's 'g' option;
+			// also, there may be incompatibilities between Pattern's and
+			// JavaScript's regular expression implementations)
+
 			Pattern pattern = (Pattern) object;
 			String regex = pattern.toString();
 			int flags = pattern.flags();
@@ -259,8 +271,6 @@ public class ExtendedJSON
 				options += 'i';
 			if( ( flags & Pattern.MULTILINE ) != 0 )
 				options += 'm';
-			// TODO: unclear how to handle the JavaScript global flag from JVM
-			// pattern
 
 			if( javaScript )
 			{
