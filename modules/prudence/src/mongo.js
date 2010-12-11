@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.14
+// Version 1.15
 //
 // Copyright 2010 Three Crickets LLC.
 //
@@ -344,7 +344,7 @@ var Mongo = Mongo || function() {
 			this.idsCollection = config.idsCollection || Public.defaultIdsCollection
 
 			if (this.db instanceof String) {
-				this.db = this.connection.getDB(db)
+				this.db = this.connection.getDB(this.db)
 			}
 			this.collection = this.db.getCollection(name)
 			
