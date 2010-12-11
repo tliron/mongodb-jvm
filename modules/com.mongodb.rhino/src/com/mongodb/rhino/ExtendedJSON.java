@@ -162,8 +162,8 @@ public class ExtendedJSON
 	}
 
 	/**
-	 * Converts BSON, java.util.Date, java.util.regex.Pattern, and JavaScript
-	 * Date and RegExp objects to MongoDB's extended JSON.
+	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern, and
+	 * JavaScript Date and RegExp objects to MongoDB's extended JSON.
 	 * <p>
 	 * The output can be either a JavaScript object or a java.util.HashMap.
 	 * 
@@ -312,6 +312,28 @@ public class ExtendedJSON
 			Binary binary = (Binary) object;
 			String data = Base64.encodeToString( binary.getData(), false );
 			String type = Integer.toHexString( binary.getType() );
+			if( javaScript )
+			{
+				NativeObject nativeObject = new NativeObject();
+				ScriptableObject.putProperty( nativeObject, "$binary", data );
+				ScriptableObject.putProperty( nativeObject, "$type", type );
+				return nativeObject;
+			}
+			else
+			{
+				HashMap<String, String> map = new HashMap<String, String>( 2 );
+				map.put( "$binary", data );
+				map.put( "$type", type );
+				return map;
+			}
+		}
+		else if( object instanceof byte[] )
+		{
+			// Convert byte array to extended JSON $binary format
+
+			byte[] bytes = (byte[]) object;
+			String data = Base64.encodeToString( bytes, false );
+			String type = Integer.toHexString( 0 );
 			if( javaScript )
 			{
 				NativeObject nativeObject = new NativeObject();
