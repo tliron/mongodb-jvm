@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.15
+// Version 1.16
 //
 // Copyright 2010 Three Crickets LLC.
 //
@@ -368,9 +368,11 @@ var Mongo = Mongo || function() {
 	Public.defaultConnection = application.globals.get('mongo.defaults.connection')
 	if (!Public.defaultConnection) {
 		var defaultServers = application.globals.get('mongo.defaultServers')
-		Public.defaultConnection = application.getGlobal('mongo.defaults.connection', Public.connect(defaultServers, {
-			autoConnectRetry: true
-		}))
+		if (defaultServers) {
+			Public.defaultConnection = application.getGlobal('mongo.defaults.connection', Public.connect(defaultServers, {
+				autoConnectRetry: true
+			}))
+		}
 	}
 	
 	if (Public.defaultConnection) {
