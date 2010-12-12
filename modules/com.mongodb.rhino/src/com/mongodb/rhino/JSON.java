@@ -14,6 +14,7 @@ package com.mongodb.rhino;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.mozilla.javascript.NativeArray;
@@ -427,7 +428,8 @@ public class JSON
 
 	private static String[] ESCAPE_REPLACEMENTS = new String[]
 	{
-		"\\\\\\", "\\\\n", "\\\\r", "\\\\t", "\\\\f", "\\\\\""
+		Matcher.quoteReplacement( "\\\\" ), Matcher.quoteReplacement( "\\\n" ), Matcher.quoteReplacement( "\\\r" ), Matcher.quoteReplacement( "\\\t" ), Matcher.quoteReplacement( "\\\f" ),
+		Matcher.quoteReplacement( "\\\"" )
 	};
 
 	private static String escape( String string )
