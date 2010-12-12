@@ -428,8 +428,7 @@ public class JSON
 
 	private static String[] ESCAPE_REPLACEMENTS = new String[]
 	{
-		Matcher.quoteReplacement( "\\\\" ), Matcher.quoteReplacement( "\\\n" ), Matcher.quoteReplacement( "\\\r" ), Matcher.quoteReplacement( "\\\t" ), Matcher.quoteReplacement( "\\\f" ),
-		Matcher.quoteReplacement( "\\\"" )
+		Matcher.quoteReplacement( "\\\\" ), Matcher.quoteReplacement( "\\n" ), Matcher.quoteReplacement( "\\r" ), Matcher.quoteReplacement( "\\t" ), Matcher.quoteReplacement( "\\f" ), Matcher.quoteReplacement( "\\\"" )
 	};
 
 	private static String escape( String string )
