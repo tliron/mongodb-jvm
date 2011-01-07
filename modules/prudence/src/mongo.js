@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.17
+// Version 1.18
 //
 // Copyright 2010 Three Crickets LLC.
 //
@@ -40,11 +40,14 @@
 //   Most of the methods should be familiar from the common MongoDB APIs. A few changes
 //   and additions:
 //
-//     update(query, update, multi):
+//     update(query, update, multi, writeConcern):
 //       Is a multi-document update when multi (optional) is true, otherwise
-//       single-document.
+//       single-document. The writeConcern (optional) can be a boolean (fsync),
+//       a number (w) or a combined object in the form {w: number, timout: number,
+//       fsync: boolean}, where fsync is optional. Make sure that 'w' is at least
+//       1 if you want to receive the update results.
 //
-//     upsert(query, update, multi):
+//     upsert(query, update, multi, writeConcern):
 //       As above, but is an upsert.
 //
 //     nextID():
@@ -120,6 +123,12 @@
 //   Mongo.id(string):
 //     Turns a correctly formatted string into a MongoDB ObjectId instance. Note
 //     that the reverse is achieved via the regular JavaScript String(id) casting.
+//
+//   Mongo.writeConcern(object):
+//     Creates a write result (see collection's update(), above).
+//
+//   Mongo.result(CommandResult):
+//     Converts the result of a JVM driver command to a JavaScript object.
 //
 // JSON API:
 //
