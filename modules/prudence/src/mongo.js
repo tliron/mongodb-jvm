@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.18
+// Version 1.19
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -221,7 +221,7 @@ var Mongo = Mongo || function() {
 		
 		result: function(result) {
 			if (result) {
-				return BSON.from(result.lastError)
+				return BSON.from(result.cachedLastError)
 			}
 			return null
 		},
