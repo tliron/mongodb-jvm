@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.19
+// Version 1.20
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -307,16 +307,26 @@ var Mongo = Mongo || function() {
 				}
 			}
 			
-			this.save = function(doc) {
-				return Mongo.result(this.collection.save(BSON.to(doc)))
+			this.save = function(doc, writeConcern) {
+				if (writeConcern !== undefined) {
+					return Mongo.result(this.collection.save(BSON.to(doc), Mongo.writeConcern(writeConcern)))
+				}
+				else {
+					return Mongo.result(this.collection.save(BSON.to(doc)))
+				}
 			}
 			
-			this.insert = function(doc) {
-				return Mongo.result(this.collection.insert(BSON.to(doc)))
+			this.insert = function(doc, writeConcern) {
+				if (writeConcern !== undefined) {
+					return Mongo.result(this.collection.insert(BSON.to(doc), Mongo.writeConcern(writeConcern)))
+				}
+				else {
+					return Mongo.result(this.collection.insert(BSON.to(doc)))
+				}
 			}
 			
 			this.update = function(query, update, multi, writeConcern) {
-				if (writeConcern) {
+				if (writeConcern !== undefined) {
 					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, Mongo.writeConcern(writeConcern)))
 				}
 				else {
@@ -325,7 +335,7 @@ var Mongo = Mongo || function() {
 			}
 			
 			this.upsert = function(query, update, multi, writeConcern) {
-				if (writeConcern) {
+				if (writeConcern !== undefined) {
 					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, Mongo.writeConcern(writeConcern)))
 				}
 				else {
@@ -333,8 +343,13 @@ var Mongo = Mongo || function() {
 				}
 			}
 			
-			this.remove = function(query) {
-				return Mongo.result(this.collection.remove(BSON.to(query)))
+			this.remove = function(query, writeConcern) {
+				if (writeConcern !== undefined) {
+					return Mongo.result(this.collection.remove(BSON.to(query), Mongo.writeConcern(writeConcern)))
+				}
+				else {
+					return Mongo.result(this.collection.remove(BSON.to(query)))
+				}
 			}
 			
 			this.findAndModify = function(query, update) {
