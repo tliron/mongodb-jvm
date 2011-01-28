@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.20
+// Version 1.21
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -226,6 +226,30 @@ var Mongo = Mongo || function() {
 			return null
 		},
 		
+		MapReduceResult: function(result) {
+
+			this.drop = function() {
+				this.result.drop()
+			}
+
+			this.getOutputCollection = function() {
+				return new Mongo.Collection(null, {collection: this.result.getOutputCollection()})
+			}
+
+			this.getCursor = function() {
+				return new Mongo.Cursor(this.result.results())
+			}
+			
+			// //////////////////////////////////////////////////////////////////////////
+			// Private
+			
+			//
+			// Construction
+			//
+
+			this.result = result
+		},
+		
 		Cursor: function(cursor) {
 		
 			this.hasNext = function() {
@@ -351,6 +375,14 @@ var Mongo = Mongo || function() {
 					return Mongo.result(this.collection.remove(BSON.to(query)))
 				}
 			}
+
+			this.mapReduce = function(mapFn, reduceFn, query) {
+				var result = this.collection.mapReduce(String(mapFn), String(reduceFn), null, BSON.to(query))
+				if (result) {
+					return new Mongo.MapReduceResult(result)
+				}
+				return null
+			}
 			
 			this.findAndModify = function(query, update) {
 				return Mongo.result(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
@@ -400,7 +432,7 @@ var Mongo = Mongo || function() {
 			if (this.db instanceof String) {
 				this.db = this.connection.getDB(this.db)
 			}
-			this.collection = this.db.getCollection(name)
+			this.collection = config.collection || this.db.getCollection(name)
 			
 			if (config.uniqueID) {
 				var index = {}
