@@ -1,2 +1,2 @@
-mongo-java-driver	2.3
+mongo-java-driver	2.4
 rhino				1.7R2
