@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.21
+// Version 1.22
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -378,18 +378,15 @@ var Mongo = Mongo || function() {
 
 			this.mapReduce = function(mapFn, reduceFn, query) {
 				var result = this.collection.mapReduce(String(mapFn), String(reduceFn), null, BSON.to(query))
-				if (result) {
-					return new Mongo.MapReduceResult(result)
-				}
-				return null
+				return result ? new Mongo.MapReduceResult(result) : null
 			}
 			
 			this.findAndModify = function(query, update) {
-				return Mongo.result(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
+				return BSON.from(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
 			}
 			
 			this.findAndRemove = function(query) {
-				return Mongo.result(this.collection.findAndRemove(BSON.to(query)))
+				return BSON.from(this.collection.findAndRemove(BSON.to(query)))
 			}
 			
 			this.nextID = function() {
