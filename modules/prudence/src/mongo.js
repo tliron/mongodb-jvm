@@ -220,7 +220,7 @@ var Mongo = Mongo || function() {
 		},
 		
 		result: function(result) {
-			if (result) {
+			if (result !== null) {
 				return BSON.from(result.cachedLastError)
 			}
 			return null
@@ -397,7 +397,7 @@ var Mongo = Mongo || function() {
 						next: 1
 					}
 				})
-				if (id) {
+				if (id !== null) {
 					return id.next
 				}
 				else {
@@ -426,7 +426,7 @@ var Mongo = Mongo || function() {
 			this.db = config.db || Public.defaultDB
 			this.idsCollection = config.idsCollection || Public.defaultIdsCollection
 
-			if (this.db instanceof String) {
+			if (typeof this.db == 'string') {
 				this.db = this.connection.getDB(this.db)
 			}
 			this.collection = config.collection || this.db.getCollection(name)
