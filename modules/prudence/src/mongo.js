@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.24
+// Version 1.25
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -309,17 +309,27 @@ var Mongo = Mongo || function() {
 				this.collection.ensureIndex(BSON.to(index), BSON.to(options))
 			}
 			
-			this.find = function(query) {
+			this.find = function(query, fields) {
 				if (query) {
-					return new Mongo.Cursor(this.collection.find(BSON.to(query)))
+					if (fields !== undefined) {
+						return new Mongo.Cursor(this.collection.find(BSON.to(query), BSON.to(fields)))
+					}
+					else {
+						return new Mongo.Cursor(this.collection.find(BSON.to(query)))
+					}
 				}
 				else {
 					return new Mongo.Cursor(this.collection.find())
 				}
 			}
 			
-			this.findOne = function(query) {
-				return BSON.from(this.collection.findOne(BSON.to(query)))
+			this.findOne = function(query, fields) {
+				if (fields !== undefined) {
+					return BSON.from(this.collection.findOne(BSON.to(query), BSON.to(fields)))
+				}
+				else {
+					return BSON.from(this.collection.findOne(BSON.to(query)))
+				}
 			}
 			
 			this.count = function(query) {
@@ -422,15 +432,15 @@ var Mongo = Mongo || function() {
 			//
 			
 			config = config || {}
-			this.connection = ((config.connection !== undefined) && (config.connection !== null)) ? config.connection : Public.defaultConnection
-			this.db = ((config.db !== undefined) && (config.db !== null)) ? config.db : Public.defaultDB
-			this.idsCollection = ((config.idsCollection !== undefined) && (config.idsCollection !== null)) ? config.idsCollection : Public.defaultIdsCollection
+			this.connection = exists(config.connection) ? config.connection : Public.defaultConnection
+			this.db = exists(config.db) ? config.db : Public.defaultDB
+			this.idsCollection = exists(config.idsCollection) ? config.idsCollection : Public.defaultIdsCollection
 
 			if ((typeof this.db == 'string') || (this.db instanceof String)) {
 				this.db = this.connection.getDB(this.db)
 			}
 
-			this.collection = ((config.collection !== undefined) && (config.collection !== null)) ? config.collection : this.db.getCollection(name)
+			this.collection = exists(config.collection) ? config.collection : this.db.getCollection(name)
 			
 			if (config.uniqueID) {
 				var index = {}
@@ -444,6 +454,11 @@ var Mongo = Mongo || function() {
 	
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
+
+	function exists(value) {
+		// Note the order: we need the value on the right side for Rhino not to complain about non-JS objects
+		return (undefined !== value) && (null !== value)
+	}
 	
 	//
 	// Construction
@@ -452,7 +467,7 @@ var Mongo = Mongo || function() {
 	// Initialize default connection from globals or shared globals
 	Public.defaultConnection = application.globals.get('mongo.defaults.connection')
 	if (Public.defaultConnection === null) {
-		if ((application.sharedGlobals !== undefined) && (application.sharedGlobals !== null)) {
+		if (exists(application.sharedGlobals)) {
 			Public.defaultConnection = application.sharedGlobals.get('mongo.defaults.connection')
 		}
 		
