@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.25
+// Version 1.26
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -32,11 +32,6 @@
 //     uniqueID:  
 //       If supplied, ensureIndex will automatically be called on the key. 
 //
-//     idsCollection:
-//       The name of the IDs collection used for insertNext and nextID (see below).
-//       If not supplied, the value of the 'mongo.defaultsIdsCollectionName' will be
-//       used instead.
-//
 //   Most of the methods should be familiar from the common MongoDB APIs. A few changes
 //   and additions:
 //
@@ -50,19 +45,10 @@
 //     upsert(query, update, multi, writeConcern):
 //       As above, but is an upsert.
 //
-//     nextID():
-//       Returns the next serial integer reserved for this collection, allowing you
-//       to create unique integer IDs as an alternative or supplement to MongoDB's
-//       default use of ObjectIds for the _id. Note that the IDs are increased
-//       atomically, guaranteeing that all calls to nextID() return unique numbers.
-//
-//       This feature works by storing counters per collection in a specially
-//       reserved collection. See the 'idsCollection' config spec, above.
-//
 //     insertNext(doc):
 //       As insert(doc), except that an "id" key is added with a call to nextID(). 
 //
-//     find(query):
+//     find(query, fields):
 //       Returns a MongoDB cursor, supporting the common MongoDB API. Useful
 //       additions:
 //
@@ -118,7 +104,7 @@
 //     connection.getDB().
 //
 //   Mongo.newID():
-//     Created a unique MongoDB ObjectId instance.
+//     Creates a unique MongoDB ObjectId.
 //
 //   Mongo.id(string):
 //     Turns a correctly formatted string into a MongoDB ObjectId instance. Note
@@ -399,26 +385,6 @@ var Mongo = Mongo || function() {
 				return BSON.from(this.collection.findAndRemove(BSON.to(query)))
 			}
 			
-			this.nextID = function() {
-				var id = this.idsCollection.findAndModify({
-					id: this.collection.name
-				}, {
-					$inc: {
-						next: 1
-					}
-				})
-				if (id !== null) {
-					return id.next
-				}
-				else {
-					Mongo.ids.insert({
-						id: this.collection.name,
-						next: 1
-					})
-					return this.nextID()
-				}
-			}
-			
 			this.insertNext = function(doc) {
 				doc.id = this.nextID()
 				return Mongo.result(this.collection.insert(BSON.to(doc)))
@@ -434,7 +400,6 @@ var Mongo = Mongo || function() {
 			config = config || {}
 			this.connection = exists(config.connection) ? config.connection : Public.defaultConnection
 			this.db = exists(config.db) ? config.db : Public.defaultDB
-			this.idsCollection = exists(config.idsCollection) ? config.idsCollection : Public.defaultIdsCollection
 
 			if ((typeof this.db == 'string') || (this.db instanceof String)) {
 				this.db = this.connection.getDB(this.db)
@@ -445,9 +410,7 @@ var Mongo = Mongo || function() {
 			if (config.uniqueID) {
 				var index = {}
 				index[config.uniqueID] = 1
-				this.ensureIndex(index, {
-					unique: true
-				})
+				this.ensureIndex(index, {unique: true})
 			}
 		}
 	}
@@ -487,17 +450,6 @@ var Mongo = Mongo || function() {
 			var defaultDB = application.globals.get('mongo.defaultDB')
 			if (defaultDB !== null) {
 				Public.defaultDB = application.getGlobal('mongo.defaults.db', Public.defaultConnection.getDB(defaultDB))
-			}
-		}
-		
-		if (Public.defaultDB !== null) {
-			// Initialize default ID collection from globals
-			Public.defaultIdsCollection = application.globals.get('mongo.defaults.idsCollection')
-			if (Public.defaultIdsCollection === null) {
-				var defaultIdsCollectionName = application.globals.get('mongo.defaultIdsCollectionName')
-				if (defaultIdsCollectionName !== null) {
-					Public.defaultIdsCollection = application.getGlobal('mongo.defaults.idsCollection', new Public.Collection(defaultIdsCollectionName))
-				}
 			}
 		}
 	}
