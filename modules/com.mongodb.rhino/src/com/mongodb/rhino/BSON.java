@@ -288,6 +288,23 @@ public class BSON
 
 			return nativeRegExp;
 		}
+		else if( object instanceof String )
+		{
+			// Convert String to NativeString
+
+			// (Rhino deals reasonably well with regular JVM strings, but these
+			// do not support the JavaScript String prototype!)
+
+			String string = (String) object;
+			Context context = Context.getCurrentContext();
+			Scriptable scope = ScriptRuntime.getTopCallScope( context );
+			Scriptable nativeString = context.newObject( scope, "String", new Object[]
+			{
+				string
+			} );
+
+			return nativeString;
+		}
 		else
 		{
 			if( extendedJSON )
