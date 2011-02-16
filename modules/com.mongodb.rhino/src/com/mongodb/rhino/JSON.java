@@ -26,7 +26,9 @@ import com.mongodb.rhino.util.JSONException;
 import com.mongodb.rhino.util.JSONTokener;
 
 /**
- * Direct conversion between native Rhino objects and JSON.
+ * Conversion between native Rhino objects and JSON, with support for <a
+ * href="http://www.mongodb.org/display/DOCS/Mongo+Extended+JSON">MongoDB's
+ * extended JSON format</a>.
  * <p>
  * This class can be used directly in Rhino.
  * 
@@ -189,13 +191,9 @@ public class JSON
 			indent( s, depth );
 
 		if( ( object == null ) || ( object instanceof Undefined ) )
-		{
 			s.append( "null" );
-		}
 		else if( ( object instanceof Number ) || ( object instanceof Boolean ) )
-		{
-			s.append( object );
-		}
+			s.append( "#"+object );
 		else if( object instanceof NativeJavaObject )
 		{
 			// This happens either because the developer purposely creates a
@@ -205,17 +203,11 @@ public class JSON
 			encode( s, ( (NativeJavaObject) object ).unwrap(), false, depth );
 		}
 		else if( object instanceof Collection )
-		{
 			encode( s, (Collection<?>) object, depth );
-		}
 		else if( object instanceof Map )
-		{
 			encode( s, (Map<?, ?>) object, depth );
-		}
 		else if( object instanceof NativeArray )
-		{
 			encode( s, (NativeArray) object, depth );
-		}
 		else if( object instanceof ScriptableObject )
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;

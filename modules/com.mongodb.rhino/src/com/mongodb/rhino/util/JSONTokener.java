@@ -32,12 +32,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptRuntime;
-import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -668,7 +664,7 @@ public class JSONTokener
 	{
 		if( s.equals( "" ) )
 		{
-			return toNativeString( s );
+			return NativeRhino.to( s );
 		}
 		if( s.equalsIgnoreCase( "true" ) )
 		{
@@ -706,7 +702,7 @@ public class JSONTokener
 					}
 					else
 					{
-						return toJavaLong( myLong );
+						return NativeRhino.wrap( myLong );
 					}
 				}
 				catch( Exception ignore )
@@ -728,7 +724,7 @@ public class JSONTokener
 					}
 					else
 					{
-						return toJavaLong( myLong );
+						return NativeRhino.wrap( myLong );
 					}
 				}
 			}
@@ -737,26 +733,6 @@ public class JSONTokener
 			}
 		}
 
-		return toNativeString( s );
-	}
-
-	private static Scriptable toNativeString( String value )
-	{
-		Context context = Context.getCurrentContext();
-		Scriptable scope = ScriptRuntime.getTopCallScope( context );
-		Scriptable nativeString = context.newObject( scope, "String", new Object[]
-		{
-			value
-		} );
-
-		return nativeString;
-	}
-
-	private static Scriptable toJavaLong( Long value )
-	{
-		Context context = Context.getCurrentContext();
-		context.getWrapFactory().setJavaPrimitiveWrap( false );
-		Scriptable scope = ScriptRuntime.getTopCallScope( context );
-		return new NativeJavaObject( scope, value, value.getClass() );
+		return NativeRhino.to( s );
 	}
 }

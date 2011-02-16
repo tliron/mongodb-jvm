@@ -18,20 +18,18 @@ import java.util.regex.Pattern;
 
 import org.bson.BSONObject;
 import org.bson.types.Symbol;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptRuntime;
-import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.rhino.util.NativeRhino;
 
 /**
- * Direct conversion between native Rhino objects and BSON.
+ * Conversion between native Rhino objects and BSON.
  * <p>
  * This class can be used directly in Rhino.
  * 
@@ -73,38 +71,16 @@ public class BSON
 		}
 		else if( object instanceof NativeRegExp )
 		{
-			NativeRegExp regExp = (NativeRegExp) object;
-			Object source = ScriptableObject.getProperty( regExp, "source" );
-
-			Object isGlobal = ScriptableObject.getProperty( regExp, "global" );
-			Object isIgnoreCase = ScriptableObject.getProperty( regExp, "ignoreCase" );
-			Object isMultiLine = ScriptableObject.getProperty( regExp, "multiline" );
+			String[] regExp = NativeRhino.from( (NativeRegExp) object );
 
 			// Note: JVM pattern does not support a "g" flag. Also, compiling
 			// the pattern here is a waste of time. In short, better to use a
 			// DBObject than a Pattern, even though the MongoDB driver supports
-			// Pattern instances:
-			//
-			// int flags = 0;
-			// if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean)
-			// isIgnoreCase ).booleanValue() ) )
-			// flags |= Pattern.CASE_INSENSITIVE;
-			// if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean)
-			// isMultiLine ).booleanValue() ) )
-			// flags |= Pattern.MULTILINE;
-			// return Pattern.compile( source.toString(), flags );
-
-			String options = "";
-			if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
-				options += "g";
-			if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
-				options += "i";
-			if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
-				options += "m";
+			// Pattern instances
 
 			BasicDBObject bson = new BasicDBObject();
-			bson.put( "$regex", source.toString() );
-			bson.put( "$options", source.toString() );
+			bson.put( "$regex", regExp[0] );
+			bson.put( "$options", regExp[1] );
 			return bson;
 		}
 		else if( object instanceof NativeArray )
@@ -129,24 +105,9 @@ public class BSON
 			if( r != null )
 				return r;
 
-			String className = scriptable.getClassName();
-			if( className.equals( "Date" ) )
-			{
-				// Convert NativeDate to Date
-
-				// (The NativeDate class is private in Rhino, but we can access
-				// it like a regular object.)
-
-				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
-				if( time instanceof Number )
-					return new Date( ( (Number) time ).longValue() );
-			}
-			else if( className.equals( "String" ) )
-			{
-				// Unpack NativeString
-
-				return scriptable.toString();
-			}
+			r = NativeRhino.from( scriptable );
+			if( r != null )
+				return r;
 
 			// Convert regular Rhino object
 
@@ -249,71 +210,22 @@ public class BSON
 		}
 		else if( object instanceof Date )
 		{
-			// Convert Date to NativeDate
-
-			// (The NativeDate class is private in Rhino, but we can create
-			// it indirectly like a regular object.)
-
-			Date date = (Date) object;
-			Context context = Context.getCurrentContext();
-			Scriptable scope = ScriptRuntime.getTopCallScope( context );
-			Scriptable nativeDate = context.newObject( scope, "Date", new Object[]
-			{
-				date.getTime()
-			} );
-
-			return nativeDate;
+			return NativeRhino.to( (Date) object );
 		}
 		else if( object instanceof Pattern )
 		{
-			// Convert Pattern to NativeRegExp
-
-			Pattern pattern = (Pattern) object;
-			String regex = pattern.toString();
-			int flags = pattern.flags();
-			String options = "";
-			if( ( flags & Pattern.CASE_INSENSITIVE ) != 0 )
-				options += 'i';
-			if( ( flags & Pattern.MULTILINE ) != 0 )
-				options += 'm';
-
-			// Note: JVM pattern does not support a "g" flag
-
-			Context context = Context.getCurrentContext();
-			Scriptable scope = ScriptRuntime.getTopCallScope( context );
-			Scriptable nativeRegExp = context.newObject( scope, "RegExp", new Object[]
-			{
-				regex, options
-			} );
-
-			return nativeRegExp;
+			return NativeRhino.to( (Pattern) object );
 		}
 		else if( object instanceof String )
 		{
-			// Convert String to NativeString
-
-			// (Rhino deals reasonably well with regular JVM strings, but these
-			// do not support the JavaScript String prototype!)
-
-			String string = (String) object;
-			Context context = Context.getCurrentContext();
-			Scriptable scope = ScriptRuntime.getTopCallScope( context );
-			Scriptable nativeString = context.newObject( scope, "String", new Object[]
-			{
-				string
-			} );
-
-			return nativeString;
+			return NativeRhino.to( (String) object );
 		}
 		else if( object instanceof Long )
 		{
 			// Wrap Long so to avoid conversion into a NativeNumber (which would
 			// risk losing precision!)
 
-			Context context = Context.getCurrentContext();
-			context.getWrapFactory().setJavaPrimitiveWrap( false );
-			Scriptable scope = ScriptRuntime.getTopCallScope( context );
-			return new NativeJavaObject( scope, object, object.getClass() );
+			return NativeRhino.wrap( (Long) object );
 		}
 		else
 		{

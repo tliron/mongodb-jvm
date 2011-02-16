@@ -17,15 +17,14 @@ import java.util.regex.Pattern;
 
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.DBRefBase;
 import com.mongodb.rhino.util.Base64;
+import com.mongodb.rhino.util.NativeRhino;
 
 /**
  * Support for <a
@@ -66,34 +65,21 @@ public class ExtendedJSON
 		Object date = ScriptableObject.getProperty( scriptable, "$date" );
 		if( date != Scriptable.NOT_FOUND )
 		{
-			if( javaScript )
-			{
-				// Convert extended JSON $date format to Rhino date
+			// Convert extended JSON $date format to Rhino/JVM date
 
-				// (The NativeDate class is private in Rhino, but we can access
-				// it like a regular object.)
-
-				Context context = Context.getCurrentContext();
-				Scriptable scope = ScriptRuntime.getTopCallScope( context );
-				Scriptable nativeDate = context.newObject( scope, "Date", new Object[]
-				{
-					date
-				} );
-
-				return nativeDate;
-			}
+			long dateTimestamp;
+			if( date instanceof Number )
+				dateTimestamp = ( (Number) date ).longValue();
 			else
-			{
-				// Convert extended JSON $date format to JVM Date
+				// Fallback to string conversion, just in case
+				dateTimestamp = Long.parseLong( date.toString() );
 
-				long dateTimestamp;
-				if( date instanceof Number )
-					dateTimestamp = ( (Number) date ).longValue();
-				else
-					// Fallback to string conversion, just in case
-					dateTimestamp = Long.parseLong( date.toString() );
-				return new Date( dateTimestamp );
-			}
+			Date jvmDate = new Date( dateTimestamp );
+
+			if( javaScript )
+				return NativeRhino.to( jvmDate );
+			else
+				return jvmDate;
 		}
 
 		Object regex = ScriptableObject.getProperty( scriptable, "$regex" );
@@ -107,14 +93,7 @@ public class ExtendedJSON
 			if( options != Scriptable.NOT_FOUND )
 				optionsString = options.toString();
 
-			Context context = Context.getCurrentContext();
-			Scriptable scope = ScriptRuntime.getTopCallScope( context );
-			Scriptable nativeRegExp = context.newObject( scope, "RegExp", new Object[]
-			{
-				source, optionsString
-			} );
-
-			return nativeRegExp;
+			return NativeRhino.to( source, optionsString );
 		}
 
 		Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
@@ -179,7 +158,7 @@ public class ExtendedJSON
 		{
 			// Convert Date to extended JSON $date format
 
-			long timestamp = ( (Date) object ).getTime();
+			Scriptable timestamp = NativeRhino.wrap( ( (Date) object ).getTime() );
 			if( javaScript )
 			{
 				NativeObject nativeObject = new NativeObject();
@@ -188,7 +167,7 @@ public class ExtendedJSON
 			}
 			else
 			{
-				HashMap<String, Long> map = new HashMap<String, Long>( 1 );
+				HashMap<String, Scriptable> map = new HashMap<String, Scriptable>( 1 );
 				map.put( "$date", timestamp );
 				return map;
 			}
@@ -197,31 +176,20 @@ public class ExtendedJSON
 		{
 			// Convert NativeRegExp to extended JSON $regex format
 
-			NativeRegExp regExp = (NativeRegExp) object;
-			String regex = ScriptableObject.getProperty( regExp, "source" ).toString();
-			Object isGlobal = ScriptableObject.getProperty( regExp, "global" );
-			Object isIgnoreCase = ScriptableObject.getProperty( regExp, "ignoreCase" );
-			Object isMultiLine = ScriptableObject.getProperty( regExp, "multiline" );
-			String options = "";
-			if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
-				options += "g";
-			if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
-				options += "i";
-			if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
-				options += "m";
+			String[] regExp = NativeRhino.from( (NativeRegExp) object );
 
 			if( javaScript )
 			{
 				NativeObject nativeObject = new NativeObject();
-				ScriptableObject.putProperty( nativeObject, "$regex", regex );
-				ScriptableObject.putProperty( nativeObject, "$options", options );
+				ScriptableObject.putProperty( nativeObject, "$regex", regExp[0] );
+				ScriptableObject.putProperty( nativeObject, "$options", regExp[1] );
 				return nativeObject;
 			}
 			else
 			{
 				HashMap<String, String> map = new HashMap<String, String>( 2 );
-				map.put( "$regex", regex );
-				map.put( "$options", options );
+				map.put( "$regex", regExp[0] );
+				map.put( "$options", regExp[1] );
 				return map;
 			}
 		}
