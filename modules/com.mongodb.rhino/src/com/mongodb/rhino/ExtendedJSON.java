@@ -52,6 +52,9 @@ public class ExtendedJSON
 	 * <p>
 	 * The {$regex:'pattern',$options:'options'} extended JSON format is
 	 * converted to a JavaScript RegExp object.
+	 * <p>
+	 * The {$long:'integer'} extended JSON format is converted to a
+	 * java.lang.Long object.
 	 * 
 	 * @param scriptable
 	 *        The JavaScript object
@@ -62,24 +65,34 @@ public class ExtendedJSON
 	 */
 	public static Object from( ScriptableObject scriptable, boolean javaScript )
 	{
-		Object date = ScriptableObject.getProperty( scriptable, "$date" );
-		if( date != Scriptable.NOT_FOUND )
+		Object longValue = ScriptableObject.getProperty( scriptable, "$long" );
+		if( longValue != Scriptable.NOT_FOUND )
+		{
+			// Convert extended JSON $long format to Long
+
+			if( longValue instanceof Number )
+				return NativeRhino.wrap( ( (Number) longValue ).longValue() );
+			else
+				return NativeRhino.wrap( Long.parseLong( longValue.toString() ) );
+		}
+
+		Object dateValue = ScriptableObject.getProperty( scriptable, "$date" );
+		if( dateValue != Scriptable.NOT_FOUND )
 		{
 			// Convert extended JSON $date format to Rhino/JVM date
 
 			long dateTimestamp;
-			if( date instanceof Number )
-				dateTimestamp = ( (Number) date ).longValue();
+			if( dateValue instanceof Number )
+				dateTimestamp = ( (Number) dateValue ).longValue();
 			else
-				// Fallback to string conversion, just in case
-				dateTimestamp = Long.parseLong( date.toString() );
+				dateTimestamp = Long.parseLong( dateValue.toString() );
 
-			Date jvmDate = new Date( dateTimestamp );
+			Date date = new Date( dateTimestamp );
 
 			if( javaScript )
-				return NativeRhino.to( jvmDate );
+				return NativeRhino.to( date );
 			else
-				return jvmDate;
+				return date;
 		}
 
 		Object regex = ScriptableObject.getProperty( scriptable, "$regex" );
@@ -141,8 +154,12 @@ public class ExtendedJSON
 	}
 
 	/**
-	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern, and
-	 * JavaScript Date and RegExp objects to MongoDB's extended JSON.
+	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern,
+	 * java.lang.Long, and JavaScript Date and RegExp objects to MongoDB's
+	 * extended JSON.
+	 * <p>
+	 * Note that java.lang.Long will be converted only if necessary in order to
+	 * preserve precision.
 	 * <p>
 	 * The output can be either a JavaScript object or a java.util.HashMap.
 	 * 
@@ -150,10 +167,39 @@ public class ExtendedJSON
 	 * @param javaScript
 	 *        True to create JavaScript object, otherwise a java.util.HashMap
 	 *        will be used
-	 * @return A JavaScript object, a java.util.HashMap or null
+	 * @return A JavaScript object, a java.util.HashMap or null if not converted
 	 */
 	public static Object to( Object object, boolean javaScript )
 	{
+		if( object instanceof Long )
+		{
+			Long longValue = (Long) object;
+			String longString = longValue.toString();
+
+			// If it can convert to float without losing precision, do nothing
+			try
+			{
+				if( new Float( longString ).longValue() == longValue )
+					return null;
+			}
+			catch( NumberFormatException x )
+			{
+				return null;
+			}
+
+			if( javaScript )
+			{
+				NativeObject nativeObject = new NativeObject();
+				ScriptableObject.putProperty( nativeObject, "$long", longString );
+				return nativeObject;
+			}
+			else
+			{
+				HashMap<String, String> map = new HashMap<String, String>( 1 );
+				map.put( "$long", longString );
+				return map;
+			}
+		}
 		if( object instanceof Date )
 		{
 			// Convert Date to extended JSON $date format

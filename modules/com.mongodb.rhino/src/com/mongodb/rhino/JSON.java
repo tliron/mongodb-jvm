@@ -62,7 +62,8 @@ public class JSON
 	 * <p>
 	 * Can optionally recognize MongoDB's extended JSON: {$oid:'objectid'},
 	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'},
-	 * {$date:timestamp} and {$regex:'pattern',$options:'options'}.
+	 * {$date:timestamp}, {$regex:'pattern',$options:'options'} and
+	 * {$long:'integer'}.
 	 * 
 	 * @param json
 	 *        The JSON string
@@ -87,8 +88,8 @@ public class JSON
 	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
 	 * primitives.
 	 * <p>
-	 * Recognizes JVM types: java.util.Map, java.util.Collection, java.util.Date
-	 * and java.util.regex.Pattern.
+	 * Recognizes JVM types: java.util.Map, java.util.Collection,
+	 * java.util.Date, java.util.regex.Pattern and java.lang.Long.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * 
@@ -113,6 +114,9 @@ public class JSON
 	 * and java.util.regex.Pattern.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
+	 * <p>
+	 * Note that java.lang.Long will be converted only if necessary in order to
+	 * preserve precision.
 	 * 
 	 * @param object
 	 *        A native JavaScript object
@@ -190,10 +194,17 @@ public class JSON
 		if( indent )
 			indent( s, depth );
 
+		Object r = ExtendedJSON.to( object, false );
+		if( r != null )
+		{
+			encode( s, r, indent, depth );
+			return;
+		}
+
 		if( ( object == null ) || ( object instanceof Undefined ) )
 			s.append( "null" );
 		else if( ( object instanceof Number ) || ( object instanceof Boolean ) )
-			s.append( "#"+object );
+			s.append( object );
 		else if( object instanceof NativeJavaObject )
 		{
 			// This happens either because the developer purposely creates a
@@ -221,25 +232,13 @@ public class JSON
 				s.append( '\"' );
 			}
 			else
-			{
-				Object r = ExtendedJSON.to( object, false );
-				if( r != null )
-					encode( s, r, indent, depth );
-				else
-					encode( s, scriptable, depth );
-			}
+				encode( s, scriptable, depth );
 		}
 		else
 		{
-			Object r = ExtendedJSON.to( object, false );
-			if( r != null )
-				encode( s, r, indent, depth );
-			else
-			{
-				s.append( '\"' );
-				s.append( escape( object.toString() ) );
-				s.append( '\"' );
-			}
+			s.append( '\"' );
+			s.append( escape( object.toString() ) );
+			s.append( '\"' );
 		}
 	}
 
