@@ -8,7 +8,6 @@
  * limitations, transferable or non-transferable, directly from Three Crickets
  * at http://threecrickets.com/
  */
-
 package com.mongodb.rhino.test;
 
 import org.mozilla.javascript.Context;

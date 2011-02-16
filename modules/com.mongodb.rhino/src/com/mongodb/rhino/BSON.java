@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2011 Three Cricketsckets LLC.
+ * Copyright 2010-2011 Three Crickets LLC.
  * <p>
  * The contents of this file are subject to the terms of the Apache License
  * version 2.0: http://www.opensource.org/licenses/apache2.0.php
@@ -304,6 +304,16 @@ public class BSON
 			} );
 
 			return nativeString;
+		}
+		else if( object instanceof Long )
+		{
+			// Wrap Long so to avoid conversion into a NativeNumber (which would
+			// risk losing precision!)
+
+			Context context = Context.getCurrentContext();
+			context.getWrapFactory().setJavaPrimitiveWrap( false );
+			Scriptable scope = ScriptRuntime.getTopCallScope( context );
+			return new NativeJavaObject( scope, object, object.getClass() );
 		}
 		else
 		{
