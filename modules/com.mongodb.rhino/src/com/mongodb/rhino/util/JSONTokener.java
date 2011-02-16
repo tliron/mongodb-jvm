@@ -32,8 +32,12 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptRuntime;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -664,7 +668,7 @@ public class JSONTokener
 	{
 		if( s.equals( "" ) )
 		{
-			return s;
+			return toNativeString( s );
 		}
 		if( s.equalsIgnoreCase( "true" ) )
 		{
@@ -694,7 +698,16 @@ public class JSONTokener
 			{
 				try
 				{
-					return new Integer( Integer.parseInt( s.substring( 2 ), 16 ) );
+					// Tal Liron's patch: allow for longs hexes! Why not?
+					Long myLong = Long.parseLong( s.substring( 2 ), 16 );
+					if( myLong.longValue() == myLong.intValue() )
+					{
+						return new Integer( myLong.intValue() );
+					}
+					else
+					{
+						return toJavaLong( myLong );
+					}
 				}
 				catch( Exception ignore )
 				{
@@ -715,7 +728,7 @@ public class JSONTokener
 					}
 					else
 					{
-						return myLong;
+						return toJavaLong( myLong );
 					}
 				}
 			}
@@ -724,6 +737,26 @@ public class JSONTokener
 			}
 		}
 
-		return s;
+		return toNativeString( s );
+	}
+
+	private static Scriptable toNativeString( String value )
+	{
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		Scriptable nativeString = context.newObject( scope, "String", new Object[]
+		{
+			value
+		} );
+
+		return nativeString;
+	}
+
+	private static Scriptable toJavaLong( Long value )
+	{
+		Context context = Context.getCurrentContext();
+		context.getWrapFactory().setJavaPrimitiveWrap( false );
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		return new NativeJavaObject( scope, value, value.getClass() );
 	}
 }
