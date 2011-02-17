@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.regexp.NativeRegExp;
@@ -159,7 +160,7 @@ public class ExtendedJSON
 	 * extended JSON.
 	 * <p>
 	 * Note that java.lang.Long will be converted only if necessary in order to
-	 * preserve precision.
+	 * preserve its value when converted to a JavaScript Number object.
 	 * <p>
 	 * The output can be either a JavaScript object or a java.util.HashMap.
 	 * 
@@ -176,16 +177,12 @@ public class ExtendedJSON
 			Long longValue = (Long) object;
 			String longString = longValue.toString();
 
-			// If it can convert to float without losing precision, do nothing
-			try
-			{
-				if( new Float( longString ).longValue() == longValue )
-					return null;
-			}
-			catch( NumberFormatException x )
-			{
+			// If it can convert to a JavaScript Number object without losing
+			// its value, do nothing
+
+			String convertedString = ScriptRuntime.numberToString( longValue, 10 );
+			if( longValue.equals( Long.valueOf( convertedString ) ) )
 				return null;
-			}
 
 			if( javaScript )
 			{

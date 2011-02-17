@@ -116,7 +116,7 @@ public class JSON
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * <p>
 	 * Note that java.lang.Long will be converted only if necessary in order to
-	 * preserve precision.
+	 * preserve its value when converted to a JavaScript Number object.
 	 * 
 	 * @param object
 	 *        A native JavaScript object

@@ -32,6 +32,11 @@ public class NativeRhino
 	// Static operations
 	//
 
+	public static Scriptable to( Number number )
+	{
+		return toNumber( number );
+	}
+
 	public static Scriptable to( String value )
 	{
 		// (The NativeString class is private in Rhino, but we can create
@@ -82,6 +87,19 @@ public class NativeRhino
 			options += 'm';
 
 		return to( regex, options );
+	}
+
+	public static Scriptable toNumber( Object value )
+	{
+		// (The NativeNumber class has a private constructor in Rhino, but we
+		// can create it indirectly like a regular object.)
+
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		return context.newObject( scope, "Number", new Object[]
+		{
+			value
+		} );
 	}
 
 	public static Object from( Scriptable scriptable )
