@@ -67,7 +67,7 @@ public class ExtendedJSON
 	 */
 	public static Object from( ScriptableObject scriptable, boolean javaScript )
 	{
-		Object longValue = getProperty( scriptable, "$long", javaScript );
+		Object longValue = getProperty( scriptable, "$long" );
 		if( longValue != null )
 		{
 			// Convert extended JSON $long format to Long
@@ -75,10 +75,19 @@ public class ExtendedJSON
 			if( longValue instanceof Number )
 				return NativeRhino.wrap( ( (Number) longValue ).longValue() );
 			else
-				return NativeRhino.wrap( Long.parseLong( longValue.toString() ) );
+			{
+				try
+				{
+					return NativeRhino.wrap( Long.parseLong( longValue.toString() ) );
+				}
+				catch( NumberFormatException x )
+				{
+					throw new RuntimeException( "Invalid $long: " + longValue );
+				}
+			}
 		}
 
-		Object dateValue = getProperty( scriptable, "$date", javaScript );
+		Object dateValue = getProperty( scriptable, "$date" );
 		if( dateValue != null )
 		{
 			// Convert extended JSON $date format to Rhino/JVM date
@@ -87,8 +96,39 @@ public class ExtendedJSON
 
 			if( dateValue instanceof Number )
 				dateTimestamp = ( (Number) dateValue ).longValue();
+			else if( dateValue instanceof ScriptableObject )
+			{
+				longValue = getProperty( (ScriptableObject) dateValue, "$long" );
+				if( longValue != null )
+				{
+					if( longValue instanceof Number )
+						dateTimestamp = ( (Number) longValue ).longValue();
+					else
+					{
+						try
+						{
+							dateTimestamp = Long.parseLong( longValue.toString() );
+						}
+						catch( NumberFormatException x )
+						{
+							throw new RuntimeException( "Invalid $long: " + longValue );
+						}
+					}
+				}
+				else
+					throw new RuntimeException( "Invalid $date: " + dateValue );
+			}
 			else
-				dateTimestamp = Long.parseLong( dateValue.toString() );
+			{
+				try
+				{
+					dateTimestamp = Long.parseLong( dateValue.toString() );
+				}
+				catch( NumberFormatException x )
+				{
+					throw new RuntimeException( "Invalid $date: " + dateValue );
+				}
+			}
 
 			Date date = new Date( dateTimestamp );
 
@@ -98,13 +138,13 @@ public class ExtendedJSON
 				return date;
 		}
 
-		Object regex = getProperty( scriptable, "$regex", javaScript );
+		Object regex = getProperty( scriptable, "$regex" );
 		if( regex != null )
 		{
 			// Convert extended JSON $regex format to Rhino RegExp
 
 			String source = regex.toString();
-			Object options = getProperty( scriptable, "$options", javaScript );
+			Object options = getProperty( scriptable, "$options" );
 			String optionsString = "";
 			if( options != null )
 				optionsString = options.toString();
@@ -112,7 +152,7 @@ public class ExtendedJSON
 			return NativeRhino.to( source, optionsString );
 		}
 
-		Object oid = getProperty( scriptable, "$oid", javaScript );
+		Object oid = getProperty( scriptable, "$oid" );
 		if( oid != null )
 		{
 			// Convert extended JSON $oid format to MongoDB ObjectId
@@ -120,30 +160,30 @@ public class ExtendedJSON
 			return new ObjectId( oid.toString() );
 		}
 
-		Object binary = getProperty( scriptable, "$binary", javaScript );
+		Object binary = getProperty( scriptable, "$binary" );
 		if( binary != null )
 		{
 			// Convert extended JSON $binary format to MongoDB Binary
 
-			Object type = getProperty( scriptable, "$type", javaScript );
+			Object type = getProperty( scriptable, "$type" );
 			byte typeNumber = type != null ? Byte.valueOf( type.toString(), 16 ) : 0;
 			byte[] data = Base64.decodeFast( binary.toString() );
 			return new Binary( typeNumber, data );
 		}
 
-		Object ref = getProperty( scriptable, "$ref", javaScript );
+		Object ref = getProperty( scriptable, "$ref" );
 		if( ref != null )
 		{
 			// Convert extended JSON $ref format to MongoDB DBRef
 
-			Object id = ScriptableObject.getProperty( scriptable, "$id" );
-			if( id != Scriptable.NOT_FOUND )
+			Object id = getProperty( scriptable, "$id" );
+			if( id != null )
 			{
 				String idString = null;
 				if( id instanceof ScriptableObject )
 				{
-					Object idOid = ScriptableObject.getProperty( (ScriptableObject) id, "$oid" );
-					if( idOid != Scriptable.NOT_FOUND )
+					Object idOid = getProperty( (ScriptableObject) id, "$oid" );
+					if( idOid != null )
 						idString = idOid.toString();
 				}
 				if( idString == null )
@@ -402,24 +442,12 @@ public class ExtendedJSON
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static Object getProperty( ScriptableObject scriptable, String key, boolean javaScript )
+	private static Object getProperty( ScriptableObject scriptable, String key )
 	{
 		Object object = ScriptableObject.getProperty( scriptable, key );
 		if( object != Scriptable.NOT_FOUND )
 		{
 			// Unwrap
-			while( object instanceof NativeJavaObject )
-				object = ( (NativeJavaObject) object ).unwrap();
-
-			// Recursive convert
-			if( object instanceof ScriptableObject )
-			{
-				Object converted = from( (ScriptableObject) object, javaScript );
-				if( converted != null )
-					object = converted;
-			}
-
-			// Unwrap again
 			while( object instanceof NativeJavaObject )
 				object = ( (NativeJavaObject) object ).unwrap();
 
