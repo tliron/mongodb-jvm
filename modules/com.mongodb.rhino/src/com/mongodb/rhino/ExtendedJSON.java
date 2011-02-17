@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
+import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
@@ -71,6 +72,8 @@ public class ExtendedJSON
 		{
 			// Convert extended JSON $long format to Long
 
+			if( longValue instanceof NativeJavaObject )
+				longValue = ( (NativeJavaObject) longValue ).unwrap();
 			if( longValue instanceof Number )
 				return NativeRhino.wrap( ( (Number) longValue ).longValue() );
 			else
@@ -83,6 +86,9 @@ public class ExtendedJSON
 			// Convert extended JSON $date format to Rhino/JVM date
 
 			long dateTimestamp;
+
+			if( dateValue instanceof NativeJavaObject )
+				dateValue = ( (NativeJavaObject) dateValue ).unwrap();
 			if( dateValue instanceof Number )
 				dateTimestamp = ( (Number) dateValue ).longValue();
 			else
