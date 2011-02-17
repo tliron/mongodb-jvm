@@ -67,28 +67,24 @@ public class ExtendedJSON
 	 */
 	public static Object from( ScriptableObject scriptable, boolean javaScript )
 	{
-		Object longValue = ScriptableObject.getProperty( scriptable, "$long" );
-		if( longValue != Scriptable.NOT_FOUND )
+		Object longValue = getProperty( scriptable, "$long", javaScript );
+		if( longValue != null )
 		{
 			// Convert extended JSON $long format to Long
 
-			if( longValue instanceof NativeJavaObject )
-				longValue = ( (NativeJavaObject) longValue ).unwrap();
 			if( longValue instanceof Number )
 				return NativeRhino.wrap( ( (Number) longValue ).longValue() );
 			else
 				return NativeRhino.wrap( Long.parseLong( longValue.toString() ) );
 		}
 
-		Object dateValue = ScriptableObject.getProperty( scriptable, "$date" );
-		if( dateValue != Scriptable.NOT_FOUND )
+		Object dateValue = getProperty( scriptable, "$date", javaScript );
+		if( dateValue != null )
 		{
 			// Convert extended JSON $date format to Rhino/JVM date
 
 			long dateTimestamp;
 
-			if( dateValue instanceof NativeJavaObject )
-				dateValue = ( (NativeJavaObject) dateValue ).unwrap();
 			if( dateValue instanceof Number )
 				dateTimestamp = ( (Number) dateValue ).longValue();
 			else
@@ -102,41 +98,41 @@ public class ExtendedJSON
 				return date;
 		}
 
-		Object regex = ScriptableObject.getProperty( scriptable, "$regex" );
-		if( regex != Scriptable.NOT_FOUND )
+		Object regex = getProperty( scriptable, "$regex", javaScript );
+		if( regex != null )
 		{
 			// Convert extended JSON $regex format to Rhino RegExp
 
 			String source = regex.toString();
-			Object options = ScriptableObject.getProperty( scriptable, "$options" );
+			Object options = getProperty( scriptable, "$options", javaScript );
 			String optionsString = "";
-			if( options != Scriptable.NOT_FOUND )
+			if( options != null )
 				optionsString = options.toString();
 
 			return NativeRhino.to( source, optionsString );
 		}
 
-		Object oid = ScriptableObject.getProperty( scriptable, "$oid" );
-		if( oid != Scriptable.NOT_FOUND )
+		Object oid = getProperty( scriptable, "$oid", javaScript );
+		if( oid != null )
 		{
 			// Convert extended JSON $oid format to MongoDB ObjectId
 
 			return new ObjectId( oid.toString() );
 		}
 
-		Object binary = ScriptableObject.getProperty( scriptable, "$binary" );
-		if( binary != Scriptable.NOT_FOUND )
+		Object binary = getProperty( scriptable, "$binary", javaScript );
+		if( binary != null )
 		{
 			// Convert extended JSON $binary format to MongoDB Binary
 
-			Object type = ScriptableObject.getProperty( scriptable, "$type" );
-			byte typeNumber = Byte.valueOf( type.toString(), 16 );
+			Object type = getProperty( scriptable, "$type", javaScript );
+			byte typeNumber = type != null ? Byte.valueOf( type.toString(), 16 ) : 0;
 			byte[] data = Base64.decodeFast( binary.toString() );
 			return new Binary( typeNumber, data );
 		}
 
-		Object ref = ScriptableObject.getProperty( scriptable, "$ref" );
-		if( ref != Scriptable.NOT_FOUND )
+		Object ref = getProperty( scriptable, "$ref", javaScript );
+		if( ref != null )
 		{
 			// Convert extended JSON $ref format to MongoDB DBRef
 
@@ -180,11 +176,14 @@ public class ExtendedJSON
 	{
 		if( object instanceof Long )
 		{
+			// Convert Long to extended JSON $long format
+
 			Long longValue = (Long) object;
 			String longString = longValue.toString();
 
-			// If it can convert to a JavaScript Number object without losing
-			// its value, do nothing
+			// If the numerical value can be converted to a string via
+			// JavaScript without loss of information, then there's no need to
+			// convert to extended JSON
 
 			String convertedString = ScriptRuntime.numberToString( longValue, 10 );
 			if( longValue.equals( Long.valueOf( convertedString ) ) )
@@ -395,6 +394,36 @@ public class ExtendedJSON
 				map.put( "$id", idString );
 				return map;
 			}
+		}
+
+		return null;
+	}
+
+	// //////////////////////////////////////////////////////////////////////////
+	// Private
+
+	private static Object getProperty( ScriptableObject scriptable, String key, boolean javaScript )
+	{
+		Object object = ScriptableObject.getProperty( scriptable, key );
+		if( object != Scriptable.NOT_FOUND )
+		{
+			// Unwrap
+			while( object instanceof NativeJavaObject )
+				object = ( (NativeJavaObject) object ).unwrap();
+
+			// Recursive convert
+			if( object instanceof ScriptableObject )
+			{
+				Object converted = from( (ScriptableObject) object, javaScript );
+				if( converted != null )
+					object = converted;
+			}
+
+			// Unwrap again
+			while( object instanceof NativeJavaObject )
+				object = ( (NativeJavaObject) object ).unwrap();
+
+			return object;
 		}
 
 		return null;

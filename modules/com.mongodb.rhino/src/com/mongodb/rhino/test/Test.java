@@ -27,7 +27,7 @@ public class Test
 
 	public static void main( String[] arguments )
 	{
-		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date()]";
+		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date(), {$ref: 'test', $id: '4d5595e3f7f2d14d2ab9630f'}]";
 		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi}";
 		toJSON( array );
 		toJSON( object );
@@ -36,6 +36,7 @@ public class Test
 		toFromJSON( object );
 		toBSON( array, "get(4).getClass()" );
 		toBSON( array, "get(5).getClass()" );
+		toBSON( array, "get(6)" );
 		toBSON( object, "get('children').getClass()" );
 		toBSON( object, "get('regular')" );
 	}
