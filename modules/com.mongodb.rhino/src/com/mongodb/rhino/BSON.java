@@ -216,10 +216,6 @@ public class BSON
 		{
 			return NativeRhino.to( (Pattern) object );
 		}
-		else if( object instanceof String )
-		{
-			return NativeRhino.to( (String) object );
-		}
 		else if( object instanceof Long )
 		{
 			// Wrap Long so to avoid conversion into a NativeNumber (which would
