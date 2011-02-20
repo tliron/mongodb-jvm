@@ -231,6 +231,14 @@ public class JSON
 				s.append( escape( object.toString() ) );
 				s.append( '\"' );
 			}
+			else if( className.equals( "Function" ) )
+			{
+				// Trying to encode functions can result in stack overflows...
+
+				s.append( '\"' );
+				s.append( escape( object.toString() ) );
+				s.append( '\"' );
+			}
 			else
 				encode( s, scriptable, depth );
 		}
