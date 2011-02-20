@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.26
+// Version 1.27
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -13,7 +13,7 @@
 //
 
 //
-// Mongo.Collection:
+// MongoDB.Collection:
 //
 //   constructor(name, config):
 //
@@ -21,10 +21,10 @@
 //
 //     db:
 //       The name of the MongoDB or an instance of the database object. If not supplied,
-//       uses the 'mongo.defaultDB' application global.
+//       uses the 'mongo.defaultDb' application global.
 //
 //     connection:
-//       A MongoDB connection instance created by Mongo.connect (see below). If not
+//       A MongoDB connection instance created by MongoDB.connect (see below). If not
 //       supplied, uses the default connection instance as defined by the
 //       'mongo.defaultServers' application global. If 'mongo.defaultServers'
 //       is also not supplied, localhost will be used at the default port.
@@ -63,7 +63,7 @@
 //
 // Utility API:
 //
-//   Mongo.connect(uris, options):
+//   MongoDB.connect(uris, options):
 //     Creates a MongoDB connection instance. The instance automatically manages a
 //     connection pool and is reusable, such that multiple instances should not
 //     normally be created for the same set of servers. This means that you'd likely
@@ -99,21 +99,21 @@
 //         milliseconds allowed for a socket operation before an exception is thrown
 //
 //     To get a DB instance from a connection instance, use connection.getDB(name).
-//     You can pass these DB instances as the DB config spec in the Mongo.Collection
+//     You can pass these DB instances as the DB config spec in the MongoDB.Collection
 //     constructor. The same instance will be reused over multiple calls to
 //     connection.getDB().
 //
-//   Mongo.newID():
+//   MongoDB.newId():
 //     Creates a unique MongoDB ObjectId.
 //
-//   Mongo.id(string):
+//   MongoDB.id(string):
 //     Turns a correctly formatted string into a MongoDB ObjectId instance. Note
 //     that the reverse is achieved via the regular JavaScript String(id) casting.
 //
-//   Mongo.writeConcern(object):
+//   MongoDB.writeConcern(object):
 //     Creates a write result (see collection's update(), above).
 //
-//   Mongo.result(CommandResult):
+//   MongoDB.result(CommandResult):
 //     Converts the result of a JVM driver command to a JavaScript object.
 //
 // JSON API:
@@ -121,9 +121,12 @@
 //   Note that the included JSON API performs especially well, because it works
 //   directly with Rhino's native objects.
 //
-//   It also supported MongoDB's extended JSON: {$date:timestamp},
+//   It also supports MongoDB's extended JSON: {$date:timestamp},
 //   {$regex:'pattern',$options:'options'}, {$oid:'objectid'},
 //   {$binary:'base64',$type:'hex'} and {$ref:'collection',$id:'objectid'}.
+//   We've also added another extended JSON notation: {$long:'integer'} for
+//   numbers that would lose precision if converted in JavaScript numbers
+//   (which are always double floats).
 //
 //   JSON.to(object, indent):
 //     Generates human-readable indented, multiline JSON when indent (optional) is
@@ -138,13 +141,12 @@
 
 importClass(com.mongodb.rhino.BSON, com.mongodb.rhino.JSON)
 
-var Mongo = Mongo || function() {
+var MongoDB = MongoDB || function() {
 
 	var Public = {
 	
 		defaultConnection: null,
-		defaultDB: null,
-		defaultIdsCollections: null,
+		defaultDb: null,
 		
 		connect: function(uris, options) {
 			if (uris instanceof Array) {
@@ -179,12 +181,18 @@ var Mongo = Mongo || function() {
 			}
 		},
 		
-		newID: function() {
+		newId: function() {
 			return org.bson.types.ObjectId.get()
 		},
 		
 		id: function(id) {
-			return id ? new org.bson.types.ObjectId(id) : null
+			try {
+				return id ? new org.bson.types.ObjectId(id) : null
+			}
+			catch (x) {
+				// Not a properly formed id
+				return id
+			}
 		},
 
 		writeConcern: function(writeConcern) {
@@ -219,11 +227,11 @@ var Mongo = Mongo || function() {
 			}
 
 			this.getOutputCollection = function() {
-				return new Mongo.Collection(null, {collection: this.result.getOutputCollection()})
+				return new MongoDB.Collection(null, {collection: this.result.getOutputCollection()})
 			}
 
 			this.getCursor = function() {
-				return new Mongo.Cursor(this.result.results())
+				return new MongoDB.Cursor(this.result.results())
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
@@ -298,14 +306,14 @@ var Mongo = Mongo || function() {
 			this.find = function(query, fields) {
 				if (query) {
 					if (fields !== undefined) {
-						return new Mongo.Cursor(this.collection.find(BSON.to(query), BSON.to(fields)))
+						return new MongoDB.Cursor(this.collection.find(BSON.to(query), BSON.to(fields)))
 					}
 					else {
-						return new Mongo.Cursor(this.collection.find(BSON.to(query)))
+						return new MongoDB.Cursor(this.collection.find(BSON.to(query)))
 					}
 				}
 				else {
-					return new Mongo.Cursor(this.collection.find())
+					return new MongoDB.Cursor(this.collection.find())
 				}
 			}
 			
@@ -329,52 +337,52 @@ var Mongo = Mongo || function() {
 			
 			this.save = function(doc, writeConcern) {
 				if (writeConcern !== undefined) {
-					return Mongo.result(this.collection.save(BSON.to(doc), Mongo.writeConcern(writeConcern)))
+					return MongoDB.result(this.collection.save(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
-					return Mongo.result(this.collection.save(BSON.to(doc)))
+					return MongoDB.result(this.collection.save(BSON.to(doc)))
 				}
 			}
 			
 			this.insert = function(doc, writeConcern) {
 				if (writeConcern !== undefined) {
-					return Mongo.result(this.collection.insert(BSON.to(doc), Mongo.writeConcern(writeConcern)))
+					return MongoDB.result(this.collection.insert(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
-					return Mongo.result(this.collection.insert(BSON.to(doc)))
+					return MongoDB.result(this.collection.insert(BSON.to(doc)))
 				}
 			}
 			
 			this.update = function(query, update, multi, writeConcern) {
 				if (writeConcern !== undefined) {
-					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, Mongo.writeConcern(writeConcern)))
+					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, MongoDB.writeConcern(writeConcern)))
 				}
 				else {
-					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true))
+					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true))
 				}
 			}
 			
 			this.upsert = function(query, update, multi, writeConcern) {
 				if (writeConcern !== undefined) {
-					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, Mongo.writeConcern(writeConcern)))
+					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, MongoDB.writeConcern(writeConcern)))
 				}
 				else {
-					return Mongo.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true))
+					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true))
 				}
 			}
 			
 			this.remove = function(query, writeConcern) {
 				if (writeConcern !== undefined) {
-					return Mongo.result(this.collection.remove(BSON.to(query), Mongo.writeConcern(writeConcern)))
+					return MongoDB.result(this.collection.remove(BSON.to(query), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
-					return Mongo.result(this.collection.remove(BSON.to(query)))
+					return MongoDB.result(this.collection.remove(BSON.to(query)))
 				}
 			}
 
 			this.mapReduce = function(mapFn, reduceFn, query) {
 				var result = this.collection.mapReduce(String(mapFn), String(reduceFn), null, BSON.to(query))
-				return result ? new Mongo.MapReduceResult(result) : null
+				return result ? new MongoDB.MapReduceResult(result) : null
 			}
 			
 			this.findAndModify = function(query, update) {
@@ -387,7 +395,7 @@ var Mongo = Mongo || function() {
 			
 			this.insertNext = function(doc) {
 				doc.id = this.nextID()
-				return Mongo.result(this.collection.insert(BSON.to(doc)))
+				return MongoDB.result(this.collection.insert(BSON.to(doc)))
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
@@ -399,7 +407,7 @@ var Mongo = Mongo || function() {
 			
 			config = config || {}
 			this.connection = exists(config.connection) ? config.connection : Public.defaultConnection
-			this.db = exists(config.db) ? config.db : Public.defaultDB
+			this.db = exists(config.db) ? config.db : Public.defaultDb
 
 			if ((typeof this.db == 'string') || (this.db instanceof String)) {
 				this.db = this.connection.getDB(this.db)
@@ -407,9 +415,9 @@ var Mongo = Mongo || function() {
 
 			this.collection = exists(config.collection) ? config.collection : this.db.getCollection(name)
 			
-			if (config.uniqueID) {
+			if (config.uniqueId) {
 				var index = {}
-				index[config.uniqueID] = 1
+				index[config.uniqueId] = 1
 				this.ensureIndex(index, {unique: true})
 			}
 		}
@@ -428,16 +436,16 @@ var Mongo = Mongo || function() {
 	//
 	
 	// Initialize default connection from globals or shared globals
-	Public.defaultConnection = application.globals.get('mongo.defaults.connection')
+	Public.defaultConnection = application.globals.get('mongoDb.defaultConnection')
 	if (Public.defaultConnection === null) {
 		if (exists(application.sharedGlobals)) {
-			Public.defaultConnection = application.sharedGlobals.get('mongo.defaults.connection')
+			Public.defaultConnection = application.sharedGlobals.get('mongoDb.defaultConnection')
 		}
 		
 		if (Public.defaultConnection === null) {
-			var defaultServers = application.globals.get('mongo.defaultServers')
+			var defaultServers = application.globals.get('mongoDb.defaultServers')
 			if (defaultServers !== null) {
-				Public.defaultConnection = application.getGlobal('mongo.defaults.connection', Public.connect(defaultServers, {autoConnectRetry: true}))
+				Public.defaultConnection = application.getGlobal('mongoDb.defaultConnection', Public.connect(defaultServers, {autoConnectRetry: true}))
 			}
 		}
 	}
@@ -445,11 +453,10 @@ var Mongo = Mongo || function() {
 	if (Public.defaultConnection !== null) {
 		
 		// Initialize default DB from globals
-		Public.defaultDB = application.globals.get('mongo.defaults.db')
-		if (Public.defaultDB === null) {
-			var defaultDB = application.globals.get('mongo.defaultDB')
-			if (defaultDB !== null) {
-				Public.defaultDB = application.getGlobal('mongo.defaults.db', Public.defaultConnection.getDB(defaultDB))
+		Public.defaultDb = application.globals.get('mongoDb.defaultDb')
+		if (Public.defaultDb !== null) {
+			if (typeof Public.defaultDb == 'string') {
+				Public.defaultDb = application.getGlobal('mongoDb.defaultDb', Public.defaultConnection.getDB(Public.defaultDb))
 			}
 		}
 	}
