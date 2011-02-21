@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.27
+// Version 1.28
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -409,7 +409,7 @@ var MongoDB = MongoDB || function() {
 			this.connection = exists(config.connection) ? config.connection : Public.defaultConnection
 			this.db = exists(config.db) ? config.db : Public.defaultDb
 
-			if ((typeof this.db == 'string') || (this.db instanceof String)) {
+			if (isString(this.db)) {
 				this.db = this.connection.getDB(this.db)
 			}
 
@@ -429,6 +429,15 @@ var MongoDB = MongoDB || function() {
 	function exists(value) {
 		// Note the order: we need the value on the right side for Rhino not to complain about non-JS objects
 		return (undefined !== value) && (null !== value)
+	}
+	
+	function isString(value) {
+		try {
+			return (typeof value == 'string') || (value instanceof String)
+		}
+		catch (x) {
+			return false
+		}
 	}
 	
 	//
@@ -451,11 +460,10 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	if (Public.defaultConnection !== null) {
-		
 		// Initialize default DB from globals
 		Public.defaultDb = application.globals.get('mongoDb.defaultDb')
 		if (Public.defaultDb !== null) {
-			if (typeof Public.defaultDb == 'string') {
+			if (isString(Public.defaultDb)) {
 				Public.defaultDb = application.getGlobal('mongoDb.defaultDb', Public.defaultConnection.getDB(Public.defaultDb))
 			}
 		}
