@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
+import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 
@@ -203,6 +204,8 @@ public class JSON
 
 		if( ( object == null ) || ( object instanceof Undefined ) )
 			s.append( "null" );
+		else if( object instanceof Double )
+			s.append( ScriptRuntime.numberToString( (Double) object, 10 ) );
 		else if( ( object instanceof Number ) || ( object instanceof Boolean ) )
 			s.append( object );
 		else if( object instanceof NativeJavaObject )
