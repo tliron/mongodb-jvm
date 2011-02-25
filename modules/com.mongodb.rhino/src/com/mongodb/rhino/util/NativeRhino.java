@@ -160,6 +160,20 @@ public class NativeRhino
 		};
 	}
 
+	public static Scriptable newObject()
+	{
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		return context.newObject( scope );
+	}
+
+	public static Scriptable newArray( int length )
+	{
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		return context.newArray( scope, length );
+	}
+
 	public static Scriptable wrap( Object value )
 	{
 		Context context = Context.getCurrentContext();

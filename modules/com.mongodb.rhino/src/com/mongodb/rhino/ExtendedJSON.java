@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -231,7 +230,7 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$long", longString );
 				return nativeObject;
 			}
@@ -249,7 +248,7 @@ public class ExtendedJSON
 			Scriptable timestamp = NativeRhino.wrap( ( (Date) object ).getTime() );
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$date", timestamp );
 				return nativeObject;
 			}
@@ -268,7 +267,7 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regExp[0] );
 				ScriptableObject.putProperty( nativeObject, "$options", regExp[1] );
 				return nativeObject;
@@ -298,7 +297,7 @@ public class ExtendedJSON
 					long timestamp = ( (Number) time ).longValue();
 					if( javaScript )
 					{
-						NativeObject nativeObject = new NativeObject();
+						Scriptable nativeObject = NativeRhino.newObject();
 						ScriptableObject.putProperty( nativeObject, "$date", timestamp );
 						return nativeObject;
 					}
@@ -330,7 +329,7 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regex );
 				ScriptableObject.putProperty( nativeObject, "$options", options );
 				return nativeObject;
@@ -350,7 +349,7 @@ public class ExtendedJSON
 			String oid = ( (ObjectId) object ).toStringMongod();
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$oid", oid );
 				return nativeObject;
 			}
@@ -370,7 +369,7 @@ public class ExtendedJSON
 			String type = Integer.toHexString( binary.getType() );
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
 				ScriptableObject.putProperty( nativeObject, "$type", type );
 				return nativeObject;
@@ -392,7 +391,7 @@ public class ExtendedJSON
 			String type = Integer.toHexString( 0 );
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
 				ScriptableObject.putProperty( nativeObject, "$type", type );
 				return nativeObject;
@@ -422,7 +421,7 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
-				NativeObject nativeObject = new NativeObject();
+				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$ref", collection );
 				ScriptableObject.putProperty( nativeObject, "$id", idString );
 				return nativeObject;

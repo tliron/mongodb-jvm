@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.28
+// Version 1.29
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -380,8 +380,45 @@ var MongoDB = MongoDB || function() {
 				}
 			}
 
-			this.mapReduce = function(mapFn, reduceFn, query) {
-				var result = this.collection.mapReduce(String(mapFn), String(reduceFn), null, BSON.to(query))
+			this.mapReduce = function(mapFn, reduceFn, options) {
+				options = options || {}
+				var query = options.query || {}
+				var outputType = null
+				var out = options.out || null
+				
+				if (typeof out == 'object') {
+					out = options.merge
+					if (out) {
+						outputType = com.mongodb.MapReduceCommand.OutputType.MERGE
+					}
+					else {
+						out = options.reduce
+						if (out) {
+							outputType = com.mongodb.MapReduceCommand.OutputType.REDUCE
+						}
+						else {
+							out = options.inline
+							if (out) {
+								outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
+							}
+							else {
+								out = options.replace
+								if (out) {
+									outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
+								}
+							}
+						}
+					}
+				}
+				
+				var result
+				if (null === outputType) {
+					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
+				}
+				else {
+					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
+				}
+				
 				return result ? new MongoDB.MapReduceResult(result) : null
 			}
 			

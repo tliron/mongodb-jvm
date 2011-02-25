@@ -32,8 +32,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -498,9 +497,9 @@ public class JSONTokener
 	 * @return A NativeObject
 	 * @throws JSONException
 	 */
-	public NativeObject createNativeObject() throws JSONException
+	public Scriptable createNativeObject() throws JSONException
 	{
-		NativeObject nativeObject = new NativeObject();
+		Scriptable nativeObject = NativeRhino.newObject();
 		char c;
 		String key;
 
@@ -568,9 +567,9 @@ public class JSONTokener
 	 * @return A NativeArray
 	 * @throws JSONException
 	 */
-	public NativeArray createNativeArray() throws JSONException
+	public Scriptable createNativeArray() throws JSONException
 	{
-		NativeArray nativeArray = new NativeArray( 0 );
+		Scriptable nativeArray = NativeRhino.newArray( 0 );
 		int arrayIndex = 0;
 		char c = nextClean();
 		char q;

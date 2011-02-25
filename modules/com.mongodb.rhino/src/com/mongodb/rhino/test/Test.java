@@ -39,6 +39,7 @@ public class Test
 		toBSON( array, "get(6)" );
 		toBSON( object, "get('children').getClass()" );
 		toBSON( object, "get('regular')" );
+		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////

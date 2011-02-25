@@ -20,7 +20,7 @@ import org.bson.BSONObject;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
@@ -181,7 +181,7 @@ public class BSON
 			// Convert list to NativeArray
 
 			List<?> list = (List<?>) object;
-			NativeArray array = new NativeArray( list.size() );
+			Scriptable array = NativeRhino.newArray( list.size() );
 
 			int index = 0;
 			for( Object item : list )
@@ -194,7 +194,7 @@ public class BSON
 			// Convert BSON object to NativeObject
 
 			BSONObject bsonObject = (BSONObject) object;
-			NativeObject nativeObject = new NativeObject();
+			Scriptable nativeObject = NativeRhino.newObject();
 
 			for( String key : bsonObject.keySet() )
 			{
