@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.29
+// Version 1.30
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -387,22 +387,23 @@ var MongoDB = MongoDB || function() {
 				var out = options.out || null
 				
 				if (typeof out == 'object') {
-					out = options.merge
+					out = out.merge
 					if (out) {
 						outputType = com.mongodb.MapReduceCommand.OutputType.MERGE
 					}
 					else {
-						out = options.reduce
+						out = out.reduce
 						if (out) {
 							outputType = com.mongodb.MapReduceCommand.OutputType.REDUCE
 						}
 						else {
-							out = options.inline
+							out = out.inline
 							if (out) {
 								outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
+								out = null
 							}
 							else {
-								out = options.replace
+								out = out.replace
 								if (out) {
 									outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
 								}
