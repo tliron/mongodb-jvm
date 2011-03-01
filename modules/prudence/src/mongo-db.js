@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.30
+// Version 1.31
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -204,7 +204,7 @@ var MongoDB = MongoDB || function() {
 				var w = writeConcern.w
 				var timeout = writeConcern.timeout
 				var fsync = writeConcern.fsync
-				if (fsync !== undefined) {
+				if (undefined !== fsync) {
 					return new com.mongodb.WriteConcern(w, timeout, fsync)
 				}
 				else {
@@ -305,7 +305,7 @@ var MongoDB = MongoDB || function() {
 			
 			this.find = function(query, fields) {
 				if (query) {
-					if (fields !== undefined) {
+					if (undefined !== fields) {
 						return new MongoDB.Cursor(this.collection.find(BSON.to(query), BSON.to(fields)))
 					}
 					else {
@@ -318,7 +318,7 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.findOne = function(query, fields) {
-				if (fields !== undefined) {
+				if (undefined !== fields) {
 					return BSON.from(this.collection.findOne(BSON.to(query), BSON.to(fields)))
 				}
 				else {
@@ -336,7 +336,7 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.save = function(doc, writeConcern) {
-				if (writeConcern !== undefined) {
+				if (undefined !== writeConcern) {
 					return MongoDB.result(this.collection.save(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
@@ -345,7 +345,7 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.insert = function(doc, writeConcern) {
-				if (writeConcern !== undefined) {
+				if (undefined !== writeConcern) {
 					return MongoDB.result(this.collection.insert(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
@@ -354,7 +354,7 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.update = function(query, update, multi, writeConcern) {
-				if (writeConcern !== undefined) {
+				if (undefined !== writeConcern) {
 					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, MongoDB.writeConcern(writeConcern)))
 				}
 				else {
@@ -363,7 +363,7 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.upsert = function(query, update, multi, writeConcern) {
-				if (writeConcern !== undefined) {
+				if (undefined !== writeConcern) {
 					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, MongoDB.writeConcern(writeConcern)))
 				}
 				else {
@@ -372,19 +372,21 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.remove = function(query, writeConcern) {
-				if (writeConcern !== undefined) {
+				if (undefined !== writeConcern) {
 					return MongoDB.result(this.collection.remove(BSON.to(query), MongoDB.writeConcern(writeConcern)))
 				}
 				else {
 					return MongoDB.result(this.collection.remove(BSON.to(query)))
 				}
 			}
+			
+			// Options: query, out ('collectionName', inline:1, merge:'collectionName', reduce:'collectionName', replace:'collectionName' -- defaults to inline)
 
 			this.mapReduce = function(mapFn, reduceFn, options) {
 				options = options || {}
 				var query = options.query || {}
 				var outputType = null
-				var out = options.out || null
+				var out = options.out || {inline: 1}
 				
 				if (typeof out == 'object') {
 					out = out.merge
@@ -423,8 +425,15 @@ var MongoDB = MongoDB || function() {
 				return result ? new MongoDB.MapReduceResult(result) : null
 			}
 			
-			this.findAndModify = function(query, update) {
-				return BSON.from(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
+			// Options: fields, sort, returnNew (default false), upsert (default false)
+			
+			this.findAndModify = function(query, update, options) {
+				if (undefined !== options) {
+					return BSON.from(this.collection.findAndModify(BSON.to(query), options.fields ? BSON.to(options.fields) : null, options.sort ? BSON.to(options.sort) : null, false, BSON.to(update), options.returnNew || false, options.upsert || false))
+				}
+				else {
+					return BSON.from(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
+				}
 			}
 			
 			this.findAndRemove = function(query) {
