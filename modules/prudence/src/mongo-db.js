@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.31
+// Version 1.33
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -187,7 +187,7 @@ var MongoDB = MongoDB || function() {
 		
 		id: function(id) {
 			try {
-				return id ? new org.bson.types.ObjectId(id) : null
+				return ((null !== id) && (undefined !== id)) ? new org.bson.types.ObjectId(id) : null
 			}
 			catch (x) {
 				// Not a properly formed id
@@ -389,25 +389,24 @@ var MongoDB = MongoDB || function() {
 				var out = options.out || {inline: 1}
 				
 				if (typeof out == 'object') {
-					out = out.merge
-					if (out) {
+					if (out.merge) {
+						out = out.merge
 						outputType = com.mongodb.MapReduceCommand.OutputType.MERGE
 					}
 					else {
-						out = out.reduce
-						if (out) {
+						if (out.reduce) {
+							out = out.reduce
 							outputType = com.mongodb.MapReduceCommand.OutputType.REDUCE
 						}
 						else {
-							out = out.inline
-							if (out) {
-								outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
-								out = null
+							if (out.replace) {
+								out = out.replace
+								outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
 							}
 							else {
-								out = out.replace
-								if (out) {
-									outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
+								if (out.inline) {
+									out = null
+									outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
 								}
 							}
 						}
@@ -419,7 +418,8 @@ var MongoDB = MongoDB || function() {
 					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
 				}
 				else {
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
+					// API 2.5 result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
+					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
 				}
 				
 				return result ? new MongoDB.MapReduceResult(result) : null
