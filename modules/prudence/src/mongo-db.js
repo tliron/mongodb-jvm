@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.33
+// Version 1.34
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -418,8 +418,7 @@ var MongoDB = MongoDB || function() {
 					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
 				}
 				else {
-					// API 2.5 result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
+					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
 				}
 				
 				return result ? new MongoDB.MapReduceResult(result) : null
