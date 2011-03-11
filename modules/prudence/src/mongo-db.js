@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.34
+// Version 1.36
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -220,6 +220,17 @@ var MongoDB = MongoDB || function() {
 			return null
 		},
 		
+		exception: function(exception) {
+			return {code: exception.code, message: exception.message}
+		},
+		
+		Error: {
+			NotFound: -5,
+			Capped: 10003,
+			DuplicateKey: 11000,
+			DuplicateKeyOnUpdate: 11001
+		},
+			
 		MapReduceResult: function(result) {
 
 			this.drop = function() {
@@ -300,7 +311,12 @@ var MongoDB = MongoDB || function() {
 		Collection: function(name, config) {
 		
 			this.ensureIndex = function(index, options) {
-				this.collection.ensureIndex(BSON.to(index), BSON.to(options))
+				try {
+					this.collection.ensureIndex(BSON.to(index), BSON.to(options))
+				}
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					throw MongoDB.exception(x.javaException)
+				}
 			}
 			
 			this.find = function(query, fields) {
@@ -336,47 +352,75 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			this.save = function(doc, writeConcern) {
-				if (undefined !== writeConcern) {
-					return MongoDB.result(this.collection.save(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
+				try {
+					if (undefined !== writeConcern) {
+						return MongoDB.result(this.collection.save(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
+					}
+					else {
+						return MongoDB.result(this.collection.save(BSON.to(doc)))
+					}
 				}
-				else {
-					return MongoDB.result(this.collection.save(BSON.to(doc)))
+				catch (x if x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
 			this.insert = function(doc, writeConcern) {
-				if (undefined !== writeConcern) {
-					return MongoDB.result(this.collection.insert(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
+				try {
+					if (undefined !== writeConcern) {
+						return MongoDB.result(this.collection.insert(BSON.to(doc), MongoDB.writeConcern(writeConcern)))
+					}
+					else {
+						return MongoDB.result(this.collection.insert(BSON.to(doc)))
+					}
 				}
-				else {
-					return MongoDB.result(this.collection.insert(BSON.to(doc)))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					if (x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
+						// TODO?
+					}
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
 			this.update = function(query, update, multi, writeConcern) {
-				if (undefined !== writeConcern) {
-					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, MongoDB.writeConcern(writeConcern)))
+				try {
+					if (undefined !== writeConcern) {
+						return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true, MongoDB.writeConcern(writeConcern)))
+					}
+					else {
+						return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true))
+					}
 				}
-				else {
-					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), false, multi == true))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
 			this.upsert = function(query, update, multi, writeConcern) {
-				if (undefined !== writeConcern) {
-					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, MongoDB.writeConcern(writeConcern)))
+				try {
+					if (undefined !== writeConcern) {
+						return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true, MongoDB.writeConcern(writeConcern)))
+					}
+					else {
+						return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true))
+					}
 				}
-				else {
-					return MongoDB.result(this.collection.update(BSON.to(query), BSON.to(update), true, multi == true))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
 			this.remove = function(query, writeConcern) {
-				if (undefined !== writeConcern) {
-					return MongoDB.result(this.collection.remove(BSON.to(query), MongoDB.writeConcern(writeConcern)))
+				try {
+					if (undefined !== writeConcern) {
+						return MongoDB.result(this.collection.remove(BSON.to(query), MongoDB.writeConcern(writeConcern)))
+					}
+					else {
+						return MongoDB.result(this.collection.remove(BSON.to(query)))
+					}
 				}
-				else {
-					return MongoDB.result(this.collection.remove(BSON.to(query)))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
@@ -414,12 +458,18 @@ var MongoDB = MongoDB || function() {
 				}
 				
 				var result
-				if (null === outputType) {
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
+				try {
+					if (null === outputType) {
+						result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, BSON.to(query))
+					}
+					else {
+						result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
+					}
 				}
-				else {
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, BSON.to(query))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					throw MongoDB.exception(x.javaException)
 				}
+				
 				
 				return result ? new MongoDB.MapReduceResult(result) : null
 			}
@@ -427,21 +477,34 @@ var MongoDB = MongoDB || function() {
 			// Options: fields, sort, returnNew (default false), upsert (default false)
 			
 			this.findAndModify = function(query, update, options) {
-				if (undefined !== options) {
-					return BSON.from(this.collection.findAndModify(BSON.to(query), options.fields ? BSON.to(options.fields) : null, options.sort ? BSON.to(options.sort) : null, false, BSON.to(update), options.returnNew || false, options.upsert || false))
+				try {
+					if (undefined !== options) {
+						return BSON.from(this.collection.findAndModify(BSON.to(query), options.fields ? BSON.to(options.fields) : null, options.sort ? BSON.to(options.sort) : null, false, BSON.to(update), options.returnNew || false, options.upsert || false))
+					}
+					else {
+						return BSON.from(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
+					}
 				}
-				else {
-					return BSON.from(this.collection.findAndModify(BSON.to(query), BSON.to(update)))
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					if (x.javaException.code == MongoDB.Error.NotFound) {
+						// "No matching object found"
+						return null
+					}
+					throw MongoDB.exception(x.javaException)
 				}
 			}
 			
 			this.findAndRemove = function(query) {
-				return BSON.from(this.collection.findAndRemove(BSON.to(query)))
-			}
-			
-			this.insertNext = function(doc) {
-				doc.id = this.nextID()
-				return MongoDB.result(this.collection.insert(BSON.to(doc)))
+				try {
+					return BSON.from(this.collection.findAndRemove(BSON.to(query)))
+				}
+				catch (x if x.javaException instanceof com.mongodb.MongoException) {
+					if (x.javaException.code == MongoDB.Error.NotFound) {
+						// "No matching object found"
+						return null
+					}
+					throw MongoDB.exception(x.javaException)
+				}
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
