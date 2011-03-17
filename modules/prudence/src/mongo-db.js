@@ -1,6 +1,6 @@
 //
 // MongoDB API for Prudence
-// Version 1.36
+// Version 1.37
 //
 // Copyright 2010-2011 Three Crickets LLC.
 //
@@ -238,11 +238,17 @@ var MongoDB = MongoDB || function() {
 			}
 
 			this.getOutputCollection = function() {
-				return new MongoDB.Collection(null, {collection: this.result.getOutputCollection()})
+				var collection = this.result.outputCollection
+				return null !== collection ? new MongoDB.Collection(null, {collection: collection}) : null
 			}
 
 			this.getCursor = function() {
-				return new MongoDB.Cursor(this.result.results())
+				var cursor = this.result.results()
+				return null !== cursor ? new MongoDB.Cursor(cursor) : null
+			}
+			
+			this.getInline = function() {
+				return BSON.from(this.result.results())
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
@@ -253,6 +259,14 @@ var MongoDB = MongoDB || function() {
 			//
 
 			this.result = result
+		},
+		
+		CursorOption: {
+			awaitData: com.mongodb.Bytes.QUERYOPTION_AWAITDATA,
+			exhaust: com.mongodb.Bytes.QUERYOPTION_EXHAUST,
+			noTimeout: com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT,
+			slaveOk: com.mongodb.Bytes.QUERYOPTION_SLAVEOK,
+			tailable: com.mongodb.Bytes.QUERYOPTION_TAILABLE
 		},
 		
 		Cursor: function(cursor) {
@@ -288,6 +302,42 @@ var MongoDB = MongoDB || function() {
 				return this.cursor.count()
 			}
 			
+			this.close = function() {
+				this.cursor.close()
+			}
+			
+			this.copy = function() {
+				return new Public.Cursor(this.cursor.copy())
+			}
+			
+			this.explain = function() {
+				return BSON.from(this.cursor.explain())
+			}
+
+			this.keysWanted = function() {
+				return BSON.from(this.cursor.keysWanted)
+			}
+			
+			this.snapshot = function() {
+				this.cursor.snapshot()
+				return this
+			}
+
+			this.hint = function(hint) {
+				if (typeof hint == 'string') {
+					this.cursor.hint(hint)
+				}
+				else {
+					this.cursor.hint(BSON.to(hint))
+				}
+				return this
+			}
+			
+			this.addSpecial = function(name, o) {
+				this.cursor.addSpecial(name, o)
+				return this
+			}
+			
 			this.toArray = function() {
 				var array = []
 				var index = 0
@@ -296,6 +346,73 @@ var MongoDB = MongoDB || function() {
 					array.push(doc)
 				}
 				return array
+			}
+			
+			// Options
+			
+			this.resetOptions = function() {
+				this.cursor.resetOptions()
+				return this
+			}
+			
+			this.getOptions = function() {
+				var options = []
+				var bits = this.cursor.options
+				for (var o in Public.CursorOption) {
+					var option = Public.CursorOption[o]
+					if (bits & option) {
+						options.push(o)
+					}
+				}
+				return options
+			}
+			
+			this.setOptions = function(options) {
+				var bits = 0
+				if (typeof options == 'number') {
+					bits = options
+				}
+				else if (typeof options == 'object') {
+					// Array of strings
+					for (var o in options) {
+						var option = Public.CursorOption[options[o]]
+						if (option) {
+							bits |= option
+						}
+					}
+				}
+				this.cursor.setOptions(bits)
+				return this
+			}
+			
+			this.addOption = function(option) {
+				var bits = 0
+				if (typeof option == 'number') {
+					bits = option
+				}
+				else if (typeof option == 'string') {
+					option = Public.CursorOption[option]
+					if (option) {
+						bits = option
+					}
+				}
+				this.cursor.addOption(bits)
+				return this
+			}
+			
+			// Batch
+			
+			this.batchSize = function(size) {
+				this.cursor.batchSize(size)
+				return this
+			}
+			
+			this.numSeen = function() {
+				return this.cursor.numSeen()
+			}
+
+			this.numGetMores = function() {
+				return this.cursor.numGetMores()
 			}
 			
 			// //////////////////////////////////////////////////////////////////////////
@@ -347,7 +464,7 @@ var MongoDB = MongoDB || function() {
 					return this.collection.getCount(BSON.to(query))
 				}
 				else {
-					return this.collection.getCount()
+					return this.collection.count
 				}
 			}
 			
