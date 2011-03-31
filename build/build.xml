@@ -30,7 +30,7 @@
 			<link href="http://download.oracle.com/javase/6/docs/api/" />
 			<link href="http://www.mozilla.org/rhino/apidocs/" />
 			<bottom>
-				<![CDATA[<i>Copyright &#169; 2009-2010 <a target="_top" href="http://threecrickets.com/">Three Crickets LLC</a>.</i>]]>
+				<![CDATA[<i>Copyright &#169; 2009-2011 <a target="_top" href="http://threecrickets.com/">Three Crickets LLC</a>.</i>]]>
 			</bottom>
 			<classpath>
 				<fileset dir="${lib}/mongo-java-driver/lib" />
