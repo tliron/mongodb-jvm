@@ -25,7 +25,7 @@ importClass(com.mongodb.rhino.BSON, com.mongodb.rhino.JSON)
  * @see Visit the <a href="https://github.com/geir/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.38
+ * @version 1.39
  */
 var MongoDB = MongoDB || function() {
     var Public = /** @lends MongoDB */ {
@@ -500,7 +500,7 @@ var MongoDB = MongoDB || function() {
 					return this.collection.getCount(BSON.to(query))
 				}
 				else {
-					return this.collection.count
+					return this.collection.getCount()
 				}
 			}
 			
