@@ -20,17 +20,28 @@ importClass(com.mongodb.rhino.BSON, com.mongodb.rhino.JSON)
  * 
  * @namespace
  * @requires com.mongodb.jar
- * @see Visit the <a href="http://www.mongodb.org/">MongoDB site</a>
- * @see Visit the <a href="http://code.google.com/p/mongodb-rhino/">MongoDB Rhino project</a>
+ * @see Visit the <a href="http://www.mongodb.org/">MongoDB site</a>;
+ * @see Visit the <a href="http://code.google.com/p/mongodb-rhino/">MongoDB Rhino project</a>;
  * @see Visit the <a href="https://github.com/geir/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.39
+ * @version 1.40
  */
 var MongoDB = MongoDB || function() {
     var Public = /** @lends MongoDB */ {
 	
+    	/**
+    	 * @field
+		 * @returns {Mongo} See the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/Mongo.html">Mongo connection documentation</a>
+    	 * @see MongoDB.connect
+    	 */
 		defaultConnection: null,
+
+    	/**
+    	 * @field
+    	 * @returns {String|DB}
+    	 * @see MongoDB.connect
+    	 */
 		defaultDb: null,
 		
 		/**
@@ -104,12 +115,13 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Converts a string representing a MongoDB object ID into an ObjectId instance.
 		 * 
+		 * @param id The ID
 		 * @returns {ObjectId} An ObjectId or null if invalid. 
 		 *          See the <a href="http://api.mongodb.org/java/2.5/index.html?org/bson/types/ObjectId.html">ObjectId documentation</a>
 		 */
 		id: function(id) {
 			try {
-				return ((null !== id) && (undefined !== id)) ? new org.bson.types.ObjectId(id) : null
+				return ((null !== id) && (undefined !== id)) ? new org.bson.types.ObjectId(String(id)) : null
 			}
 			catch (x) {
 				// Not a properly formed id
@@ -152,7 +164,8 @@ var MongoDB = MongoDB || function() {
 		 * <li>upserted: the ObjectId if upserted</li>
 		 * </ul>
 		 * 
-		 * @see Visit the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/CommandResult.html">CommandResult documentation</a>
+		 * @param result The JVM result
+		 * @see Visit the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/CommandResult.html">CommandResult documentation</a>;
 		 * @see Visit the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/WriteResult.html">WriteResult documentation</a>
 		 */
 		result: function(result) {
@@ -172,11 +185,17 @@ var MongoDB = MongoDB || function() {
 		
 		/**
 		 * Common MongoDB error codes
+		 * 
+		 * @class
 		 */
 		Error: {
+			/** @constant */
 			NotFound: -5,
+			/** @constant */
 			Capped: 10003,
+			/** @constant */
 			DuplicateKey: 11000,
+			/** @constant */
 			DuplicateKeyOnUpdate: 11001
 		},
 		
@@ -184,6 +203,7 @@ var MongoDB = MongoDB || function() {
 		 * The results of a {@link #mapReduce} command.
 		 * 
 		 * @class
+		 * @param cursor The JVM map-reduce result
 		 * @see Visit the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/MapReduceOutput.html">MapReduceOutput documentation</a>
 		 */
 		MapReduceResult: function(result) {
@@ -234,17 +254,23 @@ var MongoDB = MongoDB || function() {
 		
 		/**
 		 * Cursor options.
-		 * 
-		 * @see MongoDB.Cursor#addOption
-		 * @see MongoDB.Cursor#setOptions
-		 * @see MongoDB.Cursor#getOptions
+		 *
+		 * @class
+		 * @see MongoDB.Cursor#addOption;
+		 * @see MongoDB.Cursor#setOptions;
+		 * @see MongoDB.Cursor#getOptions;
 		 * @see Visit the <a href="http://api.mongodb.org/java/2.5/index.html?com/mongodb/Bytes.html">Bytes documentation (see QUERYOPTION_)</a>
 		 */
 		CursorOption: {
+			/** @constant */
 			awaitData: com.mongodb.Bytes.QUERYOPTION_AWAITDATA,
+			/** @constant */
 			exhaust: com.mongodb.Bytes.QUERYOPTION_EXHAUST,
+			/** @constant */
 			noTimeout: com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT,
+			/** @constant */
 			slaveOk: com.mongodb.Bytes.QUERYOPTION_SLAVEOK,
+			/** @constant */
 			tailable: com.mongodb.Bytes.QUERYOPTION_TAILABLE
 		},
 		
@@ -255,48 +281,109 @@ var MongoDB = MongoDB || function() {
 		 * with calls to {@link #next}.
 		 * 
 		 * @class
+		 * @param cursor The JVM cursor
 		 */
 		Cursor: function(cursor) {
-		
+			
+			/**
+			 * @returns {Boolean} True if there are more documents to iterate
+			 * @see #next
+			 */
 			this.hasNext = function() {
 				return this.cursor.hasNext()
 			}
 			
+			/**
+			 * Moves the cursor forward and gets the document.
+			 * 
+			 * @returns The next document
+			 * @see #hasNext
+			 */
 			this.next = function() {
 				return BSON.from(this.cursor.next())
 			}
 			
+			/**
+			 * Gets the document without moving the cursor.
+			 * 
+			 * @returns The current document
+			 */
 			this.curr = function() {
 				return BSON.from(this.cursor.curr())
 			}
 			
+			/**
+			 * Moves the cursor forward without fetching documents.
+			 * 
+			 * @param {Number} The number of documents to skip
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.skip = function(n) {
 				this.cursor.skip(n)
 				return this
 			}
 			
+			/**
+			 * Sets the maximum number of documents to iterate. 
+			 * 
+			 * @param {Number} n The limit
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.limit = function(n) {
 				this.cursor.limit(n)
 				return this
 			}
 			
+			/**
+			 * Sets the iteration order. 
+			 * 
+			 * @param orderBy
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.sort = function(orderBy) {
 				this.cursor.sort(BSON.to(orderBy))
 				return this
 			}
 			
+			/**
+			 * The total number documents available for iteration.
+			 * 
+			 * @returns {Number} The number of documents
+			 */
 			this.count = function() {
 				return this.cursor.count()
 			}
 			
+			/**
+			 * The number documents iterated.
+			 * 
+			 * @returns {Number} The number of documents iterated 
+			 */
+			this.numSeen = function() {
+				return this.cursor.numSeen()
+			}
+
+			/**
+			 * Closes the cursor.
+			 */
 			this.close = function() {
 				this.cursor.close()
 			}
 			
+			/**
+			 * Creates a copy of this cursor.
+			 * 
+			 * @returns {MongoDB.Cursor}
+			 */
 			this.copy = function() {
 				return new Public.Cursor(this.cursor.copy())
 			}
 			
+			/**
+			 * Gets the cursor's functional and behavioral characteristics.
+			 * 
+			 * @returns The cursor's explanation
+			 */
 			this.explain = function() {
 				return BSON.from(this.cursor.explain())
 			}
@@ -305,11 +392,22 @@ var MongoDB = MongoDB || function() {
 				return BSON.from(this.cursor.keysWanted)
 			}
 			
+			/**
+			 * Makes sure that the list of iterated documents does not change.
+			 * 
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.snapshot = function() {
 				this.cursor.snapshot()
 				return this
 			}
 
+			/**
+			 * Affect the cursor's functional characteristics.
+			 * 
+			 * @param {String|Object} hint The hint
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.hint = function(hint) {
 				if (typeof hint == 'string') {
 					this.cursor.hint(hint)
@@ -320,11 +418,23 @@ var MongoDB = MongoDB || function() {
 				return this
 			}
 			
+			/**
+			 * Affect the cursor's functional characteristics.
+			 * 
+			 * @param {String} name The special option name
+			 * @param o The value
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.addSpecial = function(name, o) {
 				this.cursor.addSpecial(name, o)
 				return this
 			}
 			
+			/**
+			 * Fetches all remaining documents.
+			 * 
+			 * @returns {Array} The documents
+			 */
 			this.toArray = function() {
 				var array = []
 				var index = 0
@@ -337,13 +447,21 @@ var MongoDB = MongoDB || function() {
 			
 			// Options
 			
+			/**
+			 * Removes all options.
+			 * 
+			 * @returns {MongoDB.Cursor} This cursor
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.resetOptions = function() {
 				this.cursor.resetOptions()
 				return this
 			}
 			
 			/**
-			 * @returns {String[]}
+			 * Gets the cursor's options.
+			 * 
+			 * @returns {String[]} The options
 			 * @see MongoDB.CursorOption
 			 */
 			this.getOptions = function() {
@@ -359,7 +477,10 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param {String[]|Number} options
+			 * Sets the cursor's options.
+			 * 
+			 * @param {String[]|Number} options The options
+			 * @returns {MongoDB.Cursor} This cursor
 			 * @see MongoDB.CursorOption
 			 */
 			this.setOptions = function(options) {
@@ -381,7 +502,10 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param {String|Number} options
+			 * Adds a cursor option.
+			 * 
+			 * @param {String|Number} option The option to add
+			 * @returns {MongoDB.Cursor} This cursor
 			 * @see MongoDB.CursorOption
 			 */
 			this.addOption = function(option) {
@@ -401,20 +525,19 @@ var MongoDB = MongoDB || function() {
 			
 			// Batch
 			
+			/**
+			 * Sets the batch size.
+			 * 
+			 * @param {Number} size The number of documents per batch
+			 * @returns {MongoDB.Cursor} This cursor
+			 */
 			this.batchSize = function(size) {
 				this.cursor.batchSize(size)
 				return this
 			}
 			
 			/**
-			 * @returns {Number} 
-			 */
-			this.numSeen = function() {
-				return this.cursor.numSeen()
-			}
-
-			/**
-			 * @returns {Number} 
+			 * @returns {Number} The number of documents available in this batch
 			 */
 			this.numGetMores = function() {
 				return this.cursor.numGetMores()
@@ -450,7 +573,10 @@ var MongoDB = MongoDB || function() {
 		Collection: function(name, config) {
 
 			/**
-			 * @param [options]
+			 * Creates an index if it does not exist.
+			 * 
+			 * @param index The index to create
+			 * @param [options] Index options
 			 */
 			this.ensureIndex = function(index, options) {
 				try {
@@ -463,7 +589,10 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param [fields]
+			 * Creates a cursor to iterate over one or more documents.
+			 * 
+			 * @param query The query
+			 * @param [fields] The fields to fetch
 			 * @returns {MongoDB.Cursor}
 			 */
 			this.find = function(query, fields) {
@@ -481,7 +610,11 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param [fields]
+			 * Fetches a single document.
+			 * 
+			 * @param query The query
+			 * @param [fields] The fields to fetch
+			 * @returns The document or null if not found
 			 */
 			this.findOne = function(query, fields) {
 				if (undefined !== fields) {
@@ -493,6 +626,9 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
+			 * Counts documents without fetching them.
+			 * 
+			 * @param [query] The query or null to count all documents
 			 * @returns {Number}
 			 */
 			this.count = function(query) {
@@ -505,8 +641,13 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
+			 * Shortcut to upsert a document with the given _id.
+			 * 
+			 * @param doc The document to save
 			 * @param [writeConcern] See {@link MongoDB.writeConcern}
 			 * @returns See {@link MongoDB.result}
+			 * @see #upsert;
+			 * @see #insert
 			 */
 			this.save = function(doc, writeConcern) {
 				try {
@@ -523,8 +664,12 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
+			 * Inserts a document, creating a default _id if not provided.
+			 * 
+			 * @param doc The document to insert
 			 * @param [writeConcern] See {@link MongoDB.writeConcern}
 			 * @returns See {@link MongoDB.result}
+			 * @see #save
 			 */
 			this.insert = function(doc, writeConcern) {
 				try {
@@ -545,9 +690,14 @@ var MongoDB = MongoDB || function() {
 			}
 
 			/**
+			 * Updates one or more documents.
+			 * 
+			 * @param query The query
+			 * @param update The update
 			 * @param {Boolean} [multi=false] True to update more than one document
 			 * @param [writeConcern] See {@link MongoDB.writeConcern}
 			 * @returns See {@link MongoDB.result}
+			 * @see #upsert
 			 */
 			this.update = function(query, update, multi, writeConcern) {
 				try {
@@ -564,6 +714,10 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
+			 * Like {@link #update}, but inserts a document if no documents are found.
+			 * 
+			 * @param query The query
+			 * @param update The update
 			 * @param {Boolean} [multi=false] True to update more than one document
 			 * @param [writeConcern] See {@link MongoDB.writeConcern}
 			 * @returns See {@link MongoDB.result}
@@ -583,8 +737,12 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
+			 * Removes one or more documents.
+			 * 
+			 * @param query The query
 			 * @param [writeConcern] See {@link MongoDB.writeConcern}
 			 * @returns See {@link MongoDB.result}
+			 * @see #findAndRemove
 			 */
 			this.remove = function(query, writeConcern) {
 				try {
@@ -601,9 +759,11 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param {Function|String} mapFn
-			 * @param {Function|String} reduceFn
-			 * @param [options]
+			 * Map-reduce.
+			 * 
+			 * @param {Function|String} mapFn The map function
+			 * @param {Function|String} reduceFn The reduce function
+			 * @param [options] Map-reduce options
 			 * @param [options.query] The query to apply before mapping
 			 * @param {String|Object} [options.out={inline:1}]
 			 *        If string, is interpreted as a collection name to which results are simply added. Otherwise:
@@ -664,11 +824,16 @@ var MongoDB = MongoDB || function() {
 			}
 			
 			/**
-			 * @param [options]
-			 * @param [options.fields]
-			 * @param [options.sort]
-			 * @param {Boolean} [options.returnNew=false]
-			 * @param {Boolean} [options.upsert=false]
+			 * Atomic find-and-modify on a single document.
+			 * 
+			 * @param query The query
+			 * @param update The update
+			 * @param [options] Find-and-modify options
+			 * @param [options.fields] The fields to fetch
+			 * @param [options.sort] The sort to apply
+			 * @param {Boolean} [options.returnNew=false] True to return the modified document
+			 * @param {Boolean} [options.upsert=false] True to insert if not found
+			 * @returns The document or null if not found (see options.returnNew param)
 			 */
 			this.findAndModify = function(query, update, options) {
 				try {
@@ -688,6 +853,13 @@ var MongoDB = MongoDB || function() {
 				}
 			}
 			
+			/**
+			 * Removes a single document and returns it.
+			 * 
+			 * @param query The query
+			 * @returns The document or null if not found
+			 * @see #remove
+			 */
 			this.findAndRemove = function(query) {
 				try {
 					return BSON.from(this.collection.findAndRemove(BSON.to(query)))
