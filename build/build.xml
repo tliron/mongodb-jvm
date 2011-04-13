@@ -2,7 +2,6 @@
 <project name="MongoDB Rhino" default="build">
 	
 	<property name="src" value="../modules/com.mongodb.rhino/src" />
-	<property name="prudence" value="../modules/prudence/src" />
 	<property name="lib" value="../libraries" />
 	<property name="deploy" value="../modules/com.mongodb.rhino/deploy" />
 	<property name="dist" value="./distribution" />
@@ -53,7 +52,6 @@
 	<target name="libraries" depends="jar" description="Fetch libraries">
 		<copy todir="${content}/lib">
 			<fileset dir="${lib}/mongo-java-driver/lib" />
-			<fileset dir="${prudence}" />
 		</copy>
 		<copy todir="${content}/lib">
 			<fileset dir="${lib}" includes="*.txt" />
