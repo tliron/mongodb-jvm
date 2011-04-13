@@ -27,7 +27,7 @@ public class Test
 
 	public static void main( String[] arguments )
 	{
-		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date(), {$ref: 'test', $id: '4d5595e3f7f2d14d2ab9630f'}]";
+		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date(), {$ref: 'test', $id: '4d5595e3f7f2d14d2ab9630f'}, {$regex: 'myreg'}]";
 		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi}";
 		toJSON( array );
 		toJSON( object );
@@ -39,6 +39,7 @@ public class Test
 		toBSON( array, "get(6)" );
 		toBSON( object, "get('children').getClass()" );
 		toBSON( object, "get('regular')" );
+		run( base + "x={name: {$regex: 'pattern'}};System.out.println(BSON.to(x));" );
 		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 	}
 

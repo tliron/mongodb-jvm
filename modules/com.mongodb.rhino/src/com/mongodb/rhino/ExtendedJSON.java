@@ -137,18 +137,21 @@ public class ExtendedJSON
 				return date;
 		}
 
-		Object regex = getProperty( scriptable, "$regex" );
-		if( regex != null )
+		if( javaScript )
 		{
-			// Convert extended JSON $regex format to Rhino RegExp
+			Object regex = getProperty( scriptable, "$regex" );
+			if( regex != null )
+			{
+				// Convert extended JSON $regex format to Rhino RegExp
 
-			String source = regex.toString();
-			Object options = getProperty( scriptable, "$options" );
-			String optionsString = "";
-			if( options != null )
-				optionsString = options.toString();
+				String source = regex.toString();
+				Object options = getProperty( scriptable, "$options" );
+				String optionsString = "";
+				if( options != null )
+					optionsString = options.toString();
 
-			return NativeRhino.to( source, optionsString );
+				return NativeRhino.to( source, optionsString );
+			}
 		}
 
 		Object oid = getProperty( scriptable, "$oid" );
