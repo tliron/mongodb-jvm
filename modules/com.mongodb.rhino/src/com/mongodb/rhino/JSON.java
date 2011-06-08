@@ -64,7 +64,7 @@ public class JSON
 	 * Can optionally recognize MongoDB's extended JSON: {$oid:'objectid'},
 	 * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'},
 	 * {$date:timestamp}, {$regex:'pattern',$options:'options'} and
-	 * {$long:'integer'}.
+	 * {$long:'integer'}, {$function:'source'}.
 	 * 
 	 * @param json
 	 *        The JSON string
@@ -86,8 +86,8 @@ public class JSON
 	 * Recursively convert from native JavaScript, a few JVM types and BSON
 	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
-	 * primitives.
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects,
+	 * Function objects and primitives.
 	 * <p>
 	 * Recognizes JVM types: java.util.Map, java.util.Collection,
 	 * java.util.Date, java.util.regex.Pattern and java.lang.Long.
@@ -108,8 +108,8 @@ public class JSON
 	 * Recursively convert from native JavaScript, a few JVM types and BSON
 	 * types to extended JSON.
 	 * <p>
-	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects and
-	 * primitives.
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects,
+	 * Function objects and primitives.
 	 * <p>
 	 * Recognizes JVM types: java.util.Map, java.util.Collection, java.util.Date
 	 * and java.util.regex.Pattern.

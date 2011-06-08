@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.regex.Pattern;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
@@ -100,6 +101,13 @@ public class NativeRhino
 		{
 			value
 		} );
+	}
+
+	public static Function toFunction( Object value )
+	{
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		return context.compileFunction( scope, value.toString(), NativeRhino.class.getCanonicalName(), 0, null );
 	}
 
 	public static Object from( Scriptable scriptable )

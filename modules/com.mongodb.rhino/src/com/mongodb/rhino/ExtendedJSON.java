@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
@@ -54,6 +55,9 @@ public class ExtendedJSON
 	 * The {$regex:'pattern',$options:'options'} extended JSON format is
 	 * converted to a JavaScript RegExp object.
 	 * <p>
+	 * The {$function:'source'} extended JSON format is converted to a
+	 * JavaScript function object.
+	 * <p>
 	 * The {$long:'integer'} extended JSON format is converted to a
 	 * java.lang.Long object.
 	 * 
@@ -84,6 +88,14 @@ public class ExtendedJSON
 					throw new RuntimeException( "Invalid $long: " + longValue );
 				}
 			}
+		}
+
+		Object functionValue = getProperty( scriptable, "$function" );
+		if( functionValue != null )
+		{
+			// Convert extended JSON $function format to JavaScript function
+
+			return NativeRhino.toFunction( functionValue );
 		}
 
 		Object dateValue = getProperty( scriptable, "$date" );
@@ -200,8 +212,8 @@ public class ExtendedJSON
 
 	/**
 	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern,
-	 * java.lang.Long, and JavaScript Date and RegExp objects to MongoDB's
-	 * extended JSON.
+	 * java.lang.Long, and JavaScript Date, RegExp and Function objects to
+	 * MongoDB's extended JSON.
 	 * <p>
 	 * Note that java.lang.Long will be converted only if necessary in order to
 	 * preserve its value when converted to a JavaScript Number object.
@@ -244,7 +256,25 @@ public class ExtendedJSON
 				return map;
 			}
 		}
-		if( object instanceof Date )
+		else if( object instanceof Function )
+		{
+			// Convert Function to extended JSON $function format
+
+			String source = ScriptRuntime.toString( object );
+			if( javaScript )
+			{
+				Scriptable nativeObject = NativeRhino.newObject();
+				ScriptableObject.putProperty( nativeObject, "$function", source );
+				return nativeObject;
+			}
+			else
+			{
+				HashMap<String, String> map = new HashMap<String, String>( 1 );
+				map.put( "$function", source );
+				return map;
+			}
+		}
+		else if( object instanceof Date )
 		{
 			// Convert Date to extended JSON $date format
 
