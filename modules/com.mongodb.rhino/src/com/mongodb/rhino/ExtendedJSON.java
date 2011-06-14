@@ -256,24 +256,6 @@ public class ExtendedJSON
 				return map;
 			}
 		}
-		else if( object instanceof Function )
-		{
-			// Convert Function to extended JSON $function format
-
-			String source = ScriptRuntime.toString( object );
-			if( javaScript )
-			{
-				Scriptable nativeObject = NativeRhino.newObject();
-				ScriptableObject.putProperty( nativeObject, "$function", source );
-				return nativeObject;
-			}
-			else
-			{
-				HashMap<String, String> map = new HashMap<String, String>( 1 );
-				map.put( "$function", source );
-				return map;
-			}
-		}
 		else if( object instanceof Date )
 		{
 			// Convert Date to extended JSON $date format
@@ -310,6 +292,24 @@ public class ExtendedJSON
 				HashMap<String, String> map = new HashMap<String, String>( 2 );
 				map.put( "$regex", regExp[0] );
 				map.put( "$options", regExp[1] );
+				return map;
+			}
+		}
+		else if( object instanceof Function )
+		{
+			// Convert Function to extended JSON $function format
+
+			String source = ScriptRuntime.toString( object );
+			if( javaScript )
+			{
+				Scriptable nativeObject = NativeRhino.newObject();
+				ScriptableObject.putProperty( nativeObject, "$function", source );
+				return nativeObject;
+			}
+			else
+			{
+				HashMap<String, String> map = new HashMap<String, String>( 1 );
+				map.put( "$function", source );
 				return map;
 			}
 		}
