@@ -26,7 +26,9 @@ import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.DBRefBase;
 import com.mongodb.rhino.util.Base64;
+import com.mongodb.rhino.util.Literal;
 import com.mongodb.rhino.util.NativeRhino;
+import com.mongodb.rhino.util.JavaScriptUtil;
 
 /**
  * Support for <a
@@ -218,15 +220,21 @@ public class ExtendedJSON
 	 * Note that java.lang.Long will be converted only if necessary in order to
 	 * preserve its value when converted to a JavaScript Number object.
 	 * <p>
-	 * The output can be either a JavaScript object or a java.util.HashMap.
+	 * The output can be either a native Rhino object or a java.util.HashMap.
+	 * <p>
+	 * A special "JavaScript" mode allows dumping JavaScript literals (for Date,
+	 * RegExp and functions), though note this will break JSON compatibility!
 	 * 
 	 * @param object
-	 * @param javaScript
-	 *        True to create JavaScript object, otherwise a java.util.HashMap
+	 * @param rhino
+	 *        True to create Rhino native objects, otherwise a java.util.HashMap
 	 *        will be used
+	 * @param javaScript
+	 *        True to allow JavaScript literals (these will break JSON
+	 *        compatibility!)
 	 * @return A JavaScript object, a java.util.HashMap or null if not converted
 	 */
-	public static Object to( Object object, boolean javaScript )
+	public static Object to( Object object, boolean rhino, boolean javaScript )
 	{
 		if( object instanceof Long )
 		{
@@ -243,7 +251,7 @@ public class ExtendedJSON
 			if( longValue.equals( Long.valueOf( convertedString ) ) )
 				return null;
 
-			if( javaScript )
+			if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$long", longString );
@@ -262,6 +270,10 @@ public class ExtendedJSON
 
 			Scriptable timestamp = NativeRhino.wrap( ( (Date) object ).getTime() );
 			if( javaScript )
+			{
+				return new Literal( "new Date(" + timestamp + ")" );
+			}
+			else if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$date", timestamp );
@@ -282,6 +294,13 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
+				if( ( regExp[1] != null ) && ( regExp[1].length() > 0 ) )
+					return new Literal( "new RegExp(\"" + JavaScriptUtil.escape( regExp[0] ) + "\", \"" + JavaScriptUtil.escape( regExp[1] ) + "\")" );
+				else
+					return new Literal( "new RegExp(\"" + JavaScriptUtil.escape( regExp[0] ) + "\")" );
+			}
+			else if( rhino )
+			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regExp[0] );
 				ScriptableObject.putProperty( nativeObject, "$options", regExp[1] );
@@ -299,8 +318,13 @@ public class ExtendedJSON
 		{
 			// Convert Function to extended JSON $function format
 
-			String source = ScriptRuntime.toString( object );
+			String source = ScriptRuntime.toString( object ).trim();
+
 			if( javaScript )
+			{
+				return new Literal( source );
+			}
+			else if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$function", source );
@@ -328,7 +352,7 @@ public class ExtendedJSON
 				if( time instanceof Number )
 				{
 					long timestamp = ( (Number) time ).longValue();
-					if( javaScript )
+					if( rhino )
 					{
 						Scriptable nativeObject = NativeRhino.newObject();
 						ScriptableObject.putProperty( nativeObject, "$date", timestamp );
@@ -362,6 +386,13 @@ public class ExtendedJSON
 
 			if( javaScript )
 			{
+				if( options.length() > 0 )
+					return new Literal( "new RegExp(\"" + JavaScriptUtil.escape( regex ) + "\", \"" + JavaScriptUtil.escape( options ) + "\")" );
+				else
+					return new Literal( "new RegExp(\"" + JavaScriptUtil.escape( regex ) + "\")" );
+			}
+			else if( rhino )
+			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regex );
 				ScriptableObject.putProperty( nativeObject, "$options", options );
@@ -380,7 +411,7 @@ public class ExtendedJSON
 			// Convert MongoDB ObjectId to extended JSON $oid format
 
 			String oid = ( (ObjectId) object ).toStringMongod();
-			if( javaScript )
+			if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$oid", oid );
@@ -400,7 +431,7 @@ public class ExtendedJSON
 			Binary binary = (Binary) object;
 			String data = Base64.encodeToString( binary.getData(), false );
 			String type = Integer.toHexString( binary.getType() );
-			if( javaScript )
+			if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
@@ -422,7 +453,7 @@ public class ExtendedJSON
 			byte[] bytes = (byte[]) object;
 			String data = Base64.encodeToString( bytes, false );
 			String type = Integer.toHexString( 0 );
-			if( javaScript )
+			if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
@@ -452,7 +483,7 @@ public class ExtendedJSON
 				// what the MongoDB documentation says!
 				idString = id.toString();
 
-			if( javaScript )
+			if( rhino )
 			{
 				Scriptable nativeObject = NativeRhino.newObject();
 				ScriptableObject.putProperty( nativeObject, "$ref", collection );

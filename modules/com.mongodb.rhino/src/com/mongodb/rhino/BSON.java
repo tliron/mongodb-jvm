@@ -227,7 +227,7 @@ public class BSON
 		{
 			if( extendedJSON )
 			{
-				Object r = ExtendedJSON.to( object, true );
+				Object r = ExtendedJSON.to( object, true, false );
 				if( r != null )
 					return r;
 			}

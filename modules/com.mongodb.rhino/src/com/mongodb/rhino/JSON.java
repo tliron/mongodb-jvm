@@ -14,8 +14,6 @@ package com.mongodb.rhino;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
@@ -25,6 +23,8 @@ import org.mozilla.javascript.Undefined;
 
 import com.mongodb.rhino.util.JSONException;
 import com.mongodb.rhino.util.JSONTokener;
+import com.mongodb.rhino.util.Literal;
+import com.mongodb.rhino.util.JavaScriptUtil;
 
 /**
  * Conversion between native Rhino objects and JSON, with support for <a
@@ -93,6 +93,9 @@ public class JSON
 	 * java.util.Date, java.util.regex.Pattern and java.lang.Long.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
+	 * <p>
+	 * Note that java.lang.Long will be converted only if necessary in order to
+	 * preserve its value when converted to a JavaScript Number object.
 	 * 
 	 * @param object
 	 *        A native JavaScript object
@@ -101,7 +104,7 @@ public class JSON
 	 */
 	public static String to( Object object )
 	{
-		return to( object, false );
+		return to( object, false, false );
 	}
 
 	/**
@@ -111,8 +114,8 @@ public class JSON
 	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects,
 	 * Function objects and primitives.
 	 * <p>
-	 * Recognizes JVM types: java.util.Map, java.util.Collection, java.util.Date
-	 * and java.util.regex.Pattern.
+	 * Recognizes JVM types: java.util.Map, java.util.Collection,
+	 * java.util.Date, java.util.regex.Pattern and java.lang.Long.
 	 * <p>
 	 * Recognizes BSON types: ObjectId, Binary and DBRef.
 	 * <p>
@@ -128,8 +131,38 @@ public class JSON
 	 */
 	public static String to( Object object, boolean indent )
 	{
+		return to( object, indent, false );
+	}
+
+	/**
+	 * Recursively convert from native JavaScript, a few JVM types and BSON
+	 * types to extended JSON.
+	 * <p>
+	 * Recognizes JavaScript objects, arrays, Date objects, RegExp objects,
+	 * Function objects and primitives.
+	 * <p>
+	 * Recognizes JVM types: java.util.Map, java.util.Collection,
+	 * java.util.Date, java.util.regex.Pattern and java.lang.Long.
+	 * <p>
+	 * Recognizes BSON types: ObjectId, Binary and DBRef.
+	 * <p>
+	 * Note that java.lang.Long will be converted only if necessary in order to
+	 * preserve its value when converted to a JavaScript Number object.
+	 * 
+	 * @param object
+	 *        A native JavaScript object
+	 * @param indent
+	 *        Whether to indent the JSON for human readability
+	 * @param javaScript
+	 *        True to allow JavaScript literals (these will break JSON
+	 *        compatibility!)
+	 * @return The JSON string
+	 * @see #fromExtendedJSON(Object)
+	 */
+	public static String to( Object object, boolean indent, boolean javaScript )
+	{
 		StringBuilder s = new StringBuilder();
-		encode( s, object, indent, indent ? 0 : -1 );
+		encode( s, object, javaScript, indent, indent ? 0 : -1 );
 		return s.toString();
 	}
 
@@ -190,15 +223,18 @@ public class JSON
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static void encode( StringBuilder s, Object object, boolean indent, int depth )
+	private static void encode( StringBuilder s, Object object, boolean javaScript, boolean indent, int depth )
 	{
 		if( indent )
 			indent( s, depth );
 
-		Object r = ExtendedJSON.to( object, false );
+		Object r = ExtendedJSON.to( object, false, javaScript );
 		if( r != null )
 		{
-			encode( s, r, indent, depth );
+			if( r instanceof Literal )
+				s.append( ( (Literal) r ).toString( depth ) );
+			else
+				encode( s, r, indent, javaScript, depth );
 			return;
 		}
 
@@ -210,18 +246,18 @@ public class JSON
 			s.append( object );
 		else if( object instanceof NativeJavaObject )
 		{
-			// This happens either because the developer purposely creates a
+			// This happens either because the developer purposely created a
 			// Java object, or because it was returned from a Java call and
 			// wrapped by Rhino.
 
-			encode( s, ( (NativeJavaObject) object ).unwrap(), false, depth );
+			encode( s, ( (NativeJavaObject) object ).unwrap(), javaScript, false, depth );
 		}
 		else if( object instanceof Collection )
-			encode( s, (Collection<?>) object, depth );
+			encode( s, (Collection<?>) object, javaScript, depth );
 		else if( object instanceof Map )
-			encode( s, (Map<?, ?>) object, depth );
+			encode( s, (Map<?, ?>) object, javaScript, depth );
 		else if( object instanceof NativeArray )
-			encode( s, (NativeArray) object, depth );
+			encode( s, (NativeArray) object, javaScript, depth );
 		else if( object instanceof ScriptableObject )
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
@@ -231,7 +267,7 @@ public class JSON
 				// Unpack NativeString
 
 				s.append( '\"' );
-				s.append( escape( object.toString() ) );
+				s.append( JavaScriptUtil.escape( object.toString() ) );
 				s.append( '\"' );
 			}
 			else if( className.equals( "Function" ) )
@@ -239,21 +275,21 @@ public class JSON
 				// Trying to encode functions can result in stack overflows...
 
 				s.append( '\"' );
-				s.append( escape( object.toString() ) );
+				s.append( JavaScriptUtil.escape( object.toString() ) );
 				s.append( '\"' );
 			}
 			else
-				encode( s, scriptable, depth );
+				encode( s, scriptable, javaScript, depth );
 		}
 		else
 		{
 			s.append( '\"' );
-			s.append( escape( object.toString() ) );
+			s.append( JavaScriptUtil.escape( object.toString() ) );
 			s.append( '\"' );
 		}
 	}
 
-	private static void encode( StringBuilder s, Collection<?> collection, int depth )
+	private static void encode( StringBuilder s, Collection<?> collection, boolean javaScript, int depth )
 	{
 		s.append( '[' );
 
@@ -267,7 +303,7 @@ public class JSON
 			{
 				Object value = i.next();
 
-				encode( s, value, true, depth > -1 ? depth + 1 : -1 );
+				encode( s, value, javaScript, true, depth > -1 ? depth + 1 : -1 );
 
 				if( i.hasNext() )
 				{
@@ -289,7 +325,7 @@ public class JSON
 		s.append( ']' );
 	}
 
-	private static void encode( StringBuilder s, Map<?, ?> map, int depth )
+	private static void encode( StringBuilder s, Map<?, ?> map, boolean javaScript, int depth )
 	{
 		s.append( '{' );
 
@@ -309,13 +345,13 @@ public class JSON
 					indent( s, depth + 1 );
 
 				s.append( '\"' );
-				s.append( escape( key ) );
+				s.append( JavaScriptUtil.escape( key ) );
 				s.append( "\":" );
 
 				if( depth > -1 )
 					s.append( ' ' );
 
-				encode( s, value, false, depth > -1 ? depth + 1 : -1 );
+				encode( s, value, javaScript, false, depth > -1 ? depth + 1 : -1 );
 
 				if( i.hasNext() )
 				{
@@ -337,7 +373,7 @@ public class JSON
 		s.append( '}' );
 	}
 
-	private static void encode( StringBuilder s, NativeArray array, int depth )
+	private static void encode( StringBuilder s, NativeArray array, boolean javaScript, int depth )
 	{
 		s.append( '[' );
 
@@ -351,7 +387,7 @@ public class JSON
 			{
 				Object value = ScriptableObject.getProperty( array, i );
 
-				encode( s, value, true, depth > -1 ? depth + 1 : -1 );
+				encode( s, value, javaScript, true, depth > -1 ? depth + 1 : -1 );
 
 				if( i < length - 1 )
 				{
@@ -371,7 +407,7 @@ public class JSON
 		s.append( ']' );
 	}
 
-	private static void encode( StringBuilder s, ScriptableObject object, int depth )
+	private static void encode( StringBuilder s, ScriptableObject object, boolean javaScript, int depth )
 	{
 		s.append( '{' );
 
@@ -391,13 +427,13 @@ public class JSON
 					indent( s, depth + 1 );
 
 				s.append( '\"' );
-				s.append( escape( key ) );
+				s.append( JavaScriptUtil.escape( key ) );
 				s.append( "\":" );
 
 				if( depth > -1 )
 					s.append( ' ' );
 
-				encode( s, value, false, depth > -1 ? depth + 1 : -1 );
+				encode( s, value, javaScript, false, depth > -1 ? depth + 1 : -1 );
 
 				if( i < length - 1 )
 				{
@@ -421,22 +457,5 @@ public class JSON
 	{
 		for( int i = depth - 1; i >= 0; i-- )
 			s.append( "  " );
-	}
-
-	private static Pattern[] ESCAPE_PATTERNS = new Pattern[]
-	{
-		Pattern.compile( "\\\\" ), Pattern.compile( "\\n" ), Pattern.compile( "\\r" ), Pattern.compile( "\\t" ), Pattern.compile( "\\f" ), Pattern.compile( "\\\"" )
-	};
-
-	private static String[] ESCAPE_REPLACEMENTS = new String[]
-	{
-		Matcher.quoteReplacement( "\\\\" ), Matcher.quoteReplacement( "\\n" ), Matcher.quoteReplacement( "\\r" ), Matcher.quoteReplacement( "\\t" ), Matcher.quoteReplacement( "\\f" ), Matcher.quoteReplacement( "\\\"" )
-	};
-
-	private static String escape( String string )
-	{
-		for( int i = 0, length = ESCAPE_PATTERNS.length; i < length; i++ )
-			string = ESCAPE_PATTERNS[i].matcher( string ).replaceAll( ESCAPE_REPLACEMENTS[i] );
-		return string;
 	}
 }
