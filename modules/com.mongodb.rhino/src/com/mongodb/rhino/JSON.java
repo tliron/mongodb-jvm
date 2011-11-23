@@ -23,8 +23,8 @@ import org.mozilla.javascript.Undefined;
 
 import com.mongodb.rhino.util.JSONException;
 import com.mongodb.rhino.util.JSONTokener;
-import com.mongodb.rhino.util.Literal;
 import com.mongodb.rhino.util.JavaScriptUtil;
+import com.mongodb.rhino.util.Literal;
 
 /**
  * Conversion between native Rhino objects and JSON, with support for <a
@@ -253,11 +253,11 @@ public class JSON
 			encode( s, ( (NativeJavaObject) object ).unwrap(), javaScript, false, depth );
 		}
 		else if( object instanceof Collection )
-			encode( s, (Collection<?>) object, javaScript, depth );
+			encodeCollection( s, (Collection<?>) object, javaScript, depth );
 		else if( object instanceof Map )
-			encode( s, (Map<?, ?>) object, javaScript, depth );
+			encodeMap( s, (Map<?, ?>) object, javaScript, depth );
 		else if( object instanceof NativeArray )
-			encode( s, (NativeArray) object, javaScript, depth );
+			encodeNativeArray( s, (NativeArray) object, javaScript, depth );
 		else if( object instanceof ScriptableObject )
 		{
 			ScriptableObject scriptable = (ScriptableObject) object;
@@ -279,7 +279,7 @@ public class JSON
 				s.append( '\"' );
 			}
 			else
-				encode( s, scriptable, javaScript, depth );
+				encodeScriptableObject( s, scriptable, javaScript, depth );
 		}
 		else
 		{
@@ -289,7 +289,7 @@ public class JSON
 		}
 	}
 
-	private static void encode( StringBuilder s, Collection<?> collection, boolean javaScript, int depth )
+	private static void encodeCollection( StringBuilder s, Collection<?> collection, boolean javaScript, int depth )
 	{
 		s.append( '[' );
 
@@ -325,7 +325,7 @@ public class JSON
 		s.append( ']' );
 	}
 
-	private static void encode( StringBuilder s, Map<?, ?> map, boolean javaScript, int depth )
+	private static void encodeMap( StringBuilder s, Map<?, ?> map, boolean javaScript, int depth )
 	{
 		s.append( '{' );
 
@@ -373,7 +373,7 @@ public class JSON
 		s.append( '}' );
 	}
 
-	private static void encode( StringBuilder s, NativeArray array, boolean javaScript, int depth )
+	private static void encodeNativeArray( StringBuilder s, NativeArray array, boolean javaScript, int depth )
 	{
 		s.append( '[' );
 
@@ -407,7 +407,7 @@ public class JSON
 		s.append( ']' );
 	}
 
-	private static void encode( StringBuilder s, ScriptableObject object, boolean javaScript, int depth )
+	private static void encodeScriptableObject( StringBuilder s, ScriptableObject object, boolean javaScript, int depth )
 	{
 		s.append( '{' );
 
