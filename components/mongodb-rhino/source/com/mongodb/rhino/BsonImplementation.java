@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2011 Three Crickets LLC.
+ * Copyright 2010-2012 Three Crickets LLC.
  * <p>
  * The contents of this file are subject to the terms of the Apache License
  * version 2.0: http://www.opensource.org/licenses/apache2.0.php
@@ -26,7 +26,8 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.rhino.util.NativeRhino;
+import com.mongodb.util.JSON;
+import com.threecrickets.rhino.util.NativeRhinoUtil;
 
 /**
  * Conversion between native Rhino objects and BSON.
@@ -35,10 +36,10 @@ import com.mongodb.rhino.util.NativeRhino;
  * 
  * @author Tal Liron
  */
-public class BSON
+public class BsonImplementation
 {
 	//
-	// Static operations
+	// Operations
 	//
 
 	/**
@@ -59,7 +60,7 @@ public class BSON
 	 *        A Rhino native object
 	 * @return A BSON-compatible object
 	 */
-	public static Object to( Object object )
+	public Object to( Object object )
 	{
 		if( object instanceof NativeJavaObject )
 		{
@@ -71,7 +72,7 @@ public class BSON
 		}
 		else if( object instanceof NativeRegExp )
 		{
-			String[] regExp = NativeRhino.from( (NativeRegExp) object );
+			String[] regExp = NativeRhinoUtil.from( (NativeRegExp) object );
 
 			// Note: JVM pattern does not support a "g" flag. Also, compiling
 			// the pattern here is a waste of time. In short, better to use a
@@ -101,11 +102,11 @@ public class BSON
 			ScriptableObject scriptable = (ScriptableObject) object;
 
 			// Is it in extended JSON format?
-			Object r = ExtendedJSON.from( scriptable, false );
+			Object r = mongoJsonExtender.from( scriptable, false );
 			if( r != null )
 				return r;
 
-			r = NativeRhino.from( scriptable );
+			r = NativeRhinoUtil.from( scriptable );
 			if( r != null )
 				return r;
 
@@ -149,7 +150,7 @@ public class BSON
 	 *        A BSON object
 	 * @return A JSON-compatible Rhino object
 	 */
-	public static Object from( Object object )
+	public Object from( Object object )
 	{
 		return from( object, false );
 	}
@@ -174,14 +175,14 @@ public class BSON
 	 *        Whether to convert extended JSON objects
 	 * @return A JSON-compatible Rhino object
 	 */
-	public static Object from( Object object, boolean extendedJSON )
+	public Object from( Object object, boolean extendedJSON )
 	{
 		if( object instanceof List<?> )
 		{
 			// Convert list to NativeArray
 
 			List<?> list = (List<?>) object;
-			Scriptable array = NativeRhino.newArray( list.size() );
+			Scriptable array = NativeRhinoUtil.newArray( list.size() );
 
 			int index = 0;
 			for( Object item : list )
@@ -194,7 +195,7 @@ public class BSON
 			// Convert BSON object to NativeObject
 
 			BSONObject bsonObject = (BSONObject) object;
-			Scriptable nativeObject = NativeRhino.newObject();
+			Scriptable nativeObject = NativeRhinoUtil.newObject();
 
 			for( String key : bsonObject.keySet() )
 			{
@@ -210,24 +211,24 @@ public class BSON
 		}
 		else if( object instanceof Date )
 		{
-			return NativeRhino.to( (Date) object );
+			return NativeRhinoUtil.to( (Date) object );
 		}
 		else if( object instanceof Pattern )
 		{
-			return NativeRhino.to( (Pattern) object );
+			return NativeRhinoUtil.to( (Pattern) object );
 		}
 		else if( object instanceof Long )
 		{
 			// Wrap Long so to avoid conversion into a NativeNumber (which would
 			// risk losing precision!)
 
-			return NativeRhino.wrap( (Long) object );
+			return NativeRhinoUtil.wrap( (Long) object );
 		}
 		else
 		{
 			if( extendedJSON )
 			{
-				Object r = ExtendedJSON.to( object, true, false );
+				Object r = mongoJsonExtender.to( object, true, false );
 				if( r != null )
 					return r;
 			}
@@ -235,4 +236,9 @@ public class BSON
 			return object;
 		}
 	}
+
+	// //////////////////////////////////////////////////////////////////////////
+	// Private
+
+	private final MongoJsonExtender mongoJsonExtender = new MongoJsonExtender();
 }

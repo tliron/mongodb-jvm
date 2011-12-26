@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2011 Three Crickets LLC.
+ * Copyright 2010-2012 Three Crickets LLC.
  * <p>
  * The contents of this file are subject to the terms of the Apache License
  * version 2.0: http://www.opensource.org/licenses/apache2.0.php
@@ -25,10 +25,11 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.DBRefBase;
-import com.mongodb.rhino.util.Base64;
-import com.mongodb.rhino.util.Literal;
-import com.mongodb.rhino.util.NativeRhino;
-import com.mongodb.rhino.util.JavaScriptUtil;
+import com.mongodb.rhino.internal.Base64;
+import com.threecrickets.rhino.JsonExtender;
+import com.threecrickets.rhino.util.JavaScriptUtil;
+import com.threecrickets.rhino.util.Literal;
+import com.threecrickets.rhino.util.NativeRhinoUtil;
 
 /**
  * Support for <a
@@ -37,10 +38,10 @@ import com.mongodb.rhino.util.JavaScriptUtil;
  * 
  * @author Tal Liron
  */
-public class ExtendedJSON
+public class MongoJsonExtender implements JsonExtender
 {
 	//
-	// Static operations
+	// JsonExtender
 	//
 
 	/**
@@ -70,7 +71,7 @@ public class ExtendedJSON
 	 *        it will be converted to a java.util.Date
 	 * @return A BSON object, a java.util.Date, a JavaScript Date or null
 	 */
-	public static Object from( ScriptableObject scriptable, boolean javaScript )
+	public Object from( ScriptableObject scriptable, boolean javaScript )
 	{
 		Object longValue = getProperty( scriptable, "$long" );
 		if( longValue != null )
@@ -78,12 +79,12 @@ public class ExtendedJSON
 			// Convert extended JSON $long format to Long
 
 			if( longValue instanceof Number )
-				return NativeRhino.wrap( ( (Number) longValue ).longValue() );
+				return NativeRhinoUtil.wrap( ( (Number) longValue ).longValue() );
 			else
 			{
 				try
 				{
-					return NativeRhino.wrap( Long.parseLong( longValue.toString() ) );
+					return NativeRhinoUtil.wrap( Long.parseLong( longValue.toString() ) );
 				}
 				catch( NumberFormatException x )
 				{
@@ -97,7 +98,7 @@ public class ExtendedJSON
 		{
 			// Convert extended JSON $function format to JavaScript function
 
-			return NativeRhino.toFunction( functionValue );
+			return NativeRhinoUtil.toFunction( functionValue );
 		}
 
 		Object dateValue = getProperty( scriptable, "$date" );
@@ -146,7 +147,7 @@ public class ExtendedJSON
 			Date date = new Date( dateTimestamp );
 
 			if( javaScript )
-				return NativeRhino.to( date );
+				return NativeRhinoUtil.to( date );
 			else
 				return date;
 		}
@@ -164,7 +165,7 @@ public class ExtendedJSON
 				if( options != null )
 					optionsString = options.toString();
 
-				return NativeRhino.to( source, optionsString );
+				return NativeRhinoUtil.to( source, optionsString );
 			}
 		}
 
@@ -234,7 +235,7 @@ public class ExtendedJSON
 	 *        compatibility!)
 	 * @return A JavaScript object, a java.util.HashMap or null if not converted
 	 */
-	public static Object to( Object object, boolean rhino, boolean javaScript )
+	public Object to( Object object, boolean rhino, boolean javaScript )
 	{
 		if( object instanceof Long )
 		{
@@ -253,7 +254,7 @@ public class ExtendedJSON
 
 			if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$long", longString );
 				return nativeObject;
 			}
@@ -268,14 +269,14 @@ public class ExtendedJSON
 		{
 			// Convert Date to extended JSON $date format
 
-			Scriptable timestamp = NativeRhino.wrap( ( (Date) object ).getTime() );
+			Scriptable timestamp = NativeRhinoUtil.wrap( ( (Date) object ).getTime() );
 			if( javaScript )
 			{
 				return new Literal( "new Date(" + timestamp + ")" );
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$date", timestamp );
 				return nativeObject;
 			}
@@ -290,7 +291,7 @@ public class ExtendedJSON
 		{
 			// Convert NativeRegExp to extended JSON $regex format
 
-			String[] regExp = NativeRhino.from( (NativeRegExp) object );
+			String[] regExp = NativeRhinoUtil.from( (NativeRegExp) object );
 
 			if( javaScript )
 			{
@@ -301,7 +302,7 @@ public class ExtendedJSON
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regExp[0] );
 				ScriptableObject.putProperty( nativeObject, "$options", regExp[1] );
 				return nativeObject;
@@ -326,7 +327,7 @@ public class ExtendedJSON
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$function", source );
 				return nativeObject;
 			}
@@ -354,7 +355,7 @@ public class ExtendedJSON
 					long timestamp = ( (Number) time ).longValue();
 					if( rhino )
 					{
-						Scriptable nativeObject = NativeRhino.newObject();
+						Scriptable nativeObject = NativeRhinoUtil.newObject();
 						ScriptableObject.putProperty( nativeObject, "$date", timestamp );
 						return nativeObject;
 					}
@@ -393,7 +394,7 @@ public class ExtendedJSON
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$regex", regex );
 				ScriptableObject.putProperty( nativeObject, "$options", options );
 				return nativeObject;
@@ -413,7 +414,7 @@ public class ExtendedJSON
 			String oid = ( (ObjectId) object ).toStringMongod();
 			if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$oid", oid );
 				return nativeObject;
 			}
@@ -433,7 +434,7 @@ public class ExtendedJSON
 			String type = Integer.toHexString( binary.getType() );
 			if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
 				ScriptableObject.putProperty( nativeObject, "$type", type );
 				return nativeObject;
@@ -455,7 +456,7 @@ public class ExtendedJSON
 			String type = Integer.toHexString( 0 );
 			if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$binary", data );
 				ScriptableObject.putProperty( nativeObject, "$type", type );
 				return nativeObject;
@@ -485,7 +486,7 @@ public class ExtendedJSON
 
 			if( rhino )
 			{
-				Scriptable nativeObject = NativeRhino.newObject();
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
 				ScriptableObject.putProperty( nativeObject, "$ref", collection );
 				ScriptableObject.putProperty( nativeObject, "$id", idString );
 				return nativeObject;

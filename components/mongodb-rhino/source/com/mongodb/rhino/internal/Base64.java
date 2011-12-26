@@ -1,4 +1,4 @@
-package com.mongodb.rhino.util;
+package com.mongodb.rhino.internal;
 
 /**
  * Licence (BSD):

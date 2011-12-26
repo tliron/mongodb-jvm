@@ -46,7 +46,7 @@ public class Test
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "importClass(java.lang.System, com.mongodb.rhino.BSON);JSON = com.mongodb.rhino.JSON;";
+	private static final String base = "importClass(java.lang.System, com.mongodb.rhino.BSON); JSON = new com.mongodb.rhino.MongoJsonImplementation();";
 
 	private static void toJSON( String object )
 	{
