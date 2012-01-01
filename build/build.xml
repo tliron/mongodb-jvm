@@ -14,7 +14,6 @@
 	<property file="component.properties" />
 	
 	<property name="component.source" value="../components/${component}/source" />
-	<property name="component.resources" value="../components/${component}/resources" />
 	<property name="component.notices" value="../components/notices" />
 	
 	<property name="dependencies" value="../dependencies" />

@@ -4,14 +4,14 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.mongodb</groupId>
-	<artifactId>rhino-driver</artifactId>
+	<artifactId>rhino-driver-project</artifactId>
 	<version>2.0</version>
 	<packaging>pom</packaging>
 
-	<name>MongoDB Rhino Driver</name>
+	<name>MongoDB Rhino Driver: Project</name>
 	<description>Adds some JavaScript-specific friendliness to the MongoDB Java driver.</description>
-	<url>http://threecrickets.com/scripturian/</url>
-	<inceptionYear>2009</inceptionYear>
+	<url>http://code.google.com/p/mongodb-rhino/</url>
+	<inceptionYear>2010</inceptionYear>
 
 	<scm>
 		<connection>scm:git:https://code.google.com/p/mongodb-rhino/</connection>
@@ -40,97 +40,9 @@
 		</developer>
 	</developers>
 
-	<build>
-		<directory>../cache/maven</directory>
-
-		<plugins>
-			<!-- Delegate to the Ant build script -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<phase>generate-resources</phase>
-						<configuration>
-							<tasks>
-								<ant dir=".." antfile="build.xml" target="libraries" />
-							</tasks>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-				<dependencies>
-					<dependency>
-						<groupId>com.sun</groupId>
-						<artifactId>tools</artifactId>
-						<version>${java.vm.version}</version>
-						<scope>system</scope>
-						<systemPath>${java.home}/../lib/tools.jar</systemPath>
-					</dependency>
-				</dependencies>
-			</plugin>
-
-			<!-- jar artifact -->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<id>jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>attach-artifact</goal>
-						</goals>
-						<configuration>
-							<artifacts>
-								<artifact>
-									<type>jar</type>
-									<file>../distribution/content/libraries/jars/${project.groupId}/${project.artifactId}/${project.version}/${project.artifactId}.jar</file>
-								</artifact>
-							</artifacts>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.3.2</version>
-				<executions>
-					<!-- javadoc artifact -->
-					<execution>
-						<id>javadoc</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<configuration>
-							<classifier>javadoc</classifier>
-							<classesDirectory>../distribution/content/reference/documentation/api</classesDirectory>
-						</configuration>
-					</execution>
-
-					<!-- sources artifact -->
-					<execution>
-						<id>source</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<configuration>
-							<classifier>sources</classifier>
-							<classesDirectory>../distribution/content/reference/source/${project.groupId}/${project.artifactId}/${project.version}</classesDirectory>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-		</plugins>
-	</build>
+	<modules>
+		<module>mongodb-rhino</module>
+		<module>sincerity</module>
+	</modules>
 
 </project>
