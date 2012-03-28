@@ -1728,30 +1728,50 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	function removeGlobal(name) {
-		try {
-			delete app.globals[name]
-		}
-		catch (x) {}
-		application.globals.remove(name)
+		var fullName = 'mongoDb.' + name
+		application.globals.remove(fullName)
 	}
 	
 	function getGlobal(name) {
+		var fullName = 'mongoDb.' + name
 		var value
 		try {
-			value = app.globals[name]
+			value = app.globals.mongoDb[name]
 		}
 		catch (x) {}
 		if (!exists(value)) {
-			value = application.globals.get(name)
-		}
-		if (!exists(value)) {
 			try {
-				value = app.sharedGlobals[name]
+				value = app.globals[fullName]
 			}
 			catch (x) {}
 		}
-		if (!exists(value) && exists(application.sharedGlobals)) {
-			value = application.sharedGlobals.get(name)
+		try {
+			value = app.sharedGlobals.mongoDb[name]
+		}
+		catch (x) {}
+		if (!exists(value)) {
+			try {
+				value = app.sharedGlobals[fullName]
+			}
+			catch (x) {}
+		}
+		if (!exists(value)) {
+			try {
+				value = application.globals.get(fullName)
+			}
+			catch (x) {}
+		}
+		if (!exists(value)) {
+			try {
+				value = application.sharedGlobals.get(fullName)
+			}
+			catch (x) {}
+		}
+		if (!exists(value)) {
+			try {
+				value = component.context.attributes.get(fullName)
+			}
+			catch (x) {}
 		}
 		return value
 	}
@@ -1761,20 +1781,20 @@ var MongoDB = MongoDB || function() {
 	//
 	
 	// Initialize default connection
-	Public.defaultConnection = getGlobal('mongoDb.defaultConnection')
+	Public.defaultConnection = getGlobal('defaultConnection')
 	if (!exists(Public.defaultConnection)) {
-		var defaultServers = getGlobal('mongoDb.defaultServers')
+		var defaultServers = getGlobal('defaultServers')
 		if (exists(defaultServers)) {
-			Public.defaultConnection = application.getGlobal('mongoDb.defaultConnection', Public.connect(defaultServers, {slaveOk: true, autoConnectRetry: true}))
+			Public.defaultConnection = application.getGlobal('defaultConnection', Public.connect(defaultServers, {autoConnectRetry: true}))
 			try {
-				app.globals['mongoDb.defaultConnection'] = Public.defaultConnection
+				app.globals['defaultConnection'] = Public.defaultConnection
 			} catch(x) {}
 		}
 	}
 	
 	// Initialize default DB (only valid if there is a default connection)
 	if (exists(Public.defaultConnection)) {
-		Public.defaultDb = getGlobal('mongoDb.defaultDb')
+		Public.defaultDb = getGlobal('defaultDb')
 		
 		if (exists(Public.defaultDb) && !(Public.defaultDb instanceof com.mongodb.DB)) {
 			if (isString(Public.defaultDb)) {
@@ -1783,22 +1803,22 @@ var MongoDB = MongoDB || function() {
 			else {
 				Public.defaultDb = Public.getDB(Public.defaultConnection, Public.defaultDb.name, Public.defaultDb.username, Public.defaultDb.password)
 			}
-			var existing = application.globals.put('mongoDb.defaultDb', Public.defaultDb)
+			var existing = application.globals.put('defaultDb', Public.defaultDb)
 			if (exists(existing) && !isString(existing)) {
 				Public.defaultDb = existing
 			}
 			try {
-				app.globals['mongoDb.defaultDb'] = Public.defaultDb
+				app.globals['defaultDb'] = Public.defaultDb
 			} catch(x) {}
 		}
 	}
 	
 	// Initialize default swallow mode
-	Public.defaultSwallow = getGlobal('mongoDb.defaultSwallow')
+	Public.defaultSwallow = getGlobal('defaultSwallow')
 	if (exists(Public.defaultSwallow) && Public.defaultSwallow.booleanValue) {
 		Public.defaultSwallow = Public.defaultSwallow.booleanValue()
 		try {
-			app.globals['mongoDb.defaultSwallow'] = Public.defaultSwallow
+			app.globals['defaultSwallow'] = Public.defaultSwallow
 		} catch(x) {}
 	}
 	else {
