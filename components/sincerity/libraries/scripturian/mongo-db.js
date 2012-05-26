@@ -1825,5 +1825,10 @@ var MongoDB = MongoDB || function() {
 		Public.defaultSwallow = false
 	}
 	
+	// Support for extended JSON
+	if (Object.prototype.toString.call(com.threecrickets.rhino.JSON) == '[object JavaClass]') {
+		com.threecrickets.rhino.JSON.implementation = new com.mongodb.rhino.MongoJsonImplementation()
+	}
+	
 	return Public
 }()
