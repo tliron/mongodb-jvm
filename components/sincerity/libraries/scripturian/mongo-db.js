@@ -1787,7 +1787,8 @@ var MongoDB = MongoDB || function() {
 		if (exists(defaultServers)) {
 			Public.defaultConnection = application.getGlobal('defaultConnection', Public.connect(defaultServers, {autoConnectRetry: true}))
 			try {
-				app.globals['defaultConnection'] = Public.defaultConnection
+				app.globals.mongoDb = app.globals.mongoDb || {}
+				app.globals.mongoDb.defaultConnection = Public.defaultConnection
 			} catch(x) {}
 		}
 	}
@@ -1808,7 +1809,8 @@ var MongoDB = MongoDB || function() {
 				Public.defaultDb = existing
 			}
 			try {
-				app.globals['defaultDb'] = Public.defaultDb
+				app.globals.mongoDb = app.globals.mongoDb || {}
+				app.globals.mongoDb.defaultDb = Public.defaultDb
 			} catch(x) {}
 		}
 	}
@@ -1818,7 +1820,8 @@ var MongoDB = MongoDB || function() {
 	if (exists(Public.defaultSwallow) && Public.defaultSwallow.booleanValue) {
 		Public.defaultSwallow = Public.defaultSwallow.booleanValue()
 		try {
-			app.globals['defaultSwallow'] = Public.defaultSwallow
+			app.globals.mongoDb = app.globals.mongoDb || {}
+			app.globals.mongoDb.defaultSwallow = Public.defaultSwallow
 		} catch(x) {}
 	}
 	else {
