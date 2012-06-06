@@ -1164,12 +1164,14 @@ var MongoDB = MongoDB || function() {
 		this.insert = function(doc, writeConcern) {
 			try {
 				var result
+				var bson = Public.BSON.to(doc)
 				if (undefined !== writeConcern) {
-					result = this.collection.insert(Public.BSON.to(doc), MongoDB.writeConcern(writeConcern))
+					result = this.collection.insert(bson, MongoDB.writeConcern(writeConcern))
 				}
 				else {
-					result = this.collection.insert(Public.BSON.to(doc))
+					result = this.collection.insert(bson)
 				}
+				doc._id = bson.get('_id')
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1229,12 +1231,14 @@ var MongoDB = MongoDB || function() {
 		this.save = function(doc, writeConcern) {
 			try {
 				var result
+				var bson = Public.BSON.to(doc)
 				if (undefined !== writeConcern) {
-					result = this.collection.save(Public.BSON.to(doc), MongoDB.writeConcern(writeConcern))
+					result = this.collection.save(bson, MongoDB.writeConcern(writeConcern))
 				}
 				else {
-					result = this.collection.save(Public.BSON.to(doc))
+					result = this.collection.save(bson)
 				}
+				doc._id = bson.get('_id')
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
 			}
