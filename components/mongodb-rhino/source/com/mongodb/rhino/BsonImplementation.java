@@ -141,10 +141,9 @@ public class BsonImplementation
 	 * result is JSON-compatible.
 	 * <p>
 	 * Note that special MongoDB types (ObjectIds, Binary and DBRef) are not
-	 * converted, but {@link JSON#to(Object)} recognizes them, so they can still
-	 * be considered JSON-compatible in this limited sense. Use
-	 * {@link #from(Object, boolean)} if you want to convert them to MongoDB's
-	 * extended JSON.
+	 * converted, but {@link MongoJsonExtender#to(Object,boolean,boolean)}
+	 * recognizes them, so they can still be considered JSON-compatible in this
+	 * limited sense.
 	 * 
 	 * @param object
 	 *        A BSON object

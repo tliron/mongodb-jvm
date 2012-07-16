@@ -11,8 +11,6 @@
 
 package com.mongodb.rhino;
 
-import com.mongodb.util.JSON;
-
 /**
  * Conversion between native Rhino objects and BSON.
  * <p>
@@ -66,14 +64,13 @@ public class BSON
 	/**
 	 * Recursively convert from BSON to native JavaScript values.
 	 * <p>
-	 * Converts to JavaScript objects, arrays, Date objectss and primitives. The
+	 * Converts to JavaScript objects, arrays, Date objects and primitives. The
 	 * result is JSON-compatible.
 	 * <p>
 	 * Note that special MongoDB types (ObjectIds, Binary and DBRef) are not
-	 * converted, but {@link JSON#to(Object)} recognizes them, so they can still
-	 * be considered JSON-compatible in this limited sense. Use
-	 * {@link #from(Object, boolean)} if you want to convert them to MongoDB's
-	 * extended JSON.
+	 * converted, but {@link MongoJsonExtender#to(Object,boolean,boolean)}
+	 * recognizes them, so they can still be considered JSON-compatible in this
+	 * limited sense.
 	 * 
 	 * @param object
 	 *        A BSON object
@@ -94,9 +91,9 @@ public class BSON
 	 * {$oid:'objectid'}, {$binary:'base64',$type:'hex'},
 	 * {$ref:'collection',$id:'objectid'}.
 	 * <p>
-	 * Note that even if they are not converted, {@link JSON#to(Object)}
-	 * recognizes them, so they can still be considered JSON-compatible in this
-	 * limited sense.
+	 * Note that even if they are not converted,
+	 * {@link MongoJsonExtender#to(Object,boolean,boolean)} recognizes them, so
+	 * they can still be considered JSON-compatible in this limited sense.
 	 * 
 	 * @param object
 	 *        A BSON object
