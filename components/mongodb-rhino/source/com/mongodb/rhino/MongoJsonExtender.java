@@ -62,7 +62,8 @@ public class MongoJsonExtender implements JsonExtender
 	 * JavaScript function object.
 	 * <p>
 	 * The {$long:'integer'} extended JSON format is converted to a
-	 * java.lang.Long object.
+	 * java.lang.Long object. The {$integer:'integer'} extended JSON format is
+	 * converted to a java.lang.Integer object.
 	 * 
 	 * @param scriptable
 	 *        The JavaScript object
@@ -89,6 +90,26 @@ public class MongoJsonExtender implements JsonExtender
 				catch( NumberFormatException x )
 				{
 					throw new RuntimeException( "Invalid $long: " + longValue );
+				}
+			}
+		}
+
+		Object integerValue = getProperty( scriptable, "$integer" );
+		if( integerValue != null )
+		{
+			// Convert extended JSON $integer format to Integer
+
+			if( integerValue instanceof Number )
+				return NativeRhinoUtil.wrap( ( (Number) integerValue ).intValue() );
+			else
+			{
+				try
+				{
+					return NativeRhinoUtil.wrap( Integer.parseInt( integerValue.toString() ) );
+				}
+				catch( NumberFormatException x )
+				{
+					throw new RuntimeException( "Invalid $integer: " + integerValue );
 				}
 			}
 		}

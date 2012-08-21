@@ -1,5 +1,5 @@
 //
-// MongoDB API for Sincerity
+// MongoDB API for Prudence
 //
 // Copyright 2010-2012 Three Crickets LLC.
 //
