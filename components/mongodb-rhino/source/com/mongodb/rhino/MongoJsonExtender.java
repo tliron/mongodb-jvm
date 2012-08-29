@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
+import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 import org.mozilla.javascript.Function;
@@ -53,7 +54,9 @@ public class MongoJsonExtender implements JsonExtender
 	 * <p>
 	 * The {$date:timestamp} extended JSON format can be converted to either a
 	 * JavaScript Date object or a java.util.Date object, according to the
-	 * javaScript argument.
+	 * javaScript argument. The same goes for the
+	 * {$timestamp:{t:milliseconds,i:inc}} (JavaScript Date or
+	 * org.bson.types.BSONTimestamp).
 	 * <p>
 	 * The {$regex:'pattern',$options:'options'} extended JSON format is
 	 * converted to a JavaScript RegExp object.
@@ -171,6 +174,40 @@ public class MongoJsonExtender implements JsonExtender
 				return NativeRhinoUtil.to( date );
 			else
 				return date;
+		}
+
+		Object timestampValue = getProperty( scriptable, "$timestamp" );
+		if( timestampValue != null )
+		{
+			// Convert extended JSON $timestamp format to MongoDB BSONTimestamp
+			// or Rhino date
+
+			int t, i;
+
+			if( timestampValue instanceof ScriptableObject )
+			{
+				Object tValue = getProperty( (ScriptableObject) dateValue, "t" );
+				Object iValue = getProperty( (ScriptableObject) dateValue, "i" );
+
+				if( ( tValue instanceof Number ) && ( iValue instanceof Number ) )
+				{
+					t = ( (Number) tValue ).intValue();
+					i = ( (Number) iValue ).intValue();
+				}
+				else
+					throw new RuntimeException( "Invalid $timestamp: " + timestampValue );
+			}
+			else
+				throw new RuntimeException( "Invalid $timestamp: " + timestampValue );
+
+			// Note: BSONTimestamp wants "t" in seconds!
+			// See: https://jira.mongodb.org/browse/JAVA-634
+			BSONTimestamp timestamp = new BSONTimestamp( t / 1000, i );
+
+			if( javaScript )
+				return NativeRhinoUtil.to( new Date( timestamp.getTime() * 1000L ) );
+			else
+				return timestamp;
 		}
 
 		if( javaScript )
@@ -517,6 +554,29 @@ public class MongoJsonExtender implements JsonExtender
 				HashMap<String, String> map = new HashMap<String, String>( 2 );
 				map.put( "$ref", collection );
 				map.put( "$id", idString );
+				return map;
+			}
+		}
+		else if( object instanceof BSONTimestamp )
+		{
+			// Convert MongoDB BSONTimestamp to extended JSON $timestamp format
+
+			BSONTimestamp timestamp = (BSONTimestamp) object;
+			int t = timestamp.getTime() * 1000;
+			int i = timestamp.getInc();
+
+			if( rhino )
+			{
+				Scriptable nativeObject = NativeRhinoUtil.newObject();
+				ScriptableObject.putProperty( nativeObject, "t", t );
+				ScriptableObject.putProperty( nativeObject, "i", i );
+				return nativeObject;
+			}
+			else
+			{
+				HashMap<String, Integer> map = new HashMap<String, Integer>( 2 );
+				map.put( "t", t );
+				map.put( "i", i );
 				return map;
 			}
 		}
