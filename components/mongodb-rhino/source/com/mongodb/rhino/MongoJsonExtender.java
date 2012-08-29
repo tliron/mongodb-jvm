@@ -54,9 +54,8 @@ public class MongoJsonExtender implements JsonExtender
 	 * <p>
 	 * The {$date:timestamp} extended JSON format can be converted to either a
 	 * JavaScript Date object or a java.util.Date object, according to the
-	 * javaScript argument. The same goes for the
-	 * {$timestamp:{t:milliseconds,i:inc}} (JavaScript Date or
-	 * org.bson.types.BSONTimestamp).
+	 * javaScript argument. The same goes for the {$timestamp:{t:seconds,i:inc}}
+	 * (JavaScript Date or org.bson.types.BSONTimestamp).
 	 * <p>
 	 * The {$regex:'pattern',$options:'options'} extended JSON format is
 	 * converted to a JavaScript RegExp object.
@@ -200,9 +199,7 @@ public class MongoJsonExtender implements JsonExtender
 			else
 				throw new RuntimeException( "Invalid $timestamp: " + timestampValue );
 
-			// Note: BSONTimestamp wants "t" in seconds!
-			// See: https://jira.mongodb.org/browse/JAVA-634
-			BSONTimestamp timestamp = new BSONTimestamp( t / 1000, i );
+			BSONTimestamp timestamp = new BSONTimestamp( t, i );
 
 			if( javaScript )
 				return NativeRhinoUtil.to( new Date( timestamp.getTime() * 1000L ) );
@@ -562,7 +559,7 @@ public class MongoJsonExtender implements JsonExtender
 			// Convert MongoDB BSONTimestamp to extended JSON $timestamp format
 
 			BSONTimestamp timestamp = (BSONTimestamp) object;
-			int t = timestamp.getTime() * 1000;
+			int t = timestamp.getTime();
 			int i = timestamp.getInc();
 
 			if( rhino )
