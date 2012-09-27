@@ -84,7 +84,6 @@
 			<filterchain>
 				<replacetokens>
 					<token key="VERSION" value="${version}" />
-					<token key="VERSION.SINCERITY" value="${version.sincerity}" />
 					<token key="ROOT" value="${root}" />
 					<token key="CACHE" value="${cache.maven.build}" />
 					<token key="CONTENT" value="${distribution.content}" />

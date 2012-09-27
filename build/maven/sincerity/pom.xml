@@ -5,7 +5,7 @@
 
 	<groupId>com.threecrickets.sincerity.library</groupId>
 	<artifactId>sincerity-mongodb</artifactId>
-	<version>@VERSION.SINCERITY@</version>
+	<version>@VERSION@</version>
 	<packaging>pom</packaging>
 
 	<name>Sincerity MongoDB Library</name>

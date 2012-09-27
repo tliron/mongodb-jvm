@@ -28,7 +28,7 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.70
+ * @version 1.71
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -93,7 +93,26 @@ var MongoDB = MongoDB || function() {
 		/** @constant */
 		tailable: com.mongodb.Bytes.QUERYOPTION_TAILABLE
 	}
-	
+
+    /**
+     * Read preferences.
+     * 
+     * @namespace
+     * @see MongoDB#readPreference
+     */
+    Public.ReadPreference = {
+		/** @constant */
+		primary: com.mongodb.ReadPreference.primary(),
+		/** @constant */
+		primaryPreferred: com.mongodb.ReadPreference.primaryPreferred(),
+		/** @constant */
+		secondary: com.mongodb.ReadPreference.secondary(),
+		/** @constant */
+		secondaryPreferred: com.mongodb.ReadPreference.secondaryPreferred(),
+		/** @constant */
+		nearest: com.mongodb.ReadPreference.nearest()
+	}
+    
 	/**
 	 * Defaults to the 'mongoDb.defaultConnection' application global or shared application global.
 	 * If those do not exist, uses the 'mongoDb.defaultServers' application global or shared application
@@ -285,7 +304,47 @@ var MongoDB = MongoDB || function() {
 				return new com.mongodb.WriteConcern(w, timeout)
 			}
 		}
-	},
+	}
+    
+    /**
+     * Returns a MongoDB ReadPreference.
+     * 
+     * @param {String|Object} readPreference Either a string, or a dict in the form of
+     *         {primayPreferred:...}, {secondary:...}, {secondaryPreferred:...}, {nearest:...} 
+     */
+    Public.readPreference = function(readPreference) {
+    	if (isString(readPreference)) {
+    		return Public.ReadPreference[readPreference]
+    	}
+    	else if (exists(readPreference.primaryPreferred)) {
+    		var array = readPreference.primaryPreferred
+    		for (var a in array) {
+    			array[a] = Public.BSON.to(array[a])
+    		}
+    		return com.mongodb.ReadPreference.primaryPreferred.apply(null, array)
+    	}
+    	else if (exists(readPreference.secondary)) {
+    		var array = readPreference.secondary
+    		for (var a in array) {
+    			array[a] = Public.BSON.to(array[a])
+    		}
+    		return com.mongodb.ReadPreference.secondary.apply(null, array)
+    	}
+    	else if (exists(readPreference.secondaryPreferred)) {
+    		var array = readPreference.secondaryPreferred
+    		for (var a in array) {
+    			array[a] = Public.BSON.to(array[a])
+    		}
+    		return com.mongodb.ReadPreference.secondaryPreferred.apply(null, array)
+    	}
+    	else if (exists(readPreference.nearest)) {
+    		var array = readPreference.nearest
+    		for (var a in array) {
+    			array[a] = Public.BSON.to(array[a])
+    		}
+    		return com.mongodb.ReadPreference.nearest.apply(null, array)
+    	}
+    }
 	
 	/**
 	 * Extracts the CommandResult from a WriteResult. Exact values depend on the command:
@@ -295,12 +354,38 @@ var MongoDB = MongoDB || function() {
 	 * <li>upserted: the ObjectId if upserted</li>
 	 * </ul>
 	 * 
-	 * @param result The JVM result
+	 * @param {com.mongodb.WriteResult} result The JVM result
 	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/CommandResult.html">CommandResult documentation</a>;
 	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteResult.html">WriteResult documentation</a>
 	 */
 	Public.result = function(result) {
 		return exists(result) ? Public.BSON.from(result.cachedLastError) : null
+	}
+	
+	/**
+	 * @param {com.mongodb.AggregationOutput} output
+	 */
+	Public.aggregationOutput = function(output) {
+		if (exists(output)) {
+			return {
+				result: Public.BSON.from(output.commandResult),
+				restuls: new function(iterator) {
+					this.hasNext = function() {
+						return this.iterator.hasNext()
+					}
+					
+					this.next = function() {
+						var doc = this.iterator.next()
+						return MongoDB.BSON.from(doc)
+					}
+					
+					this.iterator = iterator
+				}(output.results().iterator())
+			}
+		}
+		else {
+			return null
+		}
 	}
 	
 	/**
@@ -1033,17 +1118,9 @@ var MongoDB = MongoDB || function() {
 		this.find = function(query, fields) {
 			try {
 				var cursor
-				if (query) {
-					if (undefined !== fields) {
-						cursor = this.collection.find(Public.BSON.to(query), Public.BSON.to(fields))
-					}
-					else {
-						cursor = this.collection.find(Public.BSON.to(query))
-					}
-				}
-				else {
-					cursor = this.collection.find()
-				}
+				query = query ? Public.BSON.to(query) : null
+				fields = fields ? Public.BSON.to(fields) : null
+				cursor = this.collection.find(query, fields)
 				Public.setLastStatus(this.connection, true)
 				return new MongoDB.Cursor(cursor, this.swallow)
 			}
@@ -1061,17 +1138,20 @@ var MongoDB = MongoDB || function() {
 		 * 
 		 * @param query The query
 		 * @param [fields] The fields to fetch
+		 * @param [options]
+		 * @param [options.orderBy]
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns The document or null if not found
 		 */
-		this.findOne = function(query, fields) {
+		this.findOne = function(query, fields, options) {
 			try {
 				var doc
-				if (undefined !== fields) {
-					doc = this.collection.findOne(Public.BSON.to(query), Public.BSON.to(fields))
-				}
-				else {
-					doc = this.collection.findOne(Public.BSON.to(query))
-				}
+				query = query ? Public.BSON.to(query) : null
+				fields = fields ? Public.BSON.to(fields) : null
+				options = options || {}
+				var orderBy = options.orderBy ? Public.BSON.to(options.orderBy) : null
+				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
+				doc = this.collection.findOne(query, fields, orderBy, readPreference)
 				Public.setLastStatus(this.connection, true)
 				return Public.BSON.from(doc)
 			}
@@ -1104,7 +1184,9 @@ var MongoDB = MongoDB || function() {
 				}
 			}
 			try {
-				var result = this.collection.getDB().command(Public.BSON.to(command))
+				var result
+				command = Public.BSON.to(command)
+				result = this.collection.getDB().command(command)
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.BSON.from(result).results : null
 			}
@@ -1125,7 +1207,7 @@ var MongoDB = MongoDB || function() {
 		 * @param query The query
 		 * @param update The update
 		 * @param {Boolean} [multi=false] True to update all documents, false to update
-		 *        only the first document matching the query
+		 *         only the first document matching the query
 		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #upsert
@@ -1133,12 +1215,11 @@ var MongoDB = MongoDB || function() {
 		this.update = function(query, update, multi, writeConcern) {
 			try {
 				var result
-				if (undefined !== writeConcern) {
-					result = this.collection.update(Public.BSON.to(query), Public.BSON.to(update), false, multi == true, MongoDB.writeConcern(writeConcern))
-				}
-				else {
-					result = this.collection.update(Public.BSON.to(query), Public.BSON.to(update), false, multi == true)
-				}
+				query = query ? Public.BSON.to(query) : null
+				update = update ? Public.BSON.to(update) : null
+				multi = multi == true
+				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				result = this.collection.update(query, update, false, multi, writeConcern)
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1165,12 +1246,8 @@ var MongoDB = MongoDB || function() {
 			try {
 				var result
 				var bson = Public.BSON.to(doc)
-				if (undefined !== writeConcern) {
-					result = this.collection.insert(bson, MongoDB.writeConcern(writeConcern))
-				}
-				else {
-					result = this.collection.insert(bson)
-				}
+				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				result = this.collection.insert(bson, writeConcern)
 				doc._id = bson.get('_id')
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
@@ -1201,12 +1278,11 @@ var MongoDB = MongoDB || function() {
 		this.upsert = function(query, update, multi, writeConcern) {
 			try {
 				var result
-				if (undefined !== writeConcern) {
-					result = this.collection.update(Public.BSON.to(query), Public.BSON.to(update), true, multi == true, MongoDB.writeConcern(writeConcern))
-				}
-				else {
-					result = this.collection.update(Public.BSON.to(query), Public.BSON.to(update), true, multi == true)
-				}
+				query = query ? Public.BSON.to(query) : null
+				update = update ? Public.BSON.to(update) : null
+				multi = multi == true
+				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				result = this.collection.update(query, update, true, multi, writeConcern)
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1232,12 +1308,8 @@ var MongoDB = MongoDB || function() {
 			try {
 				var result
 				var bson = Public.BSON.to(doc)
-				if (undefined !== writeConcern) {
-					result = this.collection.save(bson, MongoDB.writeConcern(writeConcern))
-				}
-				else {
-					result = this.collection.save(bson)
-				}
+				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				result = this.collection.save(bson, writeConcern)
 				doc._id = bson.get('_id')
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
@@ -1271,12 +1343,14 @@ var MongoDB = MongoDB || function() {
 		this.findAndModify = function(query, update, options) {
 			try {
 				var doc
-				if (undefined !== options) {
-					doc = this.collection.findAndModify(Public.BSON.to(query), options.fields ? Public.BSON.to(options.fields) : null, options.sort ? Public.BSON.to(options.sort) : null, false, Public.BSON.to(update), options.returnNew || false, options.upsert || false)
-				}
-				else {
-					doc = this.collection.findAndModify(Public.BSON.to(query), Public.BSON.to(update))
-				}
+				query = query ? Public.BSON.to(query) : null
+				update = update ? Public.BSON.to(update) : null
+				options = options || {}
+				var fields = options.fields ? Public.BSON.to(options.fields) : null
+				var sort = options.sort ? Public.BSON.to(options.sort) : null
+				var returnNew = options.returnNew || false
+				var upsert = options.upsert || false
+				doc = this.collection.findAndModify(query, fields, sort, false, update, returnNew, upsert)
 				Public.setLastStatus(this.connection, true)
 				return Public.BSON.from(doc)
 			}
@@ -1306,12 +1380,9 @@ var MongoDB = MongoDB || function() {
 		this.remove = function(query, writeConcern) {
 			try {
 				var result
-				if (undefined !== writeConcern) {
-					result = this.collection.remove(Public.BSON.to(query), MongoDB.writeConcern(writeConcern))
-				}
-				else {
-					result = this.collection.remove(Public.BSON.to(query))
-				}
+				query = query ? Public.BSON.to(query) : null
+				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				result = this.collection.remove(query, writeConcern)
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1333,7 +1404,9 @@ var MongoDB = MongoDB || function() {
 		 */
 		this.findAndRemove = function(query) {
 			try {
-				var doc = this.collection.findAndRemove(Public.BSON.to(query))
+				var doc
+				query = query ? Public.BSON.to(query) : null
+				doc = this.collection.findAndRemove(query)
 				Public.setLastStatus(this.connection, true)
 				return Public.BSON.from(doc)
 			}
@@ -1371,18 +1444,22 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Counts documents without fetching them.
 		 * 
-		 * @param [query] The query or null to count all documents
+		 * @param [query] The query or else count all documents
+		 * @param [options]
+		 * @param {Number} [options.limit=0]
+		 * @param {Number} [options.skip=0]
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns {Number}
 		 */
-		this.count = function(query) {
+		this.count = function(query, options) {
 			try {
 				var count
-				if (query) {
-					count = this.collection.getCount(Public.BSON.to(query))
-				}
-				else {
-					count = this.collection.getCount()
-				}
+				query = query ? Public.BSON.to(query) : null
+				options = options || {}
+				var limit = options.limit || 0
+				var skip = options.skip || 0
+				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
+				count = this.collection.getCount(query, limit, skip, readPreference)
 				Public.setLastStatus(this.connection, true)
 				return count
 			}
@@ -1400,17 +1477,15 @@ var MongoDB = MongoDB || function() {
 		 * 
 		 * @param {String} key
 		 * @param [query] The query or null
+		 * @param [readPreference] See {@link MongoDB#readPreference}
 		 * @returns {Array}
 		 */
-		this.distinct = function(key, query) {
+		this.distinct = function(key, query, readPreference) {
 			try {
 				var list
-				if (query) {
-					list = this.collection.distinct(key, Public.BSON.to(query))
-				}
-				else {
-					list = this.collection.distinct(key)
-				}
+				query = query ? Public.BSON.to(query) : null
+				readPreference = readPreference ? Public.readPreference(readPreference) : null
+				list = this.collection.distinct(key, query, readPreference)
 				Public.setLastStatus(this.connection, true)
 				return Public.BSON.from(list)
 			}
@@ -1423,6 +1498,66 @@ var MongoDB = MongoDB || function() {
 			}
 		}
 		
+		/**
+		 * General purpose aggregation.
+		 * 
+		 * @returns See {MongoDB#aggregationOutput}
+		 */
+		this.aggregate = function(/*array*/) {
+			try {
+				var result
+				var array = []
+				for (var a in arguments) {
+					array.push(Public.BSON.to(arguments[a]))
+				}
+				result = this.collection.aggregate.apply(this.collection, array)
+				Public.setLastStatus(this.connection, true)
+				return exists(result) ? Public.aggregationOutput(result) : null
+			}
+			catch (x if x.javaException instanceof com.mongodb.MongoException) {
+				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				if (x) {
+					throw x
+				}
+				return null
+			}
+		}
+		
+		/**
+		 * Grouping.
+		 * 
+		 * @param options
+		 * @param {String} options.key
+		 * @param [options.condition]
+		 * @param [options.initial]
+		 * @param {Function|String} [options.reduceFn]
+		 * @param {Function|String} [options.finalizeFn]
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
+		 * @returns See {@link MongoDB#result}
+		 */
+		this.group = function(options) {
+			try {
+				var result
+				options = options || {}
+				var key = options.key || null
+				var condition = options.condition ? Public.BSON.to(options.condition) : null
+				var initial = options.initial ? Public.BSON.to(options.initial) : null
+				var reduceFn = options.reduceFn ? String(options.reduceFn) : null
+				var finalizeFn = options.finalizeFn ? String(options.finalizeFn) : null
+				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
+				result = this.collection.group(key, condition, initial, reduceFn, finalizeFn, readPreference)
+				Public.setLastStatus(this.connection, true)
+				return exists(result) ? Public.result(result) : null
+			}
+			catch (x if x.javaException instanceof com.mongodb.MongoException) {
+				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				if (x) {
+					throw x
+				}
+				return null
+			}
+		}
+
 		/**
 		 * Map-reduce.
 		 * 
@@ -1438,47 +1573,44 @@ var MongoDB = MongoDB || function() {
 		 *        <li>{replace:'collection name'} for replacing results</li>
 		 *        <li>{reduce:'collection name'} for calling reduce on existing results</li>
 		 *        </ul>
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns {MongoDB.MapReduceResult}
 		 */
 		this.mapReduce = function(mapFn, reduceFn, options) {
-			options = options || {}
-			var query = options.query || {}
-			var outputType = null
-			var out = options.out || {inline: 1}
-			
-			if (typeof out == 'object') {
-				if (out.merge) {
-					out = out.merge
-					outputType = com.mongodb.MapReduceCommand.OutputType.MERGE
-				}
-				else {
-					if (out.reduce) {
-						out = out.reduce
-						outputType = com.mongodb.MapReduceCommand.OutputType.REDUCE
+			try {
+				var result
+				options = options || {}
+				var query = options.query ? Public.BSON.to(options.query) : null
+				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
+				var outputType = null
+				var out = options.out || {inline: 1}
+				
+				if (typeof out == 'object') {
+					if (out.merge) {
+						out = out.merge
+						outputType = com.mongodb.MapReduceCommand.OutputType.MERGE
 					}
 					else {
-						if (out.replace) {
-							out = out.replace
-							outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
+						if (out.reduce) {
+							out = out.reduce
+							outputType = com.mongodb.MapReduceCommand.OutputType.REDUCE
 						}
 						else {
-							if (out.inline) {
-								out = null
-								outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
+							if (out.replace) {
+								out = out.replace
+								outputType = com.mongodb.MapReduceCommand.OutputType.REPLACE
+							}
+							else {
+								if (out.inline) {
+									out = null
+									outputType = com.mongodb.MapReduceCommand.OutputType.INLINE
+								}
 							}
 						}
 					}
 				}
-			}
 			
-			var result
-			try {
-				if (!exists(outputType)) {
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, Public.BSON.to(query))
-				}
-				else {
-					result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, Public.BSON.to(query))
-				}
+				result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, query, readPreference)
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? new MongoDB.MapReduceResult(result, this.connection, this.swallow) : null
 			}
