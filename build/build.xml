@@ -1,34 +1,29 @@
 <?xml version="1.0"?>
 <project name="MongoDB Rhino" default="build" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-	<!--
-	A straightforward Ant build file that can build a distribution for single-component projects,
-	using Ivy to pull in dependencies.
-	
-	The distribution's directory structure is compatible with Sincerity containers.
-	See: http://threecrickets.com/sincerity/
-	
-	Version: 1.0
-	-->
+	<property name="root" location="${basedir}/.." />
 
-	<property file="component.properties" />
+	<property file="${root}/build/private.properties" />
+	<property file="${root}/build/custom.properties" />
 	
-	<property name="component.source" value="../components/${component}/source" />
-	<property name="component.notices" value="../components/notices" />
+	<property name="component.source" location="${root}/components/${component}/source" />
+	<property name="component.notices" location="${root}/components/notices" />
 	
-	<property name="dependencies" value="../dependencies" />
+	<property name="dependencies" location="${root}/dependencies" />
 
-	<property name="cache" value="./cache" />
-	<property name="cache.classes" value="${cache}/classes" />
-	<property name="cache.jars" value="${cache}/jars" />
+	<property name="cache" location="${root}/build/cache" />
+	<property name="cache.classes" location="${cache}/classes" />
+	<property name="cache.jars" location="${cache}/jars" />
+	<property name="cache.maven.pom" location="${cache}/maven/pom" />
+	<property name="cache.maven.build" location="${cache}/maven/build" />
 
-	<property name="distribution" value="./distribution" />
-	<property name="distribution.content" value="${distribution}/content" />
-	<property name="distribution.libraries" value="${distribution.content}/libraries" />
-	<property name="distribution.jars" value="${distribution.libraries}/jars" />
-	<property name="distribution.reference" value="${distribution.content}/reference" />
-	<property name="distribution.api" value="${distribution.reference}/documentation/api" />
-	<property name="distribution.source" value="${distribution.content}/reference/source" />
+	<property name="distribution" location="${root}/build/distribution" />
+	<property name="distribution.content" location="${distribution}/content" />
+	<property name="distribution.libraries" location="${distribution.content}/libraries" />
+	<property name="distribution.jars" location="${distribution.libraries}/jars" />
+	<property name="distribution.reference" location="${distribution.content}/reference" />
+	<property name="distribution.api" location="${distribution.reference}/documentation/api" />
+	<property name="distribution.source" location="${distribution.content}/reference/source" />
 
 	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${dependencies}/libraries/jars/org.apache.ivy/ivy/${ivy.version}/ivy.jar" />
 
@@ -82,14 +77,33 @@
 			<fileset dir="${component.notices}" />
 		</copy>
 	</target>
-	
-	<target name="package" depends="distribution" description="Create distribution package">
+
+	<target name="deploy-maven" if="maven" description="Deploy to Maven repository">
+		<copy todir="${cache.maven.pom}">
+			<fileset dir="${root}/build/maven" excludes="*~" />
+			<filterchain>
+				<replacetokens>
+					<token key="VERSION" value="${version}" />
+					<token key="VERSION.SINCERITY" value="${version.sincerity}" />
+					<token key="ROOT" value="${root}" />
+					<token key="CACHE" value="${cache.maven.build}" />
+					<token key="CONTENT" value="${distribution.content}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+		<exec executable="${maven}" dir="${cache.maven.pom}">
+			<arg value="deploy" />
+			<arg value="-DaltDeploymentRepository=default::default::${distribution.repo}" />
+		</exec>
+	</target>
+
+	<target name="package-zip" depends="distribution" description="Create distribution package">
 		<zip destfile="${distribution}/${component}-${version}.zip">
 			<fileset dir="${distribution.content}" />
 		</zip>
 	</target>
 	
-	<target name="build" depends="package" description="Build distribution" />
+	<target name="build" depends="distribution" description="Build distribution" />
 	
 	<target name="clean" description="Clean">
 		<delete dir="${cache}" />

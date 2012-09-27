@@ -5,7 +5,7 @@
 
 	<groupId>com.mongodb</groupId>
 	<artifactId>rhino-driver-project</artifactId>
-	<version>2.0</version>
+	<version>@VERSION@</version>
 	<packaging>pom</packaging>
 
 	<name>MongoDB Rhino Driver: Project</name>
