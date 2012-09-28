@@ -2,3 +2,4 @@
 /distribution
 *.zip
 /cache
+/private.properties

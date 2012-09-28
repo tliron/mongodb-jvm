@@ -52,7 +52,7 @@
 		<javadoc
 			destdir="${distribution.api}" sourcepath="${component.source}" excludepackagenames="**.internal.*"
 			access="protected" source="${jvm.version}"
-			windowtitle="${documentation.title} ${version}" doctitle="${documentation.title} ${version}"
+			windowtitle="${documentation.title} ${version}${version.postfix}" doctitle="${documentation.title} ${version}${version.postfix}"
 			author="true" splitindex="true" use="true" version="true" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false">
 			
 			<link href="${jvm.docs}" />
@@ -66,11 +66,11 @@
 	
 	<target name="libraries" depends="classes" description="Create jar">
 		<mkdir dir="${distribution.jars}" />
-		<jar destfile="${distribution.jars}/${maven.group}/${maven.artifact}/${version}/${maven.artifact}.jar" basedir="${cache.classes}" />
+		<jar destfile="${distribution.jars}/${maven.group}/${maven.artifact}/${version}${version.postfix}/${maven.artifact}.jar" basedir="${cache.classes}" />
 	</target>
 
 	<target name="distribution" depends="libraries, javadocs" description="Assemble distribution">
-		<copy todir="${distribution.source}/${maven.group}/${maven.artifact}/${version}">
+		<copy todir="${distribution.source}/${maven.group}/${maven.artifact}/${version}${version.postfix}">
 			<fileset dir="${component.source}" />
 		</copy>
 		<copy todir="${distribution.content}">
@@ -83,7 +83,7 @@
 			<fileset dir="${root}/build/maven" excludes="*~" />
 			<filterchain>
 				<replacetokens>
-					<token key="VERSION" value="${version}" />
+					<token key="VERSION" value="${version}${version.postfix}" />
 					<token key="ROOT" value="${root}" />
 					<token key="CACHE" value="${cache.maven.build}" />
 					<token key="CONTENT" value="${distribution.content}" />
@@ -97,7 +97,7 @@
 	</target>
 
 	<target name="package-zip" depends="distribution" description="Create distribution package">
-		<zip destfile="${distribution}/${component}-${version}.zip">
+		<zip destfile="${distribution}/${component}-${version}${version.postfix}.zip">
 			<fileset dir="${distribution.content}" />
 		</zip>
 	</target>
