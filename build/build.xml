@@ -28,17 +28,17 @@
 	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${dependencies}/libraries/jars/org.apache.ivy/ivy/${ivy.version}/ivy.jar" />
 
 	<target name="ivy" description="Settings for Ivy">
-		<ivy:settings file="ivy/settings.xml" />
+		<ivy:settings file="${root}/build/ivy/settings.xml" />
 	</target>
 
 	<target name="dependencies" depends="ivy" description="Resolve dependencies">
-		<ivy:resolve file="ivy/${component}.xml" type="jar" log="download-only" resolveId="${component}" />
+		<ivy:resolve file="${root}/build/ivy/${component}.xml" type="jar" log="download-only" resolveId="${component}" />
 		<ivy:cachepath pathid="dependencies" type="jar" resolveId="${component}" />
 	</target>
 
 	<target name="classes" depends="dependencies" description="Compile Java code">
 		<mkdir dir="${cache.classes}" />
-		<javac srcdir="${component.source}" destdir="${cache.classes}" source="${jvm.version}" target="${jvm.version}" includeAntRuntime="no" debug="${compile.debug}">
+		<javac srcdir="${component.source}" destdir="${cache.classes}" source="${compile.version}" target="${compile.version}" includeAntRuntime="no" debug="${compile.debug}">
 			<classpath refid="dependencies" />
 		</javac>
 	</target>
@@ -51,11 +51,11 @@
 	<target name="javadocs-overwrite" depends="dependencies" description="Create API documentation" unless="javadocs-present">
 		<javadoc
 			destdir="${distribution.api}" sourcepath="${component.source}" excludepackagenames="**.internal.*"
-			access="protected" source="${jvm.version}"
-			windowtitle="${documentation.title} ${version}${version.postfix}" doctitle="${documentation.title} ${version}${version.postfix}"
+			access="protected" source="${compile.version}"
+			windowtitle="${documentation.title} ${component.version}${component.version.postfix}" doctitle="${documentation.title} ${component.version}${component.version.postfix}"
 			author="true" splitindex="true" use="true" version="true" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false">
 			
-			<link href="${jvm.docs}" />
+			<link href="${documentation.jvm}" />
 			<link href="http://www.mozilla.org/rhino/apidocs/" />
 			<classpath refid="dependencies" />
 			<bottom>
@@ -66,11 +66,11 @@
 	
 	<target name="libraries" depends="classes" description="Create jar">
 		<mkdir dir="${distribution.jars}" />
-		<jar destfile="${distribution.jars}/${maven.group}/${maven.artifact}/${version}${version.postfix}/${maven.artifact}.jar" basedir="${cache.classes}" />
+		<jar destfile="${distribution.jars}/${component.group}/${component.artifact}/${component.version}${component.version.postfix}/${component.artifact}.jar" basedir="${cache.classes}" />
 	</target>
 
 	<target name="distribution" depends="libraries, javadocs" description="Assemble distribution">
-		<copy todir="${distribution.source}/${maven.group}/${maven.artifact}/${version}${version.postfix}">
+		<copy todir="${distribution.source}/${component.group}/${component.artifact}/${component.version}${component.version.postfix}">
 			<fileset dir="${component.source}" />
 		</copy>
 		<copy todir="${distribution.content}">
@@ -85,7 +85,8 @@
 			<fileset dir="${root}/build/maven" excludes="*~" />
 			<filterchain>
 				<replacetokens>
-					<token key="VERSION" value="${version}${version.postfix}" />
+					<token key="VERSION" value="${component.version}${component.version.postfix}" />
+					<token key="DEPENDENCIES" value="${dependencies.repo}" />
 					<token key="ROOT" value="${root}" />
 					<token key="CACHE" value="${cache.maven.build}" />
 					<token key="CONTENT" value="${distribution.content}" />
@@ -99,7 +100,7 @@
 	</target>
 
 	<target name="package-zip" depends="distribution" description="Create distribution package">
-		<zip destfile="${distribution}/${component}-${version}${version.postfix}.zip">
+		<zip destfile="${distribution}/${component}-${component.version}${component.version.postfix}.zip">
 			<fileset dir="${distribution.content}" />
 		</zip>
 	</target>

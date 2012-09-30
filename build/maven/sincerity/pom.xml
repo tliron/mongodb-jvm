@@ -93,4 +93,11 @@
 		</plugins>
 	</build>
 
+	<repositories>
+		<repository>
+			<id>dependencies</id>
+			<url>@DEPENDENCIES@</url>
+		</repository>
+	</repositories>
+
 </project>
