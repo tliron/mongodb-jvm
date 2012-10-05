@@ -1247,7 +1247,7 @@ var MongoDB = MongoDB || function() {
 				var result
 				var bson = Public.BSON.to(doc)
 				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
-				result = this.collection.insert(bson, writeConcern)
+				result = writeConcern == null ? this.collection.insert(bson) : this.collection.insert(bson, writeConcern)
 				doc._id = bson.get('_id')
 				Public.setLastStatus(this.connection, true)
 				return exists(result) ? Public.result(result) : null
