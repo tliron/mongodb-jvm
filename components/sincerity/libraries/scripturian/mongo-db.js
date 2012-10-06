@@ -369,7 +369,7 @@ var MongoDB = MongoDB || function() {
 		if (exists(output)) {
 			return {
 				result: Public.BSON.from(output.commandResult),
-				restuls: new function(iterator) {
+				results: new function(iterator) {
 					this.hasNext = function() {
 						return this.iterator.hasNext()
 					}
