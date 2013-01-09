@@ -128,6 +128,13 @@ public class BsonImplementation
 		{
 			return null;
 		}
+		else if( object instanceof CharSequence )
+		{
+			// This helps overcome an apparent bug in Rhino, whereby
+			// org.mozilla.javascript.ConsString is not properly serializable
+			// (see issue #6)
+			return object.toString();
+		}
 		else
 		{
 			return object;
