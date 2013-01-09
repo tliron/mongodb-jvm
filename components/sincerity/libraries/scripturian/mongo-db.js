@@ -1,7 +1,7 @@
 //
 // MongoDB API for Prudence
 //
-// Copyright 2010-2012 Three Crickets LLC.
+// Copyright 2010-2013 Three Crickets LLC.
 //
 // The contents of this file are subject to the terms of one of the following
 // open source licenses. You can select the license that you prefer but you may
