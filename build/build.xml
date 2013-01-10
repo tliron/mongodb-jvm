@@ -21,9 +21,27 @@
 	<property name="distribution.content" location="${distribution}/content" />
 	<property name="distribution.libraries" location="${distribution.content}/libraries" />
 	<property name="distribution.jars" location="${distribution.libraries}/jars" />
+	<property name="distribution.jars.pattern" value="${distribution.libraries}/jars/[organisation]/[module]/[revision](/[branch])/[artifact](.[ext])" />
 	<property name="distribution.reference" location="${distribution.content}/reference" />
 	<property name="distribution.api" location="${distribution.reference}/documentation/api" />
 	<property name="distribution.source" location="${distribution.content}/reference/source" />
+
+	<property name="googlecode" location="${dependencies}/libraries/python/googlecode_upload.py" />
+	<macrodef name="googlecode">
+		<attribute name="description" />
+		<attribute name="label" />
+		<attribute name="suffix" />
+		<sequential>
+			<exec executable="${googlecode}">
+				<arg value="--project=${component}" />
+				<arg value="--user=${googlecode.username}" />
+				<arg value="--password=${googlecode.password}" />
+				<arg value="--summary=@{description} for version ${component.version}${component.version.postfix}" />
+				<arg value="--labels=${component.version.short}${component.version.short.postfix},@{label}" />
+				<arg value="${distribution}/${component}-${component.version}${component.version.postfix}@{suffix}" />
+			</exec>
+		</sequential>
+	</macrodef>
 
 	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${dependencies}/libraries/jars/org.apache.ivy/ivy/${ivy.version}/ivy.jar" />
 
@@ -76,6 +94,9 @@
 		<copy todir="${distribution.content}">
 			<fileset dir="${component.notices}" />
 		</copy>
+		<ivy:retrieve type="jar" pattern="${distribution.jars.pattern}" log="quiet" resolveId="${component}" />
+		<!-- Don't include Rhino in the distribution, it's too big! -->
+		<delete dir="${distribution.jars}/org.mozilla" />
 	</target>
 
 	<target name="deploy-maven" if="maven" description="Deploy to Maven repository">
@@ -97,6 +118,10 @@
 			<arg value="deploy" />
 			<arg value="-DaltDeploymentRepository=default::default::${distribution.repo}" />
 		</exec>
+	</target>
+
+	<target name="deploy-googlecode" if="googlecode.password" description="Deploy to Google Code">
+		<googlecode description="Zip distribution" label="zip" suffix=".zip" />
 	</target>
 
 	<target name="package-zip" depends="distribution" description="Create distribution package">
