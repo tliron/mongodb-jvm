@@ -28,11 +28,11 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.71
+ * @version 1.72
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
-    var Public = {}
+	var Public = {}
 
 	/**
 	 * The logger.
@@ -79,9 +79,9 @@ var MongoDB = MongoDB || function() {
 	 * @see MongoDB.Cursor#addOption;
 	 * @see MongoDB.Cursor#setOptions;
 	 * @see MongoDB.Cursor#getOptions;
-	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes documentation (see QUERYOPTION_)</a>
+	 * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes documentation (see QUERYOPTION_)</a>
 	 */
-    Public.QueryOption = {
+	Public.QueryOption = {
 		/** @constant */
 		awaitData: com.mongodb.Bytes.QUERYOPTION_AWAITDATA,
 		/** @constant */
@@ -89,18 +89,74 @@ var MongoDB = MongoDB || function() {
 		/** @constant */
 		noTimeout: com.mongodb.Bytes.QUERYOPTION_NOTIMEOUT,
 		/** @constant */
+		opLogReplay: com.mongodb.Bytes.QUERYOPTION_OPLOGREPLAY,
+		/** @constant */
+		partial: com.mongodb.Bytes.QUERYOPTION_PARTIAL,
+		/** @constant */
 		slaveOk: com.mongodb.Bytes.QUERYOPTION_SLAVEOK,
 		/** @constant */
 		tailable: com.mongodb.Bytes.QUERYOPTION_TAILABLE
 	}
+	
+	/**
+	 * Result flags.
+	 *
+	 * @namespace
+	 * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes documentation (see RESULTFLAG_)</a>
+	 */
+	Public.ResultFlag = {
+		/** @constant */
+		awaitData: com.mongodb.Bytes.RESULTFLAG_AWAITCAPABLE,
+		/** @constant */
+		cursorNotFound: com.mongodb.Bytes.RESULTFLAG_CURSORNOTFOUND,
+		/** @constant */
+		errSet: com.mongodb.Bytes.RESULTFLAG_ERRSET,
+		/** @constant */
+		shardConfigStale: com.mongodb.Bytes.RESULTFLAG_SHARDCONFIGSTALE
+	}
+	
+	/**
+	* Write concern constants.
+	* 
+	* @namespace
+	 * @see MongoDB#writeConcern
+	*/
+	Public.WriteConcern = {
+		/** @constant */
+		acknowledged: com.mongodb.WriteConcern.ACKNOWLEDGED,
+		/** @constant */
+		errorsIgnored: com.mongodb.WriteConcern.ERRORS_IGNORED,
+		/** @constant */
+		fsyncSafe: com.mongodb.WriteConcern.FSYNC_SAFE,
+		/** @constant */
+		fsynced: com.mongodb.WriteConcern.FSYNCED,
+		/** @constant */
+		journalSafe: com.mongodb.WriteConcern.JOURNAL_SAFE,
+		/** @constant */
+		journaled: com.mongodb.WriteConcern.JOURNALED,
+		/** @constant */
+		majority: com.mongodb.WriteConcern.MAJORITY,
+		/** @constant */
+		none: com.mongodb.WriteConcern.NONE,
+		/** @constant */
+		normal: com.mongodb.WriteConcern.NORMAL,
+		/** @constant */
+		replicaAcknowledged: com.mongodb.WriteConcern.REPLICA_ACKNOWLEDGED,
+		/** @constant */
+		replicasSafe: com.mongodb.WriteConcern.REPLICAS_SAFE,
+		/** @constant */
+		safe: com.mongodb.WriteConcern.SAFE,
+		/** @constant */
+		unacknowledged: com.mongodb.WriteConcern.UNACKNOWLEDGED
+	}
 
-    /**
-     * Read preferences.
-     * 
-     * @namespace
-     * @see MongoDB#readPreference
-     */
-    Public.ReadPreference = {
+	/**
+	 * Read preferences.
+	 * 
+	 * @namespace
+	 * @see MongoDB#readPreference
+	 */
+	Public.ReadPreference = {
 		/** @constant */
 		primary: com.mongodb.ReadPreference.primary(),
 		/** @constant */
@@ -112,18 +168,18 @@ var MongoDB = MongoDB || function() {
 		/** @constant */
 		nearest: com.mongodb.ReadPreference.nearest()
 	}
-    
+	
 	/**
-	 * Defaults to the 'mongoDb.defaultConnection' application global or shared application global.
+	 * Defaults to the 'mongoDb.defaultClient' application global or shared application global.
 	 * If those do not exist, uses the 'mongoDb.defaultServers' application global or shared application
 	 * global to call {@link MongoDB#connect}. If that does not exist either, then tries to connect
 	 * to localhost using the default port.
 	 *  
 	 * @field
-	 * @returns {com.mongodb.Mongo} See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Mongo.html">Mongo connection documentation</a>
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 * @see MongoDB#connect
 	 */
-    Public.defaultConnection = null
+	Public.defaultClient = null
 
 	/**
 	 * Defaults to the 'mongoDb.defaultDb' application global or shared application global.
@@ -134,7 +190,7 @@ var MongoDB = MongoDB || function() {
 	 * @returns {com.mongodb.DB}
 	 * @see MongoDB#connect
 	 */
-    Public.defaultDb = null
+	Public.defaultDb = null
 	
 	/**
 	 * Defaults to the 'mongoDb.defaultSwallow' application global or shared application global.
@@ -142,123 +198,178 @@ var MongoDB = MongoDB || function() {
 	 * @field
 	 * @returns {Boolean}  If true, do not throw exceptions
 	 */
-    Public.defaultSwallow = null
+	Public.defaultSwallow = null
 	
 	/**
-	 * Creates a MongoDB connection instance, which internally handles thread pooling
+	 * Creates a MongoDB client instance, which internally handles thread pooling
 	 * and collection resource management. It is unlikely that you would need more than
-	 * one MongoDB connection to the same set of MongoDB instances in the same JVM,
+	 * one MongoDB client to the same set of MongoDB instances in the same JVM,
 	 * thus it is recommended to store it in Prudence's application.sharedGlobals.
 	 * 
 	 * @param {String|String[]} [uris='localhost:27017']
-	 *        A URI or array of URIs of the MongoDB instances to connect to.
-	 *        URIs are in the form of "host" or "host:port". "host" can be an IP address or domain name.
-	 *        When multiple URIs are used, the MongoDB connection is created in 'replica set' mode.
+	 *   A URI or array of URIs of the MongoDB instances to connect to.
+	 *   URIs are in the form of "host" or "host:port". "host" can be an IP address or domain name.
 	 * @param [options]
-	 * @param {Boolean} [options.autoConnectRetry] True if failed connections are retried
+	 * @param {Boolean} [options.alwaysUseMBeans] Sets whether JMX beans registered by the driver should always be MBeans
+	 * @param {Boolean} [options.autoConnectRetry=true] True if failed connections are retried
 	 * @param {Number} [options.connectionsPerHost] Pool size per URI
 	 * @param {Number} [options.connectTimeout] Milliseconds allowed for connection to be made before an exception is thrown
-	 * @param {Boolean} [options.fsync] Default {@link MongoDB#writeConcern} value
+	 * @param {Boolean} [options.cursorFinalizerEnabled] Sets whether cursor finalizers are enabled
+	 * @param {String} [options.description] A description of this connection (for debugging)
+	 * @param {Number} [options.maxAutoConnectRetryTime] Milliseconds for the maximum auto connect retry time
 	 * @param {Number} [options.maxWaitTime] Milliseconds allowed for a thread to block before an exception is thrown
-	 * @param {Boolean} [options.safe] True calls getLastError after every MongoDB command
-	 * @param {Boolean} [options.slaveOk] True if allowed to read from slaves
+	 * @param {Boolean} [options.socketKeepalive] Sets whether socket keep alive is enabled
 	 * @param {Number} [options.socketTimeout] Milliseconds allowed for a socket operation before an exception is thrown
-	 * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier] multiply this by connectionsPerHost to get the number
-	 *        of threads allowed to block before an exception is thrown
-	 * @param {Number} [options.w] Default {@link MongoDB#writeConcern} value
-	 * @param {Number} [options.wtimeout] Default {@link MongoDB#writeConcern} value
-	 * @param {String} [username] Optional username for authentication of 'admin' database 
-	 * @param {String} [password] Optional password for authentication of 'admin' database
-	 * @returns {com.mongodb.Mongo} See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Mongo.html">Mongo connection documentation</a>
+	 * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier] Multiply this by connectionsPerHost to get the number
+	 *                 of threads allowed to block before an exception is thrown
+	 * @param {Number} [options.writeConcern=MongoDB.WriteConcern.acknowledged] Default {@link MongoDB#writeConcern}
+	 * @param {Number} [options.readPreference] Default {@link MongoDB#readPreference}
+	 * @param {String} [options.username] Optional username for authentication of 'admin' database 
+	 * @param {String} [options.password] Optional password for authentication of 'admin' database
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 */
-    Public.connect = function(uris, options, username, password) {
-		if (Object.prototype.toString.call(uris) == '[object Array]') {
+	Public.connect = function(uris, options) {
+		if (!exists(uris) || (uris.length == 0)) {
+			uris = 'localhost:27017'
+		}
+		
+		if (isArray(uris)) {
 			var array = new java.util.ArrayList(uris.length)
 			for (var u in uris) {
 				array.add(new com.mongodb.ServerAddress(uris[u]))
 			}
 			uris = array
 		}
-		else if (uris) {
+		else {
 			uris = new com.mongodb.ServerAddress(uris)
 		}
 		
-		if (exists(options)) {
-			var mongoOptions = new com.mongodb.MongoOptions()
-			for (var key in options) {
-				mongoOptions[key] = options[key]
+		if (!exists(options)) {
+			// Default options
+			options = {
+				autoConnectRetry: true
 			}
-			options = mongoOptions
 		}
 		
-		var connection
-		if (exists(uris)) {
-			if (exists(options)) {
-				connection = new com.mongodb.Mongo(uris, options)
+		if (!exists(options.writeConcern)) {
+			// This is enforced since Java driver version 2.10.0, but
+			// we want to make sure this is always true for consistency
+			options.writeConcern = Public.WriteConcern.acknowledged
+		}
+		
+		var username
+		if (exists(options.username)) {
+			username = options.username
+			delete options.username
+		}
+		
+		var password
+		if (exists(options.password)) {
+			password = options.password
+			delete options.password
+		}
+		
+		// Convert options to MongoClientOptions
+		var builder = com.mongodb.MongoClientOptions.builder()
+		for (var key in options) {
+			var value = options[key]
+			
+			if (key == 'writeConcern') {
+				value = Public.writeConcern(value)
 			}
-			else {
-				connection = new com.mongodb.Mongo(uris)
+			else if (key == 'readPreference') {
+				value = Public.readPreference(value)
 			}
+			else if (key == 'socketFactory') {
+				// Handle special 'default' value
+				if (isString(value) && (value == 'default')) {
+					value = new javax.net.ssl.SSLSocketFactory.getDefault()
+				}
+			}
+				
+			builder = builder[key](value)
+		}
+		options = builder.build()
+		
+		var client = new com.mongodb.MongoClient(uris, options)
+		
+		if (exists(username) && exists(password)) {
+			// Authenticate the 'admin' database
+			Public.getDB(client, 'admin', username, password)
+		}
+		
+		return client
+	}
+	
+	/**
+	 * Shortcut to call {@link MongoDB#connect} and {@link MongoDB#setDefaultClient}.
+	 * 
+	 * @param {String|String[]} [uris] See {@link MongoDB#connect}
+	 * @param {Object} [options] See {@link MongoDB#connect}
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
+	 */
+	Public.connectAndSetDefaultClient = function(uris, options) {
+		var client = Public.connect(uris, options)
+		Public.setDefaultClient(client)
+		return client
+	}
+
+	/**
+	 * Sets the default client.
+	 * 
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client
+	 */
+	Public.setDefaultClient = function(client) {
+		Public.defaultClient = client
+		application.globals.put('mongoDb.defaultClient', client)
+	}
+
+	/**
+	 * Closes all MongoDB connections in the client's connection pool. Subsequent uses will open new connections and add them
+	 * to the pool.
+	 * <p>
+	 * May be useful to solve memory leak problems with the MongoDB server that are associated with connections.
+	 * Closing connections once in a while releases their heap memory on the server.
+	 * 
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} [client=defaultClient]
+	 */
+	Public.closeConnections = function(client) {
+		client = exists(client) ? client : Public.defaultClient
+		var connector = connection.connector
+
+		function close(address) {
+			var pool = connector.getDBPortPool(address)
+			for (var i = pool.all; i.hasNext(); ) {
+				var port = i.next()
+				pool.remove(port)
+			}
+		}
+
+		var addresses = connector.allAddress
+		if (exists(addresses)) {
+			// For replica sets
+			for (var i = addresses.iterator(); i.hasNext(); ) {
+				var address = i.next()
+				close(address)
+			}
+			Public.logger.info('Reset MongoDB connections for: ' + client)
 		}
 		else {
-			connection = new com.mongodb.Mongo()
+			// For single node
+			var address = connector.address
+			if (exists(address)) {
+				close(address)
+				Public.logger.info('Reset MongoDB connection for: ' + client)
+			}
 		}
-		
-		if (exists(connection) && exists(username) && exists(password)) {
-			// Authenticate the 'admin' database
-			Public.getDB(connection, 'admin', username, password)
-		}
-		
-		return connection
 	}
-    
-    /**
-     * Closes all MongoDB connections in the pool. Subsequent uses will open new connections and add them
-     * to the pool.
-     * <p>
-     * May be useful to solve memory leak problems with the MongoDB server that are associated with connections.
-     * Closing connections once in a while releases their heap memory on the server.
-     * 
-	 * @param {com.mongodb.Mongo} [connection=MongoDB.defaultConnection] The MongoDB connection
-     */
-    Public.closeConnections = function(connection) {
-    	connection = exists(connection) ? connection : Public.defaultConnection
-    	var connector = connection.connector
-
-    	function close(address) {
-    		var pool = connector.getDBPortPool(address)
-    		for (var i = pool.all; i.hasNext(); ) {
-    			var port = i.next()
-    			pool.remove(port)
-    		}
-    	}
-
-    	var addresses = connector.allAddress
-    	if (exists(addresses)) {
-    		// For replica sets
-    		for (var i = addresses.iterator(); i.hasNext(); ) {
-    			var address = i.next()
-    			close(address)
-    		}
-    		Public.logger.info('Reset MongoDB connections for: ' + connection)
-    	}
-    	else {
-    		// For single node
-    		var address = connector.address
-    		if (exists(address)) {
-    			close(address)
-    			Public.logger.info('Reset MongoDB connection for: ' + connection)
-    		}
-    	}
-    }
 	
 	/**
 	 * Creates a new, universally unique MongoDB object ID.
 	 * 
-	 * @returns {org.bson.types.ObjectId} A a new ObjectId;
-	 *          See the <a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">ObjectId documentation</a>
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>} A new ObjectId
 	 */
-    Public.newId = function() {
+	Public.newId = function() {
 		return org.bson.types.ObjectId.get()
 	}
 	
@@ -266,10 +377,9 @@ var MongoDB = MongoDB || function() {
 	 * Converts a string representing a MongoDB object ID into an ObjectId instance.
 	 * 
 	 * @param {String} id The object ID string
-	 * @returns {org.bson.types.ObjectId} An ObjectId or null if invalid;
-	 *          See the <a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">ObjectId documentation</a>
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>} An ObjectId or null if invalid
 	 */
-    Public.id = function(id) {
+	Public.id = function(id) {
 		try {
 			return exists(id) ? new org.bson.types.ObjectId(String(id)) : null
 		}
@@ -280,71 +390,91 @@ var MongoDB = MongoDB || function() {
 	}
 
 	/**
-	 * Creates a MongoDB WriteConcern. Make sure that 'w' is at least 1 if you want to receive results.
+	 * Creates a MongoDB WriteConcern.
 	 * 
-	 * @param {Number|Boolean|Object} writeConcern
-	 *        Numeric values are converted to 'w';
-	 *        boolean values are converted to 'fsync';
-	 *        otherwise provide a dict in the form of {w:number, fsync:boolean, timeout:number} 
-	 * @returns {com.mongodb.WriteConcern} See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteConcern.html">WriteConcern documentation</a>
+	 * @param {Number|String|Boolean|Object} writeConcern
+	 *   Numeric and string values are converted to 'w';
+	 *   boolean values are converted to 'fsync';
+	 *   otherwise provide a dict in the form of {w:number|string, timeout:number, fsync:boolean, j:boolean, continueOnInsertError:boolean} 
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteConcern.html">com.mongodb.WriteConcern</a>}
+	 * @see See the <a href="http://docs.mongodb.org/manual/core/write-concern/">MongoDB Manual</a>
 	 */
-    Public.writeConcern = function(writeConcern) {
+	Public.writeConcern = function(writeConcern) {
+		if (writeConcern instanceof com.mongodb.WriteConcern) {
+			return writeConcern
+		}
 		var type = typeof writeConcern
-		if ((type == 'boolean') || (type == 'number')) {
+		if (isString(type) || (type == 'boolean') || (type == 'number')) {
 			return new com.mongodb.WriteConcern(writeConcern)
 		}
 		else {
 			var w = writeConcern.w
 			var timeout = writeConcern.timeout
 			var fsync = writeConcern.fsync
+			var j = writeConcern.j
+			var continueOnInsertError = writeConcern.continueOnInsertError
+
 			if (undefined !== fsync) {
-				return new com.mongodb.WriteConcern(w, timeout, fsync)
+				if (undefined !== j) {
+					if (undefined !== continueOnInsertError) {
+						return new com.mongodb.WriteConcern(w, timeout, fsync, j, continueOnInsertError)
+					}
+					else {
+						return new com.mongodb.WriteConcern(w, timeout, fsync, j)
+					}
+				}
+				else {
+					return new com.mongodb.WriteConcern(w, timeout, fsync)
+				}
 			}
 			else {
 				return new com.mongodb.WriteConcern(w, timeout)
 			}
 		}
 	}
-    
-    /**
-     * Returns a MongoDB ReadPreference.
-     * 
-     * @param {String|Object} readPreference Either a string, or a dict in the form of
-     *         {primayPreferred:...}, {secondary:...}, {secondaryPreferred:...}, {nearest:...} 
-     */
-    Public.readPreference = function(readPreference) {
-    	if (isString(readPreference)) {
-    		return Public.ReadPreference[readPreference]
-    	}
-    	else if (exists(readPreference.primaryPreferred)) {
-    		var array = readPreference.primaryPreferred
-    		for (var a in array) {
-    			array[a] = Public.BSON.to(array[a])
-    		}
-    		return com.mongodb.ReadPreference.primaryPreferred.apply(null, array)
-    	}
-    	else if (exists(readPreference.secondary)) {
-    		var array = readPreference.secondary
-    		for (var a in array) {
-    			array[a] = Public.BSON.to(array[a])
-    		}
-    		return com.mongodb.ReadPreference.secondary.apply(null, array)
-    	}
-    	else if (exists(readPreference.secondaryPreferred)) {
-    		var array = readPreference.secondaryPreferred
-    		for (var a in array) {
-    			array[a] = Public.BSON.to(array[a])
-    		}
-    		return com.mongodb.ReadPreference.secondaryPreferred.apply(null, array)
-    	}
-    	else if (exists(readPreference.nearest)) {
-    		var array = readPreference.nearest
-    		for (var a in array) {
-    			array[a] = Public.BSON.to(array[a])
-    		}
-    		return com.mongodb.ReadPreference.nearest.apply(null, array)
-    	}
-    }
+	
+	/**
+	 * Returns a MongoDB ReadPreference.
+	 * 
+	 * @param {String|Object} readPreference Either a string, or a dict in the form of
+	 *   {primayPreferred:...}, {secondary:...}, {secondaryPreferred:...}, {nearest:...} 
+	 */
+	Public.readPreference = function(readPreference) {
+		if (readPreference instanceof com.mongodb.ReadPreference) {
+			return readPreference
+		}
+		if (isString(readPreference)) {
+			return Public.ReadPreference[readPreference]
+		}
+		else if (exists(readPreference.primaryPreferred)) {
+			var array = readPreference.primaryPreferred
+			for (var a in array) {
+				array[a] = Public.BSON.to(array[a])
+			}
+			return com.mongodb.ReadPreference.primaryPreferred.apply(null, array)
+		}
+		else if (exists(readPreference.secondary)) {
+			var array = readPreference.secondary
+			for (var a in array) {
+				array[a] = Public.BSON.to(array[a])
+			}
+			return com.mongodb.ReadPreference.secondary.apply(null, array)
+		}
+		else if (exists(readPreference.secondaryPreferred)) {
+			var array = readPreference.secondaryPreferred
+			for (var a in array) {
+				array[a] = Public.BSON.to(array[a])
+			}
+			return com.mongodb.ReadPreference.secondaryPreferred.apply(null, array)
+		}
+		else if (exists(readPreference.nearest)) {
+			var array = readPreference.nearest
+			for (var a in array) {
+				array[a] = Public.BSON.to(array[a])
+			}
+			return com.mongodb.ReadPreference.nearest.apply(null, array)
+		}
+	}
 	
 	/**
 	 * Extracts the CommandResult from a WriteResult. Exact values depend on the command:
@@ -354,9 +484,7 @@ var MongoDB = MongoDB || function() {
 	 * <li>upserted: the ObjectId if upserted</li>
 	 * </ul>
 	 * 
-	 * @param {com.mongodb.WriteResult} result The JVM result
-	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/CommandResult.html">CommandResult documentation</a>;
-	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteResult.html">WriteResult documentation</a>
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteResult.html">com.mongodb.WriteResult</a>} result The JVM result
 	 */
 	Public.result = function(result) {
 		return exists(result) ? Public.BSON.from(result.cachedLastError) : null
@@ -391,17 +519,17 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Converts the JVM exception to a JavaScript-friendly version.
 	 * 
-	 * @param {com.mongodb.MongoException} exception The MongoDB exception
-	 * @param {com.mongodb.Mongo} connection The MongoDB connection
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoException.html">com.mongodb.MongoException</a>} exception The MongoDB exception
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @param {Boolean} [swallow=false] If true, do not return exceptions
 	 * @returns {Object} In the form of {code:number, message:'message'}
 	 * @see MongoDB.Error
 	 */
-	Public.exception = function(exception, connection, swallow) {
+	Public.exception = function(exception, client, swallow) {
 		if (exception instanceof com.mongodb.MongoException.Network) {
-			if (Public.getLastStatus(connection)) {
-				Public.setLastStatus(connection, false)
-				Public.logger.severe('Down! ' + connection)
+			if (Public.getLastStatus(client)) {
+				Public.setLastStatus(client, false)
+				Public.logger.severe('Down! ' + client)
 			}
 		}
 
@@ -416,28 +544,28 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	/**
-	 * Gets a MongoDB database from a connection, optionally authenticating it.
+	 * Gets a MongoDB database from a client, optionally authenticating it.
 	 * 
-	 * @param {com.mongodb.Mongo} connection The MongoDB connection
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @param {String} name The database name
 	 * @param {String} [username] Optional username for authentication 
 	 * @param {String} [password] Optional password for authentication
 	 * @returns {com.mongodb.DB}
 	 */
-	Public.getDB = function(connection, name, username, password) {
-		var db = connection.getDB(name)
-		if (username && password && exists(db)) {
+	Public.getDB = function(client, name, username, password) {
+		var db = client.getDB(name)
+		if (exists(username) && exists(password) && exists(db)) {
 			db.authenticate(username, new java.lang.String(password).toCharArray())
 		}
 		return db
 	}
 	
 	/**
-	 * @param {com.mongodb.Mongo} connection The MongoDB connection
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @returns {Boolean} True if MongoDB was last seen as up
 	 */
-	Public.getLastStatus = function(connection) {
-		var status = application.globals.get('mongoDb.status.' + connection.hashCode())
+	Public.getLastStatus = function(client) {
+		var status = application.globals.get('mongoDb.status.' + client.hashCode())
 		if (exists(status)) {
 			return status.booleanValue()
 		}
@@ -445,21 +573,22 @@ var MongoDB = MongoDB || function() {
 	}
 
 	/**
-	 * @param {com.mongodb.Mongo} connection The MongoDB connection
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @param {Boolean} status True if MongoDB was last seen as up
 	 */
-	Public.setLastStatus = function(connection, status) {
-		if (status && !Public.getLastStatus(connection)) {
-			Public.logger.info('Up! ' + connection)
+	Public.setLastStatus = function(client, status) {
+		if (status && !Public.getLastStatus(client)) {
+			Public.logger.info('Up! ' + client)
 		}
-		application.globals.put('mongoDb.status.' + connection.hashCode(), status)
+		application.globals.put('mongoDb.status.' + client.hashCode(), status)
 	}
 	
 	/**
 	 * Removes all MongoDB settings from the application globals.
 	 */
 	Public.uninitialize = function() {
-		removeGlobal('mongoDb.defaultConnection')
+		removeGlobal('mongoDb.defaultClient')
+		removeGlobal('mongoDb.defaultUris')
 		removeGlobal('mongoDb.defaultServers')
 		removeGlobal('mongoDb.defaultSwallow')
 		removeGlobal('mongoDb.defaultDb')
@@ -469,12 +598,11 @@ var MongoDB = MongoDB || function() {
 	 * The results of a {@link MongoDB.Collection#mapReduce} command.
 	 * 
 	 * @class
-	 * @param {com.mongodb.MapReduceOutput} result The JVM map-reduce result
-	 * @param {com.mongodb.Mongo} connection The MongoDB connection
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MapReduceOutput.html">com.mongodb.MapReduceOutput</a>} result The JVM map-reduce result
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @param {Boolean} [swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
-	 * @see Visit the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MapReduceOutput.html">MapReduceOutput documentation</a>
 	 */
-	Public.MapReduceResult = function(result, connection, swallow) {
+	Public.MapReduceResult = function(result, client, swallow) {
 
 		/**
 		 * For non-inline mapReduce, returns the collection.
@@ -484,11 +612,11 @@ var MongoDB = MongoDB || function() {
 		this.getOutputCollection = function() {
 			try {
 				var collection = this.result.outputCollection
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(collection) ? new MongoDB.Collection(null, {collection: collection, swallow: this.swallow}) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -513,11 +641,11 @@ var MongoDB = MongoDB || function() {
 					}
 				}
 				this.result.drop()
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -535,11 +663,11 @@ var MongoDB = MongoDB || function() {
 				// Note that the results might be an inline iterator: we are assuming that the caller
 				// knows that it is actually a cursor
 				var cursor = this.result.results()
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(cursor) ? new MongoDB.Cursor(cursor, this.swallow) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -555,7 +683,7 @@ var MongoDB = MongoDB || function() {
 		this.getInline = function() {
 			try {
 				var iterator = this.result.results()
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				var r = []
 				while (iterator.hasNext()) {
 					r.push(Public.BSON.from(iterator.next()))
@@ -563,7 +691,7 @@ var MongoDB = MongoDB || function() {
 				return r
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -576,7 +704,7 @@ var MongoDB = MongoDB || function() {
 		//
 
 		this.result = result
-		this.connection = connection
+		this.client = connection
 		this.swallow = exists(swallow) ? swallow : Public.defaultSwallow
 				
 		// The following is a necessary workaround because the Java driver does not properly deal with map reduce outputs
@@ -594,7 +722,7 @@ var MongoDB = MongoDB || function() {
 	 * with calls to {@link #next}.
 	 * 
 	 * @class
-	 * @param {com.mongodb.DBCursor} cursor The JVM cursor
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/DBCursor.html">com.mongodb.DBCursor</a>} cursor The JVM cursor
 	 * @param {Boolean} [swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.Cursor = function(cursor, swallow) {
@@ -1095,13 +1223,13 @@ var MongoDB = MongoDB || function() {
 	 * 
 	 * @param {String} name The collection name
 	 * @param [config]
-	 * @param {String|Object|com.mongodb.DB} [config.db=MongoDB.defaultDb] The MongoDB database to use, can be its
-	 *        name, or an object in the form of {name:'string', username:'string', password:'string'} for authenticated
-	 *        connections
-	 * @param {String|com.mongodb.Mongo} [config.connection=MongoDb.defaultConnect] A MongoDB connection
-	 *        instance (see {@link MongoDB#connect})
+	 * @param {String|Object|<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>} [config.db=MongoDB.defaultDb] The MongoDB database to use, can be its
+	 *   name, or an object in the form of {name:'string', username:'string', password:'string'} for authenticated
+	 *   connections
+	 * @param {String|<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} [config.client=MongoDb.defaultClient] The MongoDB client
+	 *   instance (see {@link MongoDB#connect})
 	 * @param {String} [config.uniqueId] If supplied, {@link #ensureIndex} will automatically be called on the
-	 *        key
+	 *   key
 	 * @param {Boolean} [config.swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.Collection = function(name, config) {
@@ -1121,11 +1249,11 @@ var MongoDB = MongoDB || function() {
 				query = query ? Public.BSON.to(query) : null
 				fields = fields ? Public.BSON.to(fields) : null
 				cursor = this.collection.find(query, fields)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return new MongoDB.Cursor(cursor, this.swallow)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1152,11 +1280,11 @@ var MongoDB = MongoDB || function() {
 				var orderBy = options.orderBy ? Public.BSON.to(options.orderBy) : null
 				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
 				doc = this.collection.findOne(query, fields, orderBy, readPreference)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1187,11 +1315,11 @@ var MongoDB = MongoDB || function() {
 				var result
 				command = Public.BSON.to(command)
 				result = this.collection.getDB().command(command)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.BSON.from(result).results : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1207,7 +1335,7 @@ var MongoDB = MongoDB || function() {
 		 * @param query The query
 		 * @param update The update
 		 * @param {Boolean} [multi=false] True to update all documents, false to update
-		 *         only the first document matching the query
+		 *	only the first document matching the query
 		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #upsert
@@ -1218,13 +1346,13 @@ var MongoDB = MongoDB || function() {
 				query = query ? Public.BSON.to(query) : null
 				update = update ? Public.BSON.to(update) : null
 				multi = multi == true
-				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
 				result = this.collection.update(query, update, false, multi, writeConcern)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1246,17 +1374,17 @@ var MongoDB = MongoDB || function() {
 			try {
 				var result
 				var bson = Public.BSON.to(doc)
-				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
-				result = writeConcern == null ? this.collection.insert(bson) : this.collection.insert(bson, writeConcern)
+				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
+				result = exists(writeConcern) ? this.collection.insert(bson, writeConcern) : this.collection.insert(bson)
 				doc._id = bson.get('_id')
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
 				if (x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
-					throw MongoDB.exception(x.javaException, this.connection, false)
+					throw MongoDB.exception(x.javaException, this.client, false)
 				}
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1271,7 +1399,7 @@ var MongoDB = MongoDB || function() {
 		 * @param query The query
 		 * @param update The update
 		 * @param {Boolean} [multi=false] True to update all documents, false to update
-		 *        only the first document matching the query
+		 *   only the first document matching the query
 		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 */
@@ -1281,13 +1409,13 @@ var MongoDB = MongoDB || function() {
 				query = query ? Public.BSON.to(query) : null
 				update = update ? Public.BSON.to(update) : null
 				multi = multi == true
-				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
 				result = this.collection.update(query, update, true, multi, writeConcern)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1308,17 +1436,17 @@ var MongoDB = MongoDB || function() {
 			try {
 				var result
 				var bson = Public.BSON.to(doc)
-				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
 				result = this.collection.save(bson, writeConcern)
 				doc._id = bson.get('_id')
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
 				if (x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
-					throw MongoDB.exception(x.javaException, this.connection, false)
+					throw MongoDB.exception(x.javaException, this.client, false)
 				}
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1351,7 +1479,7 @@ var MongoDB = MongoDB || function() {
 				var returnNew = options.returnNew || false
 				var upsert = options.upsert || false
 				doc = this.collection.findAndModify(query, fields, sort, false, update, returnNew, upsert)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
@@ -1359,7 +1487,7 @@ var MongoDB = MongoDB || function() {
 					// TODO?
 					return null
 				}
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1381,13 +1509,13 @@ var MongoDB = MongoDB || function() {
 			try {
 				var result
 				query = query ? Public.BSON.to(query) : null
-				writeConcern = writeConcern ? Public.writeConcern(writeConcern) : null
+				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
 				result = this.collection.remove(query, writeConcern)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1407,7 +1535,7 @@ var MongoDB = MongoDB || function() {
 				var doc
 				query = query ? Public.BSON.to(query) : null
 				doc = this.collection.findAndRemove(query)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
@@ -1415,7 +1543,7 @@ var MongoDB = MongoDB || function() {
 					// TODO?
 					return null
 				}
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1432,7 +1560,7 @@ var MongoDB = MongoDB || function() {
 				this.collection.drop()
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1460,11 +1588,11 @@ var MongoDB = MongoDB || function() {
 				var skip = options.skip || 0
 				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
 				count = this.collection.getCount(query, limit, skip, readPreference)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return count
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1486,11 +1614,11 @@ var MongoDB = MongoDB || function() {
 				query = query ? Public.BSON.to(query) : null
 				readPreference = readPreference ? Public.readPreference(readPreference) : null
 				list = this.collection.distinct(key, query, readPreference)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(list)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1511,11 +1639,11 @@ var MongoDB = MongoDB || function() {
 					array.push(Public.BSON.to(arguments[a]))
 				}
 				result = this.collection.aggregate.apply(this.collection, array)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.aggregationOutput(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1546,11 +1674,11 @@ var MongoDB = MongoDB || function() {
 				var finalizeFn = options.finalizeFn ? String(options.finalizeFn) : null
 				var readPreference = options.readPreference ? Public.readPreference(options.readPreference) : null
 				result = this.collection.group(key, condition, initial, reduceFn, finalizeFn, readPreference)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1566,13 +1694,13 @@ var MongoDB = MongoDB || function() {
 		 * @param [options] Map-reduce options
 		 * @param [options.query] The query to apply before mapping
 		 * @param {String|Object} [options.out={inline:1}]
-		 *        If string, is interpreted as a collection name to which results are simply added. Otherwise:
-		 *        <ul>
-		 *        <li>{inline:1} for inline results (max size of single MongoDB document); see {@link MongoDB.MapReduceResults#getInline}</li>
-		 *        <li>{merge:'collection name'} for merging results</li>
-		 *        <li>{replace:'collection name'} for replacing results</li>
-		 *        <li>{reduce:'collection name'} for calling reduce on existing results</li>
-		 *        </ul>
+		 *   If string, is interpreted as a collection name to which results are simply added. Otherwise:
+		 *   <ul>
+		 *   <li>{inline:1} for inline results (max size of single MongoDB document); see {@link MongoDB.MapReduceResults#getInline}</li>
+		 *   <li>{merge:'collection name'} for merging results</li>
+		 *   <li>{replace:'collection name'} for replacing results</li>
+		 *   <li>{reduce:'collection name'} for calling reduce on existing results</li>
+		 *   </ul>
 		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns {MongoDB.MapReduceResult}
 		 */
@@ -1611,11 +1739,11 @@ var MongoDB = MongoDB || function() {
 				}
 			
 				result = this.collection.mapReduce(String(mapFn), String(reduceFn), out, outputType, query, readPreference)
-				Public.setLastStatus(this.connection, true)
-				return exists(result) ? new MongoDB.MapReduceResult(result, this.connection, this.swallow) : null
+				Public.setLastStatus(this.client, true)
+				return exists(result) ? new MongoDB.MapReduceResult(result, this.client, this.swallow) : null
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1633,11 +1761,11 @@ var MongoDB = MongoDB || function() {
 		this.getIndexInfo = function() {
 			try {
 				var info = Public.BSON.from(this.collection.indexInfo)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(info)
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1663,11 +1791,11 @@ var MongoDB = MongoDB || function() {
 				// Will not do any operation if the cached collection instance
 				// thinks there is an index, so we cannot reliably assume the
 				// connection is working:
-				// Public.setLastStatus(this.connection, true)
+				// Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1689,11 +1817,11 @@ var MongoDB = MongoDB || function() {
 				else {
 					this.collection.dropIndex(Public.BSON.to(index))
 				}
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1711,11 +1839,11 @@ var MongoDB = MongoDB || function() {
 		this.resetOptions = function() {
 			try {
 				this.collection.resetOptions()
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1733,7 +1861,7 @@ var MongoDB = MongoDB || function() {
 			try {
 				var options = []
 				var bits = this.collection.options
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				for (var o in Public.QueryOption) {
 					var option = Public.QueryOption[o]
 					if (bits & option) {
@@ -1743,7 +1871,7 @@ var MongoDB = MongoDB || function() {
 				return options
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1774,11 +1902,11 @@ var MongoDB = MongoDB || function() {
 			}
 			try {
 				this.collection.setOptions(bits)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1806,11 +1934,11 @@ var MongoDB = MongoDB || function() {
 			}
 			try {
 				this.collection.addOption(bits)
-				Public.setLastStatus(this.connection, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.connection, this.swallow)
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1824,15 +1952,15 @@ var MongoDB = MongoDB || function() {
 		
 		config = config || {}
 		this.swallow = exists(config.swallow) ? config.swallow : Public.defaultSwallow
-		this.connection = exists(config.connection) ? config.connection : Public.defaultConnection
+		this.client = exists(config.client) ? config.client : Public.defaultClient
 		this.db = exists(config.db) ? config.db : Public.defaultDb
 				
 		if (exists(this.db) && !(this.db instanceof com.mongodb.DB)) {
 			if (isString(this.db)) {
-				this.db = Public.getDB(this.connection, this.db)
+				this.db = Public.getDB(this.client, this.db)
 			}
 			else {
-				this.db = Public.getDB(this.connection, this.db.name, config.username, config.password)
+				this.db = Public.getDB(this.client, this.db.name, config.username, config.password)
 			}
 		}
 
@@ -1847,7 +1975,7 @@ var MongoDB = MongoDB || function() {
 	
 	//
 	// Private
-    //
+	//
 
 	function exists(value) {
 		// Note the order: we need the value on the right side for Rhino not to complain about non-JS objects
@@ -1861,6 +1989,10 @@ var MongoDB = MongoDB || function() {
 		catch (x) {
 			return false
 		}
+	}
+	
+	function isArray(value) {
+		return Object.prototype.toString.call(value) == '[object Array]'
 	}
 	
 	function removeGlobal(name) {
@@ -1916,35 +2048,40 @@ var MongoDB = MongoDB || function() {
 	// Initialization
 	//
 	
-	// Initialize default connection
-	Public.defaultConnection = getGlobal('defaultConnection')
-	if (!exists(Public.defaultConnection)) {
-		var defaultServers = getGlobal('defaultServers')
-		if (exists(defaultServers)) {
-			Public.defaultConnection = application.getGlobal('defaultConnection', Public.connect(defaultServers, {autoConnectRetry: true}))
+	// Initialize default client
+	Public.defaultClient = getGlobal('defaultClient')
+	if (!exists(Public.defaultClient)) {
+		var defaultUris = getGlobal('defaultUris')
+		if (!exists(defaultUris)) {
+			defaultUris = getGlobal('defaultServers') // legacy; depracated
+		}
+		if (exists(defaultUris)) {
+			var defaultOptions = getGlobal('defaultOptions')
+			Public.defaultClient = application.getGlobal('defaultClient', Public.connect(defaultUris, defaultOptions))
 			try {
+				// Prudence support
 				app.globals.mongoDb = app.globals.mongoDb || {}
-				app.globals.mongoDb.defaultConnection = Public.defaultConnection
+				app.globals.mongoDb.defaultClient = Public.defaultClient
 			} catch(x) {}
 		}
 	}
 	
-	// Initialize default DB (only valid if there is a default connection)
-	if (exists(Public.defaultConnection)) {
+	// Initialize default DB (only valid if there is a default client)
+	if (exists(Public.defaultClient)) {
 		Public.defaultDb = getGlobal('defaultDb')
-		
 		if (exists(Public.defaultDb) && !(Public.defaultDb instanceof com.mongodb.DB)) {
 			if (isString(Public.defaultDb)) {
-				Public.defaultDb = Public.getDB(Public.defaultConnection, Public.defaultDb)
+				Public.defaultDb = Public.getDB(Public.defaultClient, Public.defaultDb)
 			}
 			else {
-				Public.defaultDb = Public.getDB(Public.defaultConnection, Public.defaultDb.name, Public.defaultDb.username, Public.defaultDb.password)
+				Public.defaultDb = Public.getDB(Public.defaultClient, Public.defaultDb.name, Public.defaultDb.username, Public.defaultDb.password)
 			}
 			var existing = application.globals.put('defaultDb', Public.defaultDb)
 			if (exists(existing) && !isString(existing)) {
 				Public.defaultDb = existing
 			}
 			try {
+				// Prudence support
 				app.globals.mongoDb = app.globals.mongoDb || {}
 				app.globals.mongoDb.defaultDb = Public.defaultDb
 			} catch(x) {}
@@ -1956,6 +2093,7 @@ var MongoDB = MongoDB || function() {
 	if (exists(Public.defaultSwallow) && Public.defaultSwallow.booleanValue) {
 		Public.defaultSwallow = Public.defaultSwallow.booleanValue()
 		try {
+			// Prudence support
 			app.globals.mongoDb = app.globals.mongoDb || {}
 			app.globals.mongoDb.defaultSwallow = Public.defaultSwallow
 		} catch(x) {}
