@@ -282,7 +282,7 @@ var MongoDB = MongoDB || function() {
 			}
 			else if (key == 'socketFactory') {
 				// Handle special 'default' value
-				if (isString(value) && (value == 'default')) {
+				if (isString(value) && (value == 'ssl')) {
 					value = new javax.net.ssl.SSLSocketFactory.getDefault()
 				}
 			}
@@ -589,6 +589,7 @@ var MongoDB = MongoDB || function() {
 	Public.uninitialize = function() {
 		removeGlobal('mongoDb.defaultClient')
 		removeGlobal('mongoDb.defaultUris')
+		removeGlobal('mongoDb.defaultOptions')
 		removeGlobal('mongoDb.defaultServers')
 		removeGlobal('mongoDb.defaultSwallow')
 		removeGlobal('mongoDb.defaultDb')
