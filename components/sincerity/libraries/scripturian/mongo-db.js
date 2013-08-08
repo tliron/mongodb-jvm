@@ -28,7 +28,7 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.72
+ * @version 1.73
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -550,7 +550,7 @@ var MongoDB = MongoDB || function() {
 	 * @param {String} name The database name
 	 * @param {String} [username] Optional username for authentication 
 	 * @param {String} [password] Optional password for authentication
-	 * @returns {com.mongodb.DB}
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>}
 	 */
 	Public.getDB = function(client, name, username, password) {
 		var db = client.getDB(name)
@@ -582,7 +582,7 @@ var MongoDB = MongoDB || function() {
 		}
 		application.globals.put('mongoDb.status.' + client.hashCode(), status)
 	}
-	
+
 	/**
 	 * Removes all MongoDB settings from the application globals.
 	 */
@@ -1235,6 +1235,28 @@ var MongoDB = MongoDB || function() {
 	 */
 	Public.Collection = function(name, config) {
 		
+		/**
+		 * Execute custom commands on the collection's DB.
+		 * 
+		 * @param command
+		 * @returns {Object}
+		 */
+		this.command = function(command) {
+			try {
+				command = Public.BSON.to(command)
+				var result = this.collection.getDB().command(command)
+				Public.setLastStatus(this.client, true)
+				return exists(result) ? Public.BSON.from(result).results : null
+			}
+			catch (x if x.javaException instanceof com.mongodb.MongoException) {
+				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+				if (x) {
+					throw x
+				}
+				return null
+			}
+		}
+
 		// Document retrieval
 		
 		/**
@@ -1312,20 +1334,7 @@ var MongoDB = MongoDB || function() {
 					command[k] = options[k]
 				}
 			}
-			try {
-				var result
-				command = Public.BSON.to(command)
-				result = this.collection.getDB().command(command)
-				Public.setLastStatus(this.client, true)
-				return exists(result) ? Public.BSON.from(result).results : null
-			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
-				if (x) {
-					throw x
-				}
-				return null
-			}
+			return this.command(command)
 		}
 		
 		// Document modification
@@ -1348,7 +1357,7 @@ var MongoDB = MongoDB || function() {
 				update = update ? Public.BSON.to(update) : null
 				multi = multi == true
 				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = this.collection.update(query, update, false, multi, writeConcern)
+				result = exists(writeConcern) ? this.collection.update(query, update, false, multi, writeConcern) : this.collection.update(query, update, false, multi)
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1411,7 +1420,7 @@ var MongoDB = MongoDB || function() {
 				update = update ? Public.BSON.to(update) : null
 				multi = multi == true
 				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = this.collection.update(query, update, true, multi, writeConcern)
+				result = exists(writeConcern) ? this.collection.update(query, update, true, multi, writeConcern) : this.collection.update(query, update, true, multi)
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1438,7 +1447,7 @@ var MongoDB = MongoDB || function() {
 				var result
 				var bson = Public.BSON.to(doc)
 				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = this.collection.save(bson, writeConcern)
+				result = exists(writeConcern) ? this.collection.save(bson, writeConcern) : this.collection.save(bson) 
 				doc._id = bson.get('_id')
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
@@ -1511,7 +1520,7 @@ var MongoDB = MongoDB || function() {
 				var result
 				query = query ? Public.BSON.to(query) : null
 				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = this.collection.remove(query, writeConcern)
+				result = exists(writeConcern) ? this.collection.remove(query, writeConcern) : this.collection.remove(query)
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
