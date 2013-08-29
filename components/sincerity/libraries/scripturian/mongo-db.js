@@ -28,7 +28,7 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.73
+ * @version 1.74
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -206,10 +206,11 @@ var MongoDB = MongoDB || function() {
 	 * one MongoDB client to the same set of MongoDB instances in the same JVM,
 	 * thus it is recommended to store it in Prudence's application.sharedGlobals.
 	 * 
-	 * @param {String|String[]} [uris='localhost:27017']
-	 *   A URI or array of URIs of the MongoDB instances to connect to.
-	 *   URIs are in the form of "host" or "host:port". "host" can be an IP address or domain name.
-	 * @param [options]
+	 * @param {String|String[]} [uris='mongodb://localhost:27017']
+	 *   A <a href="http://docs.mongodb.org/manual/reference/connection-string/">MongoDB connection string</a> or one or an array of
+	 *   server addresses of the MongoDB instances to connect to. Server addresses are in the form of "host" or "host:port".
+	 *   "host" can be an IP address or domain name.
+	 * @param [options] Options are only used if you are not using a MongoDB connection string for 'uris'
 	 * @param {Boolean} [options.alwaysUseMBeans] Sets whether JMX beans registered by the driver should always be MBeans
 	 * @param {Boolean} [options.autoConnectRetry=true] True if failed connections are retried
 	 * @param {Number} [options.connectionsPerHost] Pool size per URI
@@ -229,6 +230,7 @@ var MongoDB = MongoDB || function() {
 	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 */
 	Public.connect = function(uris, options) {
+		var mongoUri
 		if (!exists(uris) || (uris.length == 0)) {
 			uris = 'localhost:27017'
 		}
@@ -241,7 +243,12 @@ var MongoDB = MongoDB || function() {
 			uris = array
 		}
 		else {
-			uris = new com.mongodb.ServerAddress(uris)
+			if (uris.substring(0, 8) == 'mongodb:') {
+				mongoUri = new com.mongodb.MongoClientURI(uris)
+			}
+			else {
+				uris = new com.mongodb.ServerAddress(uris)
+			}
 		}
 		
 		if (!exists(options)) {
@@ -249,12 +256,6 @@ var MongoDB = MongoDB || function() {
 			options = {
 				autoConnectRetry: true
 			}
-		}
-		
-		if (!exists(options.writeConcern)) {
-			// This is enforced since Java driver version 2.10.0, but
-			// we want to make sure this is always true for consistency
-			options.writeConcern = Public.WriteConcern.acknowledged
 		}
 		
 		var username
@@ -269,29 +270,41 @@ var MongoDB = MongoDB || function() {
 			delete options.password
 		}
 		
-		// Convert options to MongoClientOptions
-		var builder = com.mongodb.MongoClientOptions.builder()
-		for (var key in options) {
-			var value = options[key]
-			
-			if (key == 'writeConcern') {
-				value = Public.writeConcern(value)
-			}
-			else if (key == 'readPreference') {
-				value = Public.readPreference(value)
-			}
-			else if (key == 'socketFactory') {
-				// Handle special 'default' value
-				if (isString(value) && (value == 'ssl')) {
-					value = new javax.net.ssl.SSLSocketFactory.getDefault()
-				}
-			}
-				
-			builder = builder[key](value)
+		var client
+		if (exists(mongoUri)) {
+			client = new com.mongodb.MongoClient(mongoUri)
 		}
-		options = builder.build()
+		else {
+			if (!exists(options.writeConcern)) {
+				// This is enforced since Java driver version 2.10.0, but
+				// we want to make sure this is always true for consistency
+				options.writeConcern = Public.WriteConcern.acknowledged
+			}
+			
+			// Convert options to MongoClientOptions
+			var builder = com.mongodb.MongoClientOptions.builder()
+			for (var key in options) {
+				var value = options[key]
+				
+				if (key == 'writeConcern') {
+					value = Public.writeConcern(value)
+				}
+				else if (key == 'readPreference') {
+					value = Public.readPreference(value)
+				}
+				else if (key == 'socketFactory') {
+					// Handle special 'default' value
+					if (isString(value) && (value == 'ssl')) {
+						value = new javax.net.ssl.SSLSocketFactory.getDefault()
+					}
+				}
+					
+				builder = builder[key](value)
+			}
+			options = builder.build()
 		
-		var client = new com.mongodb.MongoClient(uris, options)
+			client = new com.mongodb.MongoClient(uris, options)
+		}
 		
 		if (exists(username) && exists(password)) {
 			// Authenticate the 'admin' database
