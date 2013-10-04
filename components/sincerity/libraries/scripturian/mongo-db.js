@@ -28,7 +28,7 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.74
+ * @version 1.75
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -606,6 +606,40 @@ var MongoDB = MongoDB || function() {
 		removeGlobal('mongoDb.defaultServers')
 		removeGlobal('mongoDb.defaultSwallow')
 		removeGlobal('mongoDb.defaultDb')
+	}
+	
+	/**
+	 * Recursively "sanitizes" a JSON-compatible object by removing
+	 * all "$" prefixes from keys.
+	 * <p>
+	 * Note that this changes the value in-place!
+	 * 
+	 * @param {Object} value The object to sanitize
+	 * @returns {Object} The sanitized object
+	 */
+	Public.sanitize = function(value) {
+		if (isArray(value)) {
+			for (var k in value) {
+				Public.sanitize(value[k])
+			}
+		}
+		else if (isDict(value)) {
+			for (var k in value) {
+				if (k[0] == '$') {
+					var v = value[k]
+					delete value[k]
+					var n = k.substring(1)
+					if (undefined === value[n]) {
+						value[n] = v
+					}
+					Public.sanitize(value[n])
+				}
+				else {
+					Public.sanitize(value[k])
+				}
+			}
+		}
+		return value
 	}
 	
 	/**
@@ -2016,6 +2050,10 @@ var MongoDB = MongoDB || function() {
 	
 	function isArray(value) {
 		return Object.prototype.toString.call(value) == '[object Array]'
+	}
+	
+	function isDict(value) {
+		return (typeof value == 'object') && !(value instanceof Date) && !(value instanceof RegExp) && !isArray(value)
 	}
 	
 	function removeGlobal(name) {
