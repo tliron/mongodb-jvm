@@ -1590,7 +1590,7 @@ var MongoDB = MongoDB || function() {
 		this.findAndRemove = function(query, options) {
 			options = options || {}
 			options.remove = true
-			return this.findAndModify(query, options)
+			return this.findAndModify(query, null, options)
 		}
 		
 		/**
