@@ -28,7 +28,7 @@
  * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.75
+ * @version 1.76
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -1391,20 +1391,29 @@ var MongoDB = MongoDB || function() {
 		 * 
 		 * @param query The query
 		 * @param update The update
-		 * @param {Boolean} [multi=false] True to update all documents, false to update
+		 * @param [options] Update options
+		 * @param {Boolean} [options.multi=false] True to update all documents, false to update
 		 *	only the first document matching the query
-		 * @param [writeConcern] See {@link MongoDB#writeConcern}
+		 * @param {Boolean} [options.upsert=false] True to uspert (see {@link #upsert})
+		 * @param [options.writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #upsert
 		 */
-		this.update = function(query, update, multi, writeConcern) {
+		this.update = function(query, update, options) {
+			// Compatibility with previous versions of API
+			if (typeof options == 'boolean') {
+				options = {multi: arguments[2], writeConcern: arguments[3]}
+			}
+			
 			try {
 				var result
 				query = query ? Public.BSON.to(query) : null
 				update = update ? Public.BSON.to(update) : null
-				multi = multi == true
-				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = exists(writeConcern) ? this.collection.update(query, update, false, multi, writeConcern) : this.collection.update(query, update, false, multi)
+				options = options || {}
+				var multi = options.multi == true
+				var upsert = options.upsert == true
+				var writeConcern = exists(options.writeConcern) ? Public.writeConcern(options.writeConcern) : null
+				result = exists(writeConcern) ? this.collection.update(query, update, upsert, multi, writeConcern) : this.collection.update(query, update, upsert, multi)
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
@@ -1452,32 +1461,18 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Like {@link #update}, but if no document is found works similary to {@link #insert}, 
 		 * creating a default _id if not provided.
+		 * <p>
+		 * Identical to calling {@link #update} with options.upsert=true.
 		 * 
 		 * @param query The query
 		 * @param update The update
-		 * @param {Boolean} [multi=false] True to update all documents, false to update
-		 *   only the first document matching the query
-		 * @param [writeConcern] See {@link MongoDB#writeConcern}
+		 * @param [options] See {@link #update}
 		 * @returns See {@link MongoDB#result}
 		 */
-		this.upsert = function(query, update, multi, writeConcern) {
-			try {
-				var result
-				query = query ? Public.BSON.to(query) : null
-				update = update ? Public.BSON.to(update) : null
-				multi = multi == true
-				writeConcern = exists(writeConcern) ? Public.writeConcern(writeConcern) : null
-				result = exists(writeConcern) ? this.collection.update(query, update, true, multi, writeConcern) : this.collection.update(query, update, true, multi)
-				Public.setLastStatus(this.client, true)
-				return exists(result) ? Public.result(result) : null
-			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
-				if (x) {
-					throw x
-				}
-				return null
-			}
+		this.upsert = function(query, update, options) {
+			options = options || {}
+			options.upsert = true
+			return this.update(query, update, options)
 		}
 
 		/**
@@ -1523,6 +1518,7 @@ var MongoDB = MongoDB || function() {
 		 * @param [options.sort] The sort to apply
 		 * @param {Boolean} [options.returnNew=false] True to return the modified document
 		 * @param {Boolean} [options.upsert=false] True to insert if not found
+		 * @param {Boolean} [options.remove=false] True to remove the result (see {@link #findAndRemove})
 		 * @returns The document or null if not found (see options.returnNew param)
 		 */
 		this.findAndModify = function(query, update, options) {
@@ -1533,9 +1529,10 @@ var MongoDB = MongoDB || function() {
 				options = options || {}
 				var fields = options.fields ? Public.BSON.to(options.fields) : null
 				var sort = options.sort ? Public.BSON.to(options.sort) : null
-				var returnNew = options.returnNew || false
-				var upsert = options.upsert || false
-				doc = this.collection.findAndModify(query, fields, sort, false, update, returnNew, upsert)
+				var remove = options.remove == true
+				var returnNew = options.returnNew == true
+				var upsert = options.upsert == true
+				doc = this.collection.findAndModify(query, fields, sort, remove, update, returnNew, upsert)
 				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
@@ -1582,30 +1579,18 @@ var MongoDB = MongoDB || function() {
 		
 		/**
 		 * Removes a single document and returns its last value.
+		 * <p>
+		 * Identical to calling {@link #findAndModify} with options.remove=true.
 		 * 
 		 * @param query The query
+		 * @para [options] See {@link #findAndModify}
 		 * @returns The document or null if not found
 		 * @see #remove
 		 */
-		this.findAndRemove = function(query) {
-			try {
-				var doc
-				query = query ? Public.BSON.to(query) : null
-				doc = this.collection.findAndRemove(query)
-				Public.setLastStatus(this.client, true)
-				return Public.BSON.from(doc)
-			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				if (x.javaException.code == MongoDB.Error.NotFound) {
-					// TODO?
-					return null
-				}
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
-				if (x) {
-					throw x
-				}
-				return null
-			}
+		this.findAndRemove = function(query, options) {
+			options = options || {}
+			options.remove = true
+			return this.findAndModify(query, options)
 		}
 		
 		/**
