@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<project name="MongoDB Rhino" default="build" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="MongoDB JVM" default="build" xmlns:ivy="antlib:org.apache.ivy.ant">
 
 	<property name="root" location="${basedir}/.." />
 
@@ -95,8 +95,9 @@
 			<fileset dir="${component.notices}" />
 		</copy>
 		<ivy:retrieve type="jar" pattern="${distribution.jars.pattern}" log="quiet" resolveId="${component}" />
-		<!-- Don't include Rhino in the distribution, it's too big! -->
+		<!-- Don't include engines in the distribution, they're too big! -->
 		<delete dir="${distribution.jars}/org.mozilla" />
+		<delete dir="${distribution.jars}/jdk.nashorn" />
 	</target>
 
 	<target name="deploy-maven" if="maven" description="Deploy to Maven repository">

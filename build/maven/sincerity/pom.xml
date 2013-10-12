@@ -10,12 +10,12 @@
 
 	<name>Sincerity MongoDB Library</name>
 	<description>A Sincerity library for MongoDB.</description>
-	<url>http://code.google.com/p/mongodb-rhino/</url>
+	<url>http://code.google.com/p/mongodb-jvm/</url>
 	<inceptionYear>2010</inceptionYear>
 
 	<scm>
-		<connection>scm:git:https://code.google.com/p/mongodb-rhino/</connection>
-		<url>http://code.google.com/p/mongodb-rhino/source/browse/</url>
+		<connection>scm:git:https://code.google.com/p/mongodb-jvm/</connection>
+		<url>http://code.google.com/p/mongodb-jvm/source/browse/</url>
 	</scm>
 
 	<organization>
@@ -55,7 +55,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.mongodb</groupId>
-			<artifactId>rhino-driver</artifactId>
+			<artifactId>jvm-driver</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
 	</dependencies>

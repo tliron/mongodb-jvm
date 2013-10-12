@@ -8,18 +8,24 @@
  * limitations, transferable or non-transferable, directly from Three Crickets
  * at http://threecrickets.com/
  */
-package com.mongodb.rhino.test;
+package com.mongodb.jvm.test;
 
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ImporterTopLevel;
-import org.mozilla.javascript.Scriptable;
+import java.io.PrintWriter;
+
+import jdk.nashorn.internal.runtime.Context;
+import jdk.nashorn.internal.runtime.ErrorManager;
+import jdk.nashorn.internal.runtime.ScriptFunction;
+import jdk.nashorn.internal.runtime.ScriptObject;
+import jdk.nashorn.internal.runtime.ScriptRuntime;
+import jdk.nashorn.internal.runtime.Source;
+import jdk.nashorn.internal.runtime.options.Options;
 
 /**
  * Test BSON and JSON conversion.
  * 
  * @author Tal Liron
  */
-public class Test
+public class TestNashorn
 {
 	//
 	// Main
@@ -32,7 +38,7 @@ public class Test
 		toJSON( array );
 		toJSON( object );
 		fromJSON( object, ".children[3].name" );
-		fromJSON( object, ".children[5].toString()" );
+		fromJSON( object, ".children[5]" );
 		toFromJSON( object );
 		toBSON( array, "get(4).getClass()" );
 		toBSON( array, "get(5).getClass()" );
@@ -47,7 +53,7 @@ public class Test
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "importClass(java.lang.System, com.mongodb.rhino.BSON); JSON = new com.mongodb.rhino.MongoJsonImplementation();";
+	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); JSON = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation();";
 
 	private static void toJSON( String object )
 	{
@@ -71,9 +77,15 @@ public class Test
 
 	private static void run( String script )
 	{
-		Context context = Context.enter();
-		Scriptable scope = new ImporterTopLevel( context );
-		context.initStandardObjects();
-		context.evaluateString( scope, script, "<cmd>", 1, null );
+		PrintWriter out = new PrintWriter( System.out, true );
+		PrintWriter err = new PrintWriter( System.err, true );
+		Options options = new Options( "nashorn", err );
+		options.set( "print.no.newline", true );
+		ErrorManager errors = new ErrorManager( err );
+		Context context = new Context( options, errors, out, err, Thread.currentThread().getContextClassLoader() );
+		ScriptObject globalScope = context.createGlobal();
+		Context.setGlobal( globalScope );
+		ScriptFunction fn = context.compileScript( new Source( TestNashorn.class.getCanonicalName(), script ), globalScope );
+		ScriptRuntime.apply( fn, globalScope );
 	}
 }

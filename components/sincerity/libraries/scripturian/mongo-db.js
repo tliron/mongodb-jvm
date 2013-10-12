@@ -19,16 +19,16 @@
 //
 
 /**
- * MongoDB API for Prudence. Uses the MongoDB Java driver.
+ * <a href="http://www.mongodb.org/">MongoDB site</a> API for
+ * <a href="http://threecrickets.com/prudence/">Prudence</a>.
+ * <p>
+ * Uses the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a>
+ * and the <a href="http://code.google.com/p/mongodb-jvm/">MongoDB JVM project</a>.
  * 
  * @namespace
- * @requires com.mongodb.jar, com.mongodb.rhino.jar
- * @see Visit the <a href="http://www.mongodb.org/">MongoDB site</a>;
- * @see Visit the <a href="http://code.google.com/p/mongodb-rhino/">MongoDB Rhino project</a>;
- * @see Visit the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a> 
  * 
  * @author Tal Liron
- * @version 1.76
+ * @version 1.77
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -38,22 +38,16 @@ var MongoDB = MongoDB || function() {
 	 * The logger.
 	 * 
 	 * @field
-	 * @returns {java.util.Logger}
+	 * @returns {java.util.logging.Logger}
 	 */
-	Public.logger = application.getSubLogger('mongodb')
+	Public.logger = (exists(application) && exists(application.getSubLogger)) ? application.getSubLogger('mongodb') : java.util.logging.Logger.getLogger('mongodb')
 
 	/**
 	 * @field
-	 * @returns {com.mongodb.rhino.BSON}
+	 * @returns {com.mongodb.jvm.BSON}
 	 */
-	Public.BSON = com.mongodb.rhino.BSON
+	Public.BSON = com.mongodb.jvm.BSON
 	
-	/**
-	 * @field
-	 * @returns {com.mongodb.rhino.JSON}
-	 */
-	Public.JSON = com.mongodb.rhino.JSON
-
 	/**
 	 * Common MongoDB error codes
 	 * 
@@ -2149,8 +2143,8 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	// Support for extended JSON
-	if (Object.prototype.toString.call(com.threecrickets.rhino.JSON) == '[object JavaClass]') {
-		com.threecrickets.rhino.JSON.implementation = new com.mongodb.rhino.MongoJsonImplementation()
+	if (Object.prototype.toString.call(com.threecrickets.jvm.json.JSON) == '[object JavaClass]') {
+		com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation()
 	}
 	
 	return Public

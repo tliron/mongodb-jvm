@@ -4,18 +4,18 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.mongodb</groupId>
-	<artifactId>rhino-driver-project</artifactId>
+	<artifactId>jvm-driver-project</artifactId>
 	<version>@VERSION@</version>
 	<packaging>pom</packaging>
 
-	<name>MongoDB Rhino Driver: Project</name>
-	<description>Adds some JavaScript-specific friendliness to the MongoDB Java driver.</description>
-	<url>http://code.google.com/p/mongodb-rhino/</url>
+	<name>MongoDB JVM Driver: Project</name>
+	<description>Adds some JVM language engine friendliness to the MongoDB Java driver.</description>
+	<url>http://code.google.com/p/mongodb-jvm/</url>
 	<inceptionYear>2010</inceptionYear>
 
 	<scm>
-		<connection>scm:git:https://code.google.com/p/mongodb-rhino/</connection>
-		<url>http://code.google.com/p/mongodb-rhino/source/browse/</url>
+		<connection>scm:git:https://code.google.com/p/mongodb-jvm/</connection>
+		<url>http://code.google.com/p/mongodb-jvm/source/browse/</url>
 	</scm>
 
 	<organization>
@@ -41,7 +41,7 @@
 	</developers>
 
 	<modules>
-		<module>mongodb-rhino</module>
+		<module>mongodb-jvm</module>
 		<module>sincerity</module>
 	</modules>
 

@@ -9,14 +9,20 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.rhino;
+package com.mongodb.jvm.nashorn;
 
-import com.threecrickets.rhino.JsonImplementation;
+import com.threecrickets.jvm.json.nashorn.NashornJsonImplementation;
 
-public class MongoJsonImplementation extends JsonImplementation
+/**
+ * A {@link NashornJsonImplementation} that uses
+ * {@link MongoNashornJsonExtender}.
+ * 
+ * @author Tal Liron
+ */
+public class MongoNashornJsonImplementation extends NashornJsonImplementation
 {
-	public MongoJsonImplementation()
+	public MongoNashornJsonImplementation()
 	{
-		super( new MongoJsonExtender() );
+		super( new MongoNashornJsonExtender() );
 	}
 }
