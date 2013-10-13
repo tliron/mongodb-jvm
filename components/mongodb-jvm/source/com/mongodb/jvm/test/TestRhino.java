@@ -28,7 +28,7 @@ public class TestRhino
 	public static void main( String[] arguments )
 	{
 		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date(), {$ref: 'test', $id: '4d5595e3f7f2d14d2ab9630f'}, {$regex: 'myreg'}]";
-		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi}";
+		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi, file:new java.io.File('/my-file/')}";
 		toJSON( array );
 		toJSON( object );
 		fromJSON( object, ".children[3].name" );
@@ -47,7 +47,7 @@ public class TestRhino
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "importClass(java.lang.System, com.mongodb.jvm.BSON); BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation(); JSON = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation();";
+	private static final String base = "importClass(java.lang.System, com.mongodb.jvm.BSON); BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation(); JSON = com.threecrickets.jvm.json.JSON; JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation();";
 
 	private static void toJSON( String object )
 	{

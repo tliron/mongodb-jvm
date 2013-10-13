@@ -82,25 +82,25 @@ public class RhinoBsonImplementation implements BsonImplementation
 		{
 			// Convert Rhino array to list
 
-			NativeArray array = (NativeArray) object;
-			int length = (int) array.getLength();
+			NativeArray nativeArray = (NativeArray) object;
+			int length = (int) nativeArray.getLength();
 			ArrayList<Object> bson = new ArrayList<Object>( length );
 
 			for( int i = 0; i < length; i++ )
-				bson.add( to( ScriptableObject.getProperty( array, i ) ) );
+				bson.add( to( ScriptableObject.getProperty( nativeArray, i ) ) );
 
 			return bson;
 		}
 		else if( object instanceof ScriptableObject )
 		{
-			ScriptableObject scriptable = (ScriptableObject) object;
+			ScriptableObject scriptableObject = (ScriptableObject) object;
 
 			// Is it in extended JSON format?
-			Object r = jsonExtender.from( scriptable, false );
+			Object r = jsonExtender.from( scriptableObject, false );
 			if( r != null )
 				return r;
 
-			r = RhinoNativeUtil.from( scriptable );
+			r = RhinoNativeUtil.from( scriptableObject );
 			if( r != null )
 				return r;
 
@@ -108,11 +108,11 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 			BasicDBObject bson = new BasicDBObject();
 
-			Object[] ids = scriptable.getAllIds();
+			Object[] ids = scriptableObject.getAllIds();
 			for( Object id : ids )
 			{
 				String key = id.toString();
-				Object value = to( ScriptableObject.getProperty( scriptable, key ) );
+				Object value = to( ScriptableObject.getProperty( scriptableObject, key ) );
 				bson.put( key, value );
 			}
 
@@ -149,28 +149,28 @@ public class RhinoBsonImplementation implements BsonImplementation
 			// Convert list to NativeArray
 
 			List<?> list = (List<?>) object;
-			Scriptable array = RhinoNativeUtil.newArray( list.size() );
+			Scriptable scriptable = RhinoNativeUtil.newArray( list.size() );
 
 			int index = 0;
 			for( Object item : list )
-				ScriptableObject.putProperty( array, index++, from( item, extendedJSON ) );
+				ScriptableObject.putProperty( scriptable, index++, from( item, extendedJSON ) );
 
-			return array;
+			return scriptable;
 		}
 		else if( object instanceof BSONObject )
 		{
 			// Convert BSON object to NativeObject
 
 			BSONObject bsonObject = (BSONObject) object;
-			Scriptable nativeObject = RhinoNativeUtil.newObject();
+			Scriptable scriptable = RhinoNativeUtil.newObject();
 
 			for( String key : bsonObject.keySet() )
 			{
 				Object value = from( bsonObject.get( key ), extendedJSON );
-				ScriptableObject.putProperty( nativeObject, key, value );
+				ScriptableObject.putProperty( scriptable, key, value );
 			}
 
-			return nativeObject;
+			return scriptable;
 		}
 		else if( object instanceof Symbol )
 		{

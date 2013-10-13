@@ -13,7 +13,6 @@ package com.mongodb.jvm.nashorn;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -98,14 +97,14 @@ public class NashornBsonImplementation implements BsonImplementation
 		}
 		else if( object instanceof ScriptObject )
 		{
-			ScriptObject script = (ScriptObject) object;
+			ScriptObject scriptObject = (ScriptObject) object;
 
 			// Is it in extended JSON format?
-			Object r = jsonExtender.from( script, false );
+			Object r = jsonExtender.from( scriptObject, false );
 			if( r != null )
 				return r;
 
-			r = NashornNativeUtil.from( script );
+			r = NashornNativeUtil.from( scriptObject );
 			if( r != null )
 				return r;
 
@@ -113,10 +112,9 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			BasicDBObject bson = new BasicDBObject();
 
-			for( Iterator<String> i = script.propertyIterator(); i.hasNext(); )
+			for( String key : scriptObject.getOwnKeys( true ) )
 			{
-				String key = i.next();
-				Object value = to( getProperty( script, key ) );
+				Object value = to( getProperty( scriptObject, key ) );
 				bson.put( key, value );
 			}
 
@@ -210,9 +208,9 @@ public class NashornBsonImplementation implements BsonImplementation
 
 	private final MongoNashornJsonExtender jsonExtender = new MongoNashornJsonExtender();
 
-	private static Object getProperty( ScriptObject script, String key )
+	private static Object getProperty( ScriptObject scriptObject, String key )
 	{
-		Object value = script.get( key );
+		Object value = scriptObject.get( key );
 		if( value instanceof Undefined )
 			return null;
 		return value;

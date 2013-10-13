@@ -11,8 +11,11 @@
 
 package com.mongodb.jvm;
 
+import com.mongodb.jvm.nashorn.MongoNashornJsonImplementation;
 import com.mongodb.jvm.nashorn.NashornBsonImplementation;
+import com.mongodb.jvm.rhino.MongoRhinoJsonImplementation;
 import com.mongodb.jvm.rhino.RhinoBsonImplementation;
+import com.threecrickets.jvm.json.JSON;
 
 /**
  * Conversion between native JVM language objects and BSON.
@@ -83,6 +86,33 @@ public class BSON
 	public static Object from( Object object, boolean extendedJSON )
 	{
 		return getImplementation().from( object, extendedJSON );
+	}
+
+	/**
+	 * Enable extended JSON (if JSON is available).
+	 */
+	public static void enableExtendedJSON()
+	{
+		try
+		{
+			try
+			{
+				JSON.setImplementation( new MongoNashornJsonImplementation() );
+			}
+			catch( NoClassDefFoundError x )
+			{
+				// Nashorn not available
+				JSON.setImplementation( new MongoRhinoJsonImplementation() );
+			}
+			catch( UnsupportedClassVersionError x )
+			{
+				// Nashorn requires at least JVM 7
+				JSON.setImplementation( new MongoRhinoJsonImplementation() );
+			}
+		}
+		catch( Throwable x )
+		{
+		}
 	}
 
 	// //////////////////////////////////////////////////////////////////////////

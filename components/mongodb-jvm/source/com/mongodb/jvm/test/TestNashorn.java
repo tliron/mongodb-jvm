@@ -34,7 +34,7 @@ public class TestNashorn
 	public static void main( String[] arguments )
 	{
 		String array = "[1, 2, 3, {name:'MyChild'}, {$oid:'47cc67093475061e3d95369d'}, new Date(), {$ref: 'test', $id: '4d5595e3f7f2d14d2ab9630f'}, {$regex: 'myreg'}]";
-		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi}";
+		String object = "{name:'MyObject', children:" + array + ", id:{$oid:'47cc67093475061e3d95369d'}, more:{more:{more:'test'}}, regular:/[w.]+/gi, file:new java.io.File('/my-file/')}";
 		toJSON( array );
 		toJSON( object );
 		fromJSON( object, ".children[3].name" );
@@ -53,7 +53,7 @@ public class TestNashorn
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); JSON = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation();";
+	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); importClass(com.threecrickets.jvm.json.JSON); JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation();";
 
 	private static void toJSON( String object )
 	{

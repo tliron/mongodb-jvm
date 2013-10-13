@@ -71,9 +71,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 	// RhinoJsonExtender
 	//
 
-	public Object from( ScriptObject script, boolean rhino )
+	public Object from( ScriptObject scriptObject, boolean rhino )
 	{
-		Object longValue = getProperty( script, "$long" );
+		Object longValue = getProperty( scriptObject, "$long" );
 		if( longValue != null )
 		{
 			// Convert extended JSON $long format to Long
@@ -93,7 +93,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 		}
 
-		Object integerValue = getProperty( script, "$integer" );
+		Object integerValue = getProperty( scriptObject, "$integer" );
 		if( integerValue != null )
 		{
 			// Convert extended JSON $integer format to Integer
@@ -113,7 +113,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 		}
 
-		Object undefined = getProperty( script, "$undefined" );
+		Object undefined = getProperty( scriptObject, "$undefined" );
 		if( undefined != null )
 		{
 			// Convert extended JSON $undefined format to JavaScript undefined
@@ -121,7 +121,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			return Undefined.getUndefined();
 		}
 
-		Object functionValue = getProperty( script, "$function" );
+		Object functionValue = getProperty( scriptObject, "$function" );
 		if( functionValue != null )
 		{
 			// Convert extended JSON $function format to JavaScript function
@@ -129,7 +129,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			return NashornNativeUtil.toFunction( functionValue );
 		}
 
-		Object dateValue = getProperty( script, "$date" );
+		Object dateValue = getProperty( scriptObject, "$date" );
 		if( dateValue != null )
 		{
 			// Convert extended JSON $date format to Rhino/JVM date
@@ -180,7 +180,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 				return date;
 		}
 
-		Object timestampValue = getProperty( script, "$timestamp" );
+		Object timestampValue = getProperty( scriptObject, "$timestamp" );
 		if( timestampValue != null )
 		{
 			// Convert extended JSON $timestamp format to MongoDB BSONTimestamp
@@ -214,13 +214,13 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 		if( rhino )
 		{
-			Object regex = getProperty( script, "$regex" );
+			Object regex = getProperty( scriptObject, "$regex" );
 			if( regex != null )
 			{
 				// Convert extended JSON $regex format to Rhino RegExp
 
 				String source = regex.toString();
-				Object options = getProperty( script, "$options" );
+				Object options = getProperty( scriptObject, "$options" );
 				String optionsString = "";
 				if( options != null )
 					optionsString = options.toString();
@@ -229,7 +229,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 		}
 
-		Object oid = getProperty( script, "$oid" );
+		Object oid = getProperty( scriptObject, "$oid" );
 		if( oid != null )
 		{
 			// Convert extended JSON $oid format to MongoDB ObjectId
@@ -237,23 +237,23 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			return new ObjectId( oid.toString() );
 		}
 
-		Object binary = getProperty( script, "$binary" );
+		Object binary = getProperty( scriptObject, "$binary" );
 		if( binary != null )
 		{
 			// Convert extended JSON $binary format to MongoDB Binary
 
-			Object type = getProperty( script, "$type" );
+			Object type = getProperty( scriptObject, "$type" );
 			byte typeNumber = type != null ? Byte.valueOf( type.toString(), 16 ) : 0;
 			byte[] data = Base64.decodeFast( binary.toString() );
 			return new Binary( typeNumber, data );
 		}
 
-		Object ref = getProperty( script, "$ref" );
+		Object ref = getProperty( scriptObject, "$ref" );
 		if( ref != null )
 		{
 			// Convert extended JSON $ref format to MongoDB DBRef
 
-			Object id = getProperty( script, "$id" );
+			Object id = getProperty( scriptObject, "$id" );
 			if( id != null )
 			{
 				String idString = null;
@@ -273,28 +273,6 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 		return null;
 	}
 
-	/**
-	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern,
-	 * java.lang.Long, and JavaScript Date, RegExp and Function objects to
-	 * MongoDB's extended JSON.
-	 * <p>
-	 * Note that java.lang.Long will be converted only if necessary in order to
-	 * preserve its value when converted to a JavaScript Number object.
-	 * <p>
-	 * The output can be either a native Rhino object or a java.util.HashMap.
-	 * <p>
-	 * A special "JavaScript" mode allows dumping JavaScript literals (for Date,
-	 * RegExp and functions), though note this will break JSON compatibility!
-	 * 
-	 * @param object
-	 * @param nashorn
-	 *        True to create Rhino native objects, otherwise a java.util.HashMap
-	 *        will be used
-	 * @param javaScript
-	 *        True to allow JavaScript literals (these will break JSON
-	 *        compatibility!)
-	 * @return A JavaScript object, a java.util.HashMap or null if not converted
-	 */
 	public Object to( Object object, boolean nashorn, boolean javaScript )
 	{
 		if( object instanceof Long )
@@ -314,9 +292,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$long", longString, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$long", longString, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -336,9 +314,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 			else if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$date", NashornNativeUtil.wrap( time ), false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$date", NashornNativeUtil.wrap( time ), false );
+				return scriptObject;
 			}
 			else
 			{
@@ -362,10 +340,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 			else if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$regex", regExp[0], false );
-				nativeObject.put( "$options", regExp[1], false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$regex", regExp[0], false );
+				scriptObject.put( "$options", regExp[1], false );
+				return scriptObject;
 			}
 			else
 			{
@@ -387,9 +365,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 			else if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$function", source, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$function", source, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -408,9 +386,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 				long timestamp = ( (Number) time ).longValue();
 				if( nashorn )
 				{
-					ScriptObject nativeObject = NashornNativeUtil.newObject();
-					nativeObject.put( "$date", timestamp, false );
-					return nativeObject;
+					ScriptObject scriptObject = NashornNativeUtil.newObject();
+					scriptObject.put( "$date", timestamp, false );
+					return scriptObject;
 				}
 				else
 				{
@@ -446,10 +424,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			}
 			else if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$regex", regex, false );
-				nativeObject.put( "$options", options, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$regex", regex, false );
+				scriptObject.put( "$options", options, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -466,9 +444,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			String oid = ( (ObjectId) object ).toStringMongod();
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$oid", oid, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$oid", oid, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -486,10 +464,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			String type = Integer.toHexString( binary.getType() );
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$binary", data, false );
-				nativeObject.put( "$type", type, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$binary", data, false );
+				scriptObject.put( "$type", type, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -508,10 +486,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			String type = Integer.toHexString( 0 );
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$binary", data, false );
-				nativeObject.put( "$type", type, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$binary", data, false );
+				scriptObject.put( "$type", type, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -538,10 +516,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "$ref", collection, false );
-				nativeObject.put( "$id", idString, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "$ref", collection, false );
+				scriptObject.put( "$id", idString, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -561,10 +539,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			if( nashorn )
 			{
-				ScriptObject nativeObject = NashornNativeUtil.newObject();
-				nativeObject.put( "t", t, false );
-				nativeObject.put( "i", i, false );
-				return nativeObject;
+				ScriptObject scriptObject = NashornNativeUtil.newObject();
+				scriptObject.put( "t", t, false );
+				scriptObject.put( "i", i, false );
+				return scriptObject;
 			}
 			else
 			{
@@ -581,9 +559,9 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static Object getProperty( ScriptObject script, String key )
+	private static Object getProperty( ScriptObject scriptObject, String key )
 	{
-		Object value = script.get( key );
+		Object value = scriptObject.get( key );
 		if( value instanceof Undefined )
 			return null;
 		return value;

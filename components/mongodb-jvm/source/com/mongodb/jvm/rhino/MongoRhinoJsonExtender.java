@@ -70,9 +70,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 	// RhinoJsonExtender
 	//
 
-	public Object from( ScriptableObject scriptable, boolean rhino )
+	public Object from( ScriptableObject scriptableObject, boolean rhino )
 	{
-		Object longValue = getProperty( scriptable, "$long" );
+		Object longValue = getProperty( scriptableObject, "$long" );
 		if( longValue != null )
 		{
 			// Convert extended JSON $long format to Long
@@ -92,7 +92,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 		}
 
-		Object integerValue = getProperty( scriptable, "$integer" );
+		Object integerValue = getProperty( scriptableObject, "$integer" );
 		if( integerValue != null )
 		{
 			// Convert extended JSON $integer format to Integer
@@ -112,7 +112,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 		}
 
-		Object undefined = getProperty( scriptable, "$undefined" );
+		Object undefined = getProperty( scriptableObject, "$undefined" );
 		if( undefined != null )
 		{
 			// Convert extended JSON $undefined format to JavaScript undefined
@@ -120,7 +120,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			return Undefined.instance;
 		}
 
-		Object functionValue = getProperty( scriptable, "$function" );
+		Object functionValue = getProperty( scriptableObject, "$function" );
 		if( functionValue != null )
 		{
 			// Convert extended JSON $function format to JavaScript function
@@ -128,7 +128,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			return RhinoNativeUtil.toFunction( functionValue );
 		}
 
-		Object dateValue = getProperty( scriptable, "$date" );
+		Object dateValue = getProperty( scriptableObject, "$date" );
 		if( dateValue != null )
 		{
 			// Convert extended JSON $date format to Rhino/JVM date
@@ -179,7 +179,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 				return date;
 		}
 
-		Object timestampValue = getProperty( scriptable, "$timestamp" );
+		Object timestampValue = getProperty( scriptableObject, "$timestamp" );
 		if( timestampValue != null )
 		{
 			// Convert extended JSON $timestamp format to MongoDB BSONTimestamp
@@ -213,13 +213,13 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 		if( rhino )
 		{
-			Object regex = getProperty( scriptable, "$regex" );
+			Object regex = getProperty( scriptableObject, "$regex" );
 			if( regex != null )
 			{
 				// Convert extended JSON $regex format to Rhino RegExp
 
 				String source = regex.toString();
-				Object options = getProperty( scriptable, "$options" );
+				Object options = getProperty( scriptableObject, "$options" );
 				String optionsString = "";
 				if( options != null )
 					optionsString = options.toString();
@@ -228,7 +228,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 		}
 
-		Object oid = getProperty( scriptable, "$oid" );
+		Object oid = getProperty( scriptableObject, "$oid" );
 		if( oid != null )
 		{
 			// Convert extended JSON $oid format to MongoDB ObjectId
@@ -236,23 +236,23 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			return new ObjectId( oid.toString() );
 		}
 
-		Object binary = getProperty( scriptable, "$binary" );
+		Object binary = getProperty( scriptableObject, "$binary" );
 		if( binary != null )
 		{
 			// Convert extended JSON $binary format to MongoDB Binary
 
-			Object type = getProperty( scriptable, "$type" );
+			Object type = getProperty( scriptableObject, "$type" );
 			byte typeNumber = type != null ? Byte.valueOf( type.toString(), 16 ) : 0;
 			byte[] data = Base64.decodeFast( binary.toString() );
 			return new Binary( typeNumber, data );
 		}
 
-		Object ref = getProperty( scriptable, "$ref" );
+		Object ref = getProperty( scriptableObject, "$ref" );
 		if( ref != null )
 		{
 			// Convert extended JSON $ref format to MongoDB DBRef
 
-			Object id = getProperty( scriptable, "$id" );
+			Object id = getProperty( scriptableObject, "$id" );
 			if( id != null )
 			{
 				String idString = null;
@@ -272,28 +272,6 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 		return null;
 	}
 
-	/**
-	 * Converts BSON, byte arrays, java.util.Date, java.util.regex.Pattern,
-	 * java.lang.Long, and JavaScript Date, RegExp and Function objects to
-	 * MongoDB's extended JSON.
-	 * <p>
-	 * Note that java.lang.Long will be converted only if necessary in order to
-	 * preserve its value when converted to a JavaScript Number object.
-	 * <p>
-	 * The output can be either a native Rhino object or a java.util.HashMap.
-	 * <p>
-	 * A special "JavaScript" mode allows dumping JavaScript literals (for Date,
-	 * RegExp and functions), though note this will break JSON compatibility!
-	 * 
-	 * @param object
-	 * @param rhino
-	 *        True to create Rhino native objects, otherwise a java.util.HashMap
-	 *        will be used
-	 * @param javaScript
-	 *        True to allow JavaScript literals (these will break JSON
-	 *        compatibility!)
-	 * @return A JavaScript object, a java.util.HashMap or null if not converted
-	 */
 	public Object to( Object object, boolean rhino, boolean javaScript )
 	{
 		if( object instanceof Long )
@@ -313,9 +291,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$long", longString );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$long", longString );
+				return scriptableObject;
 			}
 			else
 			{
@@ -335,9 +313,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$date", RhinoNativeUtil.wrap( time ) );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$date", RhinoNativeUtil.wrap( time ) );
+				return scriptableObject;
 			}
 			else
 			{
@@ -361,10 +339,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$regex", regExp[0] );
-				ScriptableObject.putProperty( nativeObject, "$options", regExp[1] );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$regex", regExp[0] );
+				ScriptableObject.putProperty( scriptableObject, "$options", regExp[1] );
+				return scriptableObject;
 			}
 			else
 			{
@@ -386,9 +364,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$function", source );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$function", source );
+				return scriptableObject;
 			}
 			else
 			{
@@ -399,8 +377,8 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 		}
 		else if( object instanceof ScriptableObject )
 		{
-			ScriptableObject scriptable = (ScriptableObject) object;
-			String className = scriptable.getClassName();
+			ScriptableObject scriptableObject = (ScriptableObject) object;
+			String className = scriptableObject.getClassName();
 			if( className.equals( "Date" ) )
 			{
 				// Convert NativeDate to extended JSON $date format
@@ -408,15 +386,15 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 				// (The NativeDate class is private in Rhino, but we can access
 				// it like a regular object.)
 
-				Object time = ScriptableObject.callMethod( scriptable, "getTime", null );
+				Object time = ScriptableObject.callMethod( scriptableObject, "getTime", null );
 				if( time instanceof Number )
 				{
 					long timestamp = ( (Number) time ).longValue();
 					if( rhino )
 					{
-						Scriptable nativeObject = RhinoNativeUtil.newObject();
-						ScriptableObject.putProperty( nativeObject, "$date", timestamp );
-						return nativeObject;
+						Scriptable dateScriptableObject = RhinoNativeUtil.newObject();
+						ScriptableObject.putProperty( dateScriptableObject, "$date", timestamp );
+						return dateScriptableObject;
 					}
 					else
 					{
@@ -453,10 +431,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			}
 			else if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$regex", regex );
-				ScriptableObject.putProperty( nativeObject, "$options", options );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$regex", regex );
+				ScriptableObject.putProperty( scriptableObject, "$options", options );
+				return scriptableObject;
 			}
 			else
 			{
@@ -473,9 +451,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			String oid = ( (ObjectId) object ).toStringMongod();
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$oid", oid );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$oid", oid );
+				return scriptableObject;
 			}
 			else
 			{
@@ -493,10 +471,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			String type = Integer.toHexString( binary.getType() );
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$binary", data );
-				ScriptableObject.putProperty( nativeObject, "$type", type );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$binary", data );
+				ScriptableObject.putProperty( scriptableObject, "$type", type );
+				return scriptableObject;
 			}
 			else
 			{
@@ -515,10 +493,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			String type = Integer.toHexString( 0 );
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$binary", data );
-				ScriptableObject.putProperty( nativeObject, "$type", type );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$binary", data );
+				ScriptableObject.putProperty( scriptableObject, "$type", type );
+				return scriptableObject;
 			}
 			else
 			{
@@ -545,10 +523,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "$ref", collection );
-				ScriptableObject.putProperty( nativeObject, "$id", idString );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "$ref", collection );
+				ScriptableObject.putProperty( scriptableObject, "$id", idString );
+				return scriptableObject;
 			}
 			else
 			{
@@ -568,10 +546,10 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 			if( rhino )
 			{
-				Scriptable nativeObject = RhinoNativeUtil.newObject();
-				ScriptableObject.putProperty( nativeObject, "t", t );
-				ScriptableObject.putProperty( nativeObject, "i", i );
-				return nativeObject;
+				Scriptable scriptableObject = RhinoNativeUtil.newObject();
+				ScriptableObject.putProperty( scriptableObject, "t", t );
+				ScriptableObject.putProperty( scriptableObject, "i", i );
+				return scriptableObject;
 			}
 			else
 			{
@@ -588,9 +566,9 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static Object getProperty( ScriptableObject scriptable, String key )
+	private static Object getProperty( ScriptableObject scriptableObject, String key )
 	{
-		Object object = ScriptableObject.getProperty( scriptable, key );
+		Object object = ScriptableObject.getProperty( scriptableObject, key );
 		if( object != Scriptable.NOT_FOUND )
 		{
 			// Unwrap
