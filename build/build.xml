@@ -100,7 +100,7 @@
 		<delete dir="${distribution.jars}/jdk.nashorn" />
 	</target>
 
-	<target name="deploy-maven" if="maven" description="Deploy to Maven repository">
+	<target name="deploy-maven" if="maven" depends="distribution" description="Deploy to Maven repository">
 		<delete dir="${cache.maven.pom}" />
 		<delete dir="${cache.maven.build}" />
 		<copy todir="${cache.maven.pom}">

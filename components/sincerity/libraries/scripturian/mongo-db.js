@@ -662,7 +662,7 @@ var MongoDB = MongoDB || function() {
 	 * @returns {Boolean} True if MongoDB was last seen as up
 	 */
 	Public.getLastStatus = function(client) {
-		var status = application.globals.get(String('mongoDb.status.' + client.hashCode()))// workaround to avoid ConsString in Nashorn
+		var status = application.globals.get(String('mongoDb.status.' + client.hashCode())) // workaround to avoid ConsString in Nashorn
 		if (exists(status)) {
 			return status.booleanValue()
 		}
@@ -681,7 +681,7 @@ var MongoDB = MongoDB || function() {
 		if (status && !Public.getLastStatus(client)) {
 			Public.logger.info('Up! ' + client)
 		}
-		application.globals.put(String('mongoDb.status.' + client.hashCode()), status)// workaround to avoid ConsString in Nashorn
+		application.globals.put(String('mongoDb.status.' + client.hashCode()), status) // workaround to avoid ConsString in Nashorn
 	}
 
 	/**
@@ -2299,9 +2299,10 @@ var MongoDB = MongoDB || function() {
 		}
 		if (exists(defaultUris)) {
 			var defaultOptions = getGlobal('defaultOptions')
-			Public.defaultClient = application.getGlobal('defaultClient', Public.connect(defaultUris, defaultOptions))
+			Public.defaultClient = Public.connect(defaultUris, defaultOptions)
 			try {
 				// Prudence support
+				Public.defaultClient = application.getGlobal('mongoDb.defaultClient', Public.defaultClient)
 				app.globals.mongoDb = app.globals.mongoDb || {}
 				app.globals.mongoDb.defaultClient = Public.defaultClient
 			} catch(x) {}
@@ -2318,12 +2319,9 @@ var MongoDB = MongoDB || function() {
 			else {
 				Public.defaultDb = Public.getDB(Public.defaultClient, Public.defaultDb.name, Public.defaultDb.username, Public.defaultDb.password)
 			}
-			var existing = application.globals.put('defaultDb', Public.defaultDb)
-			if (exists(existing) && !isString(existing)) {
-				Public.defaultDb = existing
-			}
 			try {
 				// Prudence support
+				Public.defaultDb = application.getGlobal('mongoDb.defaultDb', Public.defaultDb)
 				app.globals.mongoDb = app.globals.mongoDb || {}
 				app.globals.mongoDb.defaultDb = Public.defaultDb
 			} catch(x) {}
@@ -2334,8 +2332,11 @@ var MongoDB = MongoDB || function() {
 	Public.defaultSwallow = getGlobal('defaultSwallow')
 	if (exists(Public.defaultSwallow) && Public.defaultSwallow.booleanValue) {
 		Public.defaultSwallow = Public.defaultSwallow.booleanValue()
+	}
+	if (exists(Public.defaultSwallow)) {
 		try {
 			// Prudence support
+			Public.defaultSwallow = application.getGlobal('mongoDb.defaultSwallow', Public.defaultSwallow)
 			app.globals.mongoDb = app.globals.mongoDb || {}
 			app.globals.mongoDb.defaultSwallow = Public.defaultSwallow
 		} catch(x) {}
