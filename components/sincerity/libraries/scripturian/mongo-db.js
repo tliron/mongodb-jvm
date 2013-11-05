@@ -29,7 +29,7 @@
  * @namespace
  * 
  * @author Tal Liron
- * @version 1.77
+ * @version 1.78
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -662,7 +662,7 @@ var MongoDB = MongoDB || function() {
 	 * @returns {Boolean} True if MongoDB was last seen as up
 	 */
 	Public.getLastStatus = function(client) {
-		var status = application.globals.get(String('mongoDb.status.' + client.hashCode())) // workaround to avoid ConsString in Nashorn
+		var status = application.globals.get('mongoDb.status.' + client.hashCode())
 		if (exists(status)) {
 			return status.booleanValue()
 		}
@@ -681,7 +681,7 @@ var MongoDB = MongoDB || function() {
 		if (status && !Public.getLastStatus(client)) {
 			Public.logger.info('Up! ' + client)
 		}
-		application.globals.put(String('mongoDb.status.' + client.hashCode()), status) // workaround to avoid ConsString in Nashorn
+		application.globals.put('mongoDb.status.' + client.hashCode(), status)
 	}
 
 	/**
@@ -2236,12 +2236,12 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	function removeGlobal(name) {
-		var fullName = String('mongoDb.' + name) // workaround to avoid ConsString in Nashorn
+		var fullName = 'mongoDb.' + name
 		application.globals.remove(fullName)
 	}
 	
 	function getGlobal(name) {
-		var fullName = String('mongoDb.' + name) // workaround to avoid ConsString in Nashorn
+		var fullName = 'mongoDb.' + name
 		var value = null
 		try {
 			value = app.globals.mongoDb[name]
