@@ -19,17 +19,15 @@
 //
 
 /**
- * <a href="http://www.mongodb.org/">MongoDB site</a> API for <a
- * href="http://threecrickets.com/prudence/">Prudence</a>.
+ * <a href="http://www.mongodb.org/">MongoDB site</a> API for <a href="http://threecrickets.com/sincerity/">Sincerity</a>.
  * <p>
- * Uses the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java
- * driver</a> and the <a href="http://code.google.com/p/mongodb-jvm/">MongoDB
- * JVM project</a>.
+ * Uses the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a>
+ * and the <a href="http://code.google.com/p/mongodb-jvm/">MongoDB JVM project</a>.
  * 
  * @namespace
  * 
  * @author Tal Liron
- * @version 1.78
+ * @version 1.79
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -74,9 +72,7 @@ var MongoDB = MongoDB || function() {
 	 * @see MongoDB.Cursor#addOption;
 	 * @see MongoDB.Cursor#setOptions;
 	 * @see MongoDB.Cursor#getOptions;
-	 * @see See the <a
-	 *      href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes
-	 *      documentation (see QUERYOPTION_)</a>
+	 * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes documentation (see QUERYOPTION_)</a>
 	 */
 	Public.QueryOption = {
 		/** @constant */
@@ -99,9 +95,7 @@ var MongoDB = MongoDB || function() {
 	 * Result flags.
 	 * 
 	 * @namespace
-	 * @see See the <a
-	 *      href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes
-	 *      documentation (see RESULTFLAG_)</a>
+	 * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/Bytes.html">Bytes documentation (see RESULTFLAG_)</a>
 	 */
 	Public.ResultFlag = {
 		/** @constant */
@@ -176,8 +170,7 @@ var MongoDB = MongoDB || function() {
 	 * tries to connect to localhost using the default port.
 	 * 
 	 * @field
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 * @see MongoDB#connect
 	 */
 	Public.defaultClient = null
@@ -210,63 +203,34 @@ var MongoDB = MongoDB || function() {
 	 * the same JVM, thus it is recommended to store it in Prudence's
 	 * application.sharedGlobals.
 	 * 
-	 * @param {String|String[]}
-	 *            [uris='mongodb://localhost:27017'] A <a
-	 *            href="http://docs.mongodb.org/manual/reference/connection-string/">MongoDB
-	 *            connection string</a> or one or an array of server addresses
+	 * @param {String|String[]} [uris='mongodb://localhost:27017']
+	 *            A <a href="http://docs.mongodb.org/manual/reference/connection-string/">MongoDB connection string</a> or one or an array of server addresses
 	 *            of the MongoDB instances to connect to. Server addresses are
 	 *            in the form of "host" or "host:port". "host" can be an IP
 	 *            address or domain name.
 	 * @param [options]
-	 *            Options are only used if you are not using a MongoDB
+	 *            Options are only used if you are <i>not</i> using a MongoDB
 	 *            connection string for 'uris'
-	 * @param {Boolean}
-	 *            [options.alwaysUseMBeans] Sets whether JMX beans registered by
-	 *            the driver should always be MBeans
-	 * @param {Boolean}
-	 *            [options.autoConnectRetry=true] True if failed connections are
-	 *            retried
-	 * @param {Number}
-	 *            [options.connectionsPerHost] Pool size per URI
-	 * @param {Number}
-	 *            [options.connectTimeout] Milliseconds allowed for connection
-	 *            to be made before an exception is thrown
-	 * @param {Boolean}
-	 *            [options.cursorFinalizerEnabled] Sets whether cursor
-	 *            finalizers are enabled
-	 * @param {String}
-	 *            [options.description] A description of this connection (for
-	 *            debugging)
-	 * @param {Number}
-	 *            [options.maxAutoConnectRetryTime] Milliseconds for the maximum
-	 *            auto connect retry time
-	 * @param {Number}
-	 *            [options.maxWaitTime] Milliseconds allowed for a thread to
-	 *            block before an exception is thrown
-	 * @param {Boolean}
-	 *            [options.socketKeepalive] Sets whether socket keep alive is
-	 *            enabled
-	 * @param {Number}
-	 *            [options.socketTimeout] Milliseconds allowed for a socket
-	 *            operation before an exception is thrown
-	 * @param {Number}
-	 *            [options.threadsAllowedToBlockForConnectionMultiplier]
+	 * @param {Boolean} [options.alwaysUseMBeans] Sets whether JMX beans registered by the driver should always be MBeans
+	 * @param {Boolean} [options.autoConnectRetry=true] True if failed connections are retried
+	 * @param {Number} [options.connectionsPerHost] Pool size per URI
+	 * @param {Number} [options.connectTimeout] Milliseconds allowed for connection to be made before an exception is thrown
+	 * @param {Boolean} [options.cursorFinalizerEnabled] Sets whether cursor finalizers are enabled
+	 * @param {String} [options.description] A description of this connection (for debugging)
+	 * @param {Number} [options.maxAutoConnectRetryTime] Milliseconds for the maximum auto connect retry time
+	 * @param {Number} [options.maxWaitTime] Milliseconds allowed for a thread to block before an exception is thrown
+	 * @param {Boolean} [options.socketKeepalive] Sets whether socket keep alive is enabled
+	 * @param {Number} [options.socketTimeout] Milliseconds allowed for a socket operation before an exception is thrown
+	 * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier]
 	 *            Multiply this by connectionsPerHost to get the number of
 	 *            threads allowed to block before an exception is thrown
-	 * @param {Number}
-	 *            [options.writeConcern=MongoDB.WriteConcern.acknowledged]
-	 *            Default {@link MongoDB#writeConcern}
-	 * @param {Number}
-	 *            [options.readPreference] Default
-	 *            {@link MongoDB#readPreference}
-	 * @param {String}
-	 *            [options.username] Optional username for authentication of
-	 *            'admin' database
-	 * @param {String}
-	 *            [options.password] Optional password for authentication of
-	 *            'admin' database
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
+	 * @param {Number} [options.writeConcern=MongoDB.WriteConcern.acknowledged] Default {@link MongoDB#writeConcern}
+	 * @param {Number} [options.readPreference] Default {@link MongoDB#readPreference}
+	 * @param {String} [options.socketFactory] Allows you set the javax.net.ssl.SSLSocketFactory;
+	 *            the special value 'ssl' will use a default SSL factory 
+	 * @param {String} [options.username] Optional username for authentication of 'admin' database
+	 * @param {String} [options.password] Optional password for authentication of 'admin' database
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 */
 	Public.connect = function(uris, options) {
 		var mongoUri
@@ -357,12 +321,9 @@ var MongoDB = MongoDB || function() {
 	 * Shortcut to call {@link MongoDB#connect} and
 	 * {@link MongoDB#setDefaultClient}.
 	 * 
-	 * @param {String|String[]}
-	 *            [uris] See {@link MongoDB#connect}
-	 * @param {Object}
-	 *            [options] See {@link MongoDB#connect}
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
+	 * @param {String|String[]} [uris] See {@link MongoDB#connect}
+	 * @param {Object} [options] See {@link MongoDB#connect}
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
 	 */
 	Public.connectAndSetDefaultClient = function(uris, options) {
 		var client = Public.connect(uris, options)
@@ -373,10 +334,7 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Sets the default client.
 	 * 
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client
 	 */
 	Public.setDefaultClient = function(client) {
 		Public.defaultClient = client
@@ -391,10 +349,7 @@ var MongoDB = MongoDB || function() {
 	 * are associated with connections. Closing connections once in a while
 	 * releases their heap memory on the server.
 	 * 
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            [client=defaultClient]
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} [client=defaultClient]
 	 */
 	Public.closeConnections = function(client) {
 		client = exists(client) ? client : Public.defaultClient
@@ -430,9 +385,7 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Creates a new, universally unique MongoDB object ID.
 	 * 
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>}
-	 *          A new ObjectId
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>} A new ObjectId
 	 */
 	Public.newId = function() {
 		return org.bson.types.ObjectId.get()
@@ -442,10 +395,8 @@ var MongoDB = MongoDB || function() {
 	 * Converts a string representing a MongoDB object ID into an ObjectId
 	 * instance.
 	 * 
-	 * @param {String}
-	 *            id The object ID string
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>}
+	 * @param {String} id The object ID string
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>}
 	 *          An ObjectId or null if invalid
 	 */
 	Public.id = function(id) {
@@ -461,16 +412,13 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Creates a MongoDB WriteConcern.
 	 * 
-	 * @param {Number|String|Boolean|Object}
-	 *            writeConcern Numeric and string values are converted to 'w';
+	 * @param {Number|String|Boolean|Object} writeConcern
+	 *            Numeric and string values are converted to 'w';
 	 *            boolean values are converted to 'fsync'; otherwise provide a
 	 *            dict in the form of {w:number|string, timeout:number,
 	 *            fsync:boolean, j:boolean, continueOnInsertError:boolean}
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteConcern.html">com.mongodb.WriteConcern</a>}
-	 * @see See the <a
-	 *      href="http://docs.mongodb.org/manual/core/write-concern/">MongoDB
-	 *      Manual</a>
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteConcern.html">com.mongodb.WriteConcern</a>}
+	 * @see See the <a href="http://docs.mongodb.org/manual/core/write-concern/">MongoDB Manual</a>
 	 */
 	Public.writeConcern = function(writeConcern) {
 		if (writeConcern instanceof com.mongodb.WriteConcern) {
@@ -509,8 +457,8 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Returns a MongoDB ReadPreference.
 	 * 
-	 * @param {String|Object}
-	 *            readPreference Either a string, or a dict in the form of
+	 * @param {String|Object} readPreference
+	 *            Either a string, or a dict in the form of
 	 *            {primayPreferred:...}, {secondary:...},
 	 *            {secondaryPreferred:...}, {nearest:...}
 	 */
@@ -560,18 +508,14 @@ var MongoDB = MongoDB || function() {
 	 * <li>upserted: the ObjectId if upserted</li>
 	 * </ul>
 	 * 
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteResult.html">com.mongodb.WriteResult</a>}
-	 *            result The JVM result
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/WriteResult.html">com.mongodb.WriteResult</a>} result The JVM result
 	 */
 	Public.result = function(result) {
 		return exists(result) ? Public.BSON.from(result.cachedLastError) : null
 	}
 	
 	/**
-	 * @param {com.mongodb.AggregationOutput}
-	 *            output
+	 * @param {com.mongodb.AggregationOutput} output
 	 */
 	Public.aggregationOutput = function(output) {
 		if (exists(output)) {
@@ -599,16 +543,9 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Converts the JVM exception to a JavaScript-friendly version.
 	 * 
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoException.html">com.mongodb.MongoException</a>}
-	 *            exception The MongoDB exception
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client The MongoDB client
-	 * @param {Boolean}
-	 *            [swallow=false] If true, do not return exceptions
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoException.html">com.mongodb.MongoException</a>} exception The MongoDB exception
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
+	 * @param {Boolean} [swallow=false] If true, do not return exceptions
 	 * @returns {Object} In the form of {code:number, message:'message'}
 	 * @see MongoDB.Error
 	 */
@@ -633,18 +570,11 @@ var MongoDB = MongoDB || function() {
 	/**
 	 * Gets a MongoDB database from a client, optionally authenticating it.
 	 * 
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client The MongoDB client
-	 * @param {String}
-	 *            name The database name
-	 * @param {String}
-	 *            [username] Optional username for authentication
-	 * @param {String}
-	 *            [password] Optional password for authentication
-	 * @returns {<a
-	 *          href="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>}
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
+	 * @param {String} name The database name
+	 * @param {String} [username] Optional username for authentication
+	 * @param {String} [password] Optional password for authentication
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>}
 	 */
 	Public.getDB = function(client, name, username, password) {
 		var db = client.getDB(name)
@@ -655,10 +585,7 @@ var MongoDB = MongoDB || function() {
 	}
 	
 	/**
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client The MongoDB client
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
 	 * @returns {Boolean} True if MongoDB was last seen as up
 	 */
 	Public.getLastStatus = function(client) {
@@ -670,12 +597,8 @@ var MongoDB = MongoDB || function() {
 	}
 
 	/**
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client The MongoDB client
-	 * @param {Boolean}
-	 *            status True if MongoDB was last seen as up
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
+	 * @param {Boolean} status True if MongoDB was last seen as up
 	 */
 	Public.setLastStatus = function(client, status) {
 		if (status && !Public.getLastStatus(client)) {
@@ -702,8 +625,7 @@ var MongoDB = MongoDB || function() {
 	 * <p>
 	 * Note that this changes the value in-place!
 	 * 
-	 * @param {Object}
-	 *            value The object to sanitize
+	 * @param {Object} value The object to sanitize
 	 * @returns {Object} The sanitized object
 	 */
 	Public.sanitize = function(value) {
@@ -735,17 +657,9 @@ var MongoDB = MongoDB || function() {
 	 * The results of a {@link MongoDB.Collection#mapReduce} command.
 	 * 
 	 * @class
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MapReduceOutput.html">com.mongodb.MapReduceOutput</a>}
-	 *            result The JVM map-reduce result
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            client The MongoDB client
-	 * @param {Boolean}
-	 *            [swallow=MongoDB.defaultSwallow] If true, do not throw
-	 *            exceptions
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MapReduceOutput.html">com.mongodb.MapReduceOutput</a>} result The JVM map-reduce result
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} client The MongoDB client
+	 * @param {Boolean} [swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.MapReduceResult = function(result, client, swallow) {
 
@@ -871,13 +785,8 @@ var MongoDB = MongoDB || function() {
 	 * {@link #next}.
 	 * 
 	 * @class
-	 * @param {
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/DBCursor.html">com.mongodb.DBCursor</a>}
-	 *            cursor The JVM cursor
-	 * @param {Boolean}
-	 *            [swallow=MongoDB.defaultSwallow] If true, do not throw
-	 *            exceptions
+	 * @param {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/DBCursor.html">com.mongodb.DBCursor</a>} cursor The JVM cursor
+	 * @param {Boolean} [swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.Cursor = function(cursor, swallow) {
 		
@@ -944,8 +853,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Moves the cursor forward without fetching documents.
 		 * 
-		 * @param {Number}
-		 *            n The number of documents to skip
+		 * @param {Number} n The number of documents to skip
 		 * @returns {MongoDB.Cursor} This cursor
 		 */
 		this.skip = function(n) {
@@ -966,8 +874,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Sets the maximum number of documents to iterate.
 		 * 
-		 * @param {Number}
-		 *            n The limit
+		 * @param {Number} n The limit
 		 * @returns {MongoDB.Cursor} This cursor
 		 */
 		this.limit = function(n) {
@@ -1145,8 +1052,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Affect the cursor's functional characteristics.
 		 * 
-		 * @param {String|Object}
-		 *            hint The hint
+		 * @param {String|Object} hint The hint
 		 * @returns {MongoDB.Cursor} This cursor
 		 */
 		this.hint = function(hint) {
@@ -1172,10 +1078,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Affect the cursor's functional characteristics.
 		 * 
-		 * @param {String}
-		 *            name The special option name
-		 * @param o
-		 *            The value
+		 * @param {String} name The special option name
+		 * @param o The value
 		 * @returns {MongoDB.Cursor} This cursor
 		 */
 		this.addSpecial = function(name, o) {
@@ -1260,8 +1164,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Sets the cursor's options.
 		 * 
-		 * @param {String[]|Number}
-		 *            options The options
+		 * @param {String[]|Number} options The options
 		 * @returns {MongoDB.Cursor} This cursor
 		 * @see MongoDB.QueryOption
 		 */
@@ -1296,8 +1199,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Adds a cursor option.
 		 * 
-		 * @param {String|Number}
-		 *            option The option to add
+		 * @param {String|Number} option The option to add
 		 * @returns {MongoDB.Cursor} This cursor
 		 * @see MongoDB.QueryOption
 		 */
@@ -1331,8 +1233,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Sets the batch size.
 		 * 
-		 * @param {Number}
-		 *            size The number of documents per batch
+		 * @param {Number} size The number of documents per batch
 		 * @returns {MongoDB.Cursor} This cursor
 		 */
 		this.batchSize = function(size) {
@@ -1384,27 +1285,17 @@ var MongoDB = MongoDB || function() {
 	 * 
 	 * @class
 	 * 
-	 * @param {String}
-	 *            name The collection name
+	 * @param {String} name The collection name
 	 * @param [config]
-	 * @param {String|Object|
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>}
-	 *            [config.db=MongoDB.defaultDb] The MongoDB database to use, can
+	 * @param {String|Object|<ahref="http://api.mongodb.org/java/current/index.html?com/mongodb/DB.html">com.mongodb.DB</a>} [config.db=MongoDB.defaultDb]
+	 *            The MongoDB database to use, can
 	 *            be its name, or an object in the form of {name:'string',
 	 *            username:'string', password:'string'} for authenticated
 	 *            connections
-	 * @param {String|
-	 *            <a
-	 *            href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>}
-	 *            [config.client=MongoDb.defaultClient] The MongoDB client
-	 *            instance (see {@link MongoDB#connect})
-	 * @param {String}
-	 *            [config.uniqueId] If supplied, {@link #ensureIndex} will
-	 *            automatically be called on the key
-	 * @param {Boolean}
-	 *            [config.swallow=MongoDB.defaultSwallow] If true, do not throw
-	 *            exceptions
+	 * @param {String|<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} [config.client=MongoDb.defaultClient]
+	 *            The MongoDB client instance (see {@link MongoDB#connect})
+	 * @param {String} [config.uniqueId] If supplied, {@link #ensureIndex} will automatically be called on the key
+	 * @param {Boolean} [config.swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.Collection = function(name, config) {
 		
@@ -1435,10 +1326,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Creates a cursor to iterate over one or more documents.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param [fields]
-		 *            The fields to fetch
+		 * @param query The query
+		 * @param [fields] The fields to fetch
 		 * @returns {MongoDB.Cursor}
 		 */
 		this.find = function(query, fields) {
@@ -1462,14 +1351,11 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Fetches a single document, the first to match the query.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param [fields]
-		 *            The fields to fetch
+		 * @param query The query
+		 * @param [fields] The fields to fetch
 		 * @param [options]
 		 * @param [options.orderBy]
-		 * @param [options.readPreference]
-		 *            See {@link MongoDB#readPreference}
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns The document or null if not found
 		 */
 		this.findOne = function(query, fields, options) {
@@ -1497,22 +1383,13 @@ var MongoDB = MongoDB || function() {
 		 * Distance query (requires a 2D index).
 		 * 
 		 * @param options
-		 * @param {Number[]}
-		 *            options.near The 2D coordinates from which to measure
-		 *            distance
-		 * @param {Number}
-		 *            [options.num] The maximum number of entries to return
-		 * @param {Number}
-		 *            [options.maxDistance] The maximum distance
-		 * @param {Number}
-		 *            [options.distanceMultiplier=1] Result distances are
-		 *            multiplied by this (but options.maxDistance isn't!)
-		 * @param {Boolean}
-		 *            [options.spherical=false] True to use spherical model
-		 * @param [options.query]
-		 *            An option query to perform before the distance query
-		 * @returns {Array} Each entry is in the form of {obj: ..., dis:
-		 *          number}, and is sorted in ascending dis
+		 * @param {Number[]} options.near The 2D coordinates from which to measure distance
+		 * @param {Number} [options.num] The maximum number of entries to return
+		 * @param {Number} [options.maxDistance] The maximum distance
+		 * @param {Number} [options.distanceMultiplier=1] Result distances are multiplied by this (but options.maxDistance isn't!)
+		 * @param {Boolean} [options.spherical=false] True to use spherical model
+		 * @param [options.query] An option query to perform before the distance query
+		 * @returns {Array} Each entry is in the form of {obj: ..., dis:number}, and is sorted in ascending dis
 		 */
 		this.geoNear = function(options) {
 			var command = {geoNear: this.collection.name}
@@ -1529,19 +1406,12 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Updates one or more documents.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param update
-		 *            The update
-		 * @param [options]
-		 *            Update options
-		 * @param {Boolean}
-		 *            [options.multi=false] True to update all documents, false
-		 *            to update only the first document matching the query
-		 * @param {Boolean}
-		 *            [options.upsert=false] True to uspert (see {@link #upsert})
-		 * @param [options.writeConcern]
-		 *            See {@link MongoDB#writeConcern}
+		 * @param query The query
+		 * @param update The update
+		 * @param [options] Update options
+		 * @param {Boolean} [options.multi=false] True to update all documents, false to update only the first document matching the query
+		 * @param {Boolean} [options.upsert=false] True to uspert (see {@link #upsert})
+		 * @param [options.writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #upsert
 		 */
@@ -1577,10 +1447,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Inserts a document, creating a default _id if not provided.
 		 * 
-		 * @param doc
-		 *            The document to insert
-		 * @param [writeConcern]
-		 *            See {@link MongoDB#writeConcern}
+		 * @param doc The document to insert
+		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #save
 		 */
@@ -1612,12 +1480,9 @@ var MongoDB = MongoDB || function() {
 		 * <p>
 		 * Identical to calling {@link #update} with options.upsert=true.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param update
-		 *            The update
-		 * @param [options]
-		 *            See {@link #update}
+		 * @param query The query
+		 * @param update The update
+		 * @param [options] See {@link #update}
 		 * @returns See {@link MongoDB#result}
 		 */
 		this.upsert = function(query, update, options) {
@@ -1629,10 +1494,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Shortcut to {@link #upsert} a single document.
 		 * 
-		 * @param doc
-		 *            The document to save
-		 * @param [writeConcern]
-		 *            See {@link MongoDB#writeConcern}
+		 * @param doc The document to save
+		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #upsert;
 		 * @see #insert
@@ -1664,26 +1527,15 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Atomic find-and-modify on a single document.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param update
-		 *            The update
-		 * @param [options]
-		 *            Find-and-modify options
-		 * @param [options.fields]
-		 *            The fields to fetch
-		 * @param [options.sort]
-		 *            The sort to apply
-		 * @param {Boolean}
-		 *            [options.returnNew=false] True to return the modified
-		 *            document
-		 * @param {Boolean}
-		 *            [options.upsert=false] True to insert if not found
-		 * @param {Boolean}
-		 *            [options.remove=false] True to remove the result (see
-		 *            {@link #findAndRemove})
-		 * @returns The document or null if not found (see options.returnNew
-		 *          param)
+		 * @param query The query
+		 * @param update The update
+		 * @param [options] Find-and-modify options
+		 * @param [options.fields] The fields to fetch
+		 * @param [options.sort] The sort to apply
+		 * @param {Boolean} [options.returnNew=false] True to return the modified document
+		 * @param {Boolean} [options.upsert=false] True to insert if not found
+		 * @param {Boolean} [options.remove=false] True to remove the result (see {@link #findAndRemove})
+		 * @returns The document or null if not found (see options.returnNew param)
 		 */
 		this.findAndModify = function(query, update, options) {
 			try {
@@ -1718,10 +1570,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Removes all documents matching the query.
 		 * 
-		 * @param query
-		 *            The query
-		 * @param [writeConcern]
-		 *            See {@link MongoDB#writeConcern}
+		 * @param query The query
+		 * @param [writeConcern] See {@link MongoDB#writeConcern}
 		 * @returns See {@link MongoDB#result}
 		 * @see #findAndRemove
 		 */
@@ -1748,9 +1598,8 @@ var MongoDB = MongoDB || function() {
 		 * <p>
 		 * Identical to calling {@link #findAndModify} with options.remove=true.
 		 * 
-		 * @param query
-		 *            The query
-		 * @para [options] See {@link #findAndModify}
+		 * @param query The query
+		 * @param [options] See {@link #findAndModify}
 		 * @returns The document or null if not found
 		 * @see #remove
 		 */
@@ -1781,15 +1630,11 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Counts documents without fetching them.
 		 * 
-		 * @param [query]
-		 *            The query or else count all documents
+		 * @param [query] The query or else count all documents
 		 * @param [options]
-		 * @param {Number}
-		 *            [options.limit=0]
-		 * @param {Number}
-		 *            [options.skip=0]
-		 * @param [options.readPreference]
-		 *            See {@link MongoDB#readPreference}
+		 * @param {Number} [options.limit=0]
+		 * @param {Number} [options.skip=0]
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns {Number}
 		 */
 		this.count = function(query, options) {
@@ -1816,12 +1661,9 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Finds all distinct values of key.
 		 * 
-		 * @param {String}
-		 *            key
-		 * @param [query]
-		 *            The query or null
-		 * @param [readPreference]
-		 *            See {@link MongoDB#readPreference}
+		 * @param {String} key
+		 * @param [query] The query or null
+		 * @param [readPreference] See {@link MongoDB#readPreference}
 		 * @returns {Array}
 		 */
 		this.distinct = function(key, query, readPreference) {
@@ -1871,16 +1713,12 @@ var MongoDB = MongoDB || function() {
 		 * Grouping.
 		 * 
 		 * @param options
-		 * @param {String}
-		 *            options.key
+		 * @param {String} options.key
 		 * @param [options.condition]
 		 * @param [options.initial]
-		 * @param {Function|String}
-		 *            [options.reduceFn]
-		 * @param {Function|String}
-		 *            [options.finalizeFn]
-		 * @param [options.readPreference]
-		 *            See {@link MongoDB#readPreference}
+		 * @param {Function|String} [options.reduceFn]
+		 * @param {Function|String} [options.finalizeFn]
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns See {@link MongoDB#result}
 		 */
 		this.group = function(options) {
@@ -1909,16 +1747,12 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Map-reduce.
 		 * 
-		 * @param {Function|String}
-		 *            mapFn The map function
-		 * @param {Function|String}
-		 *            reduceFn The reduce function
-		 * @param [options]
-		 *            Map-reduce options
-		 * @param [options.query]
-		 *            The query to apply before mapping
-		 * @param {String|Object}
-		 *            [options.out={inline:1}] If string, is interpreted as a
+		 * @param {Function|String} mapFn The map function
+		 * @param {Function|String} reduceFn The reduce function
+		 * @param [options] Map-reduce options
+		 * @param [options.query] The query to apply before mapping
+		 * @param {String|Object} [options.out={inline:1}]
+		 *            If string, is interpreted as a
 		 *            collection name to which results are simply added.
 		 *            Otherwise:
 		 *            <ul>
@@ -1930,8 +1764,7 @@ var MongoDB = MongoDB || function() {
 		 *            <li>{reduce:'collection name'} for calling reduce on
 		 *            existing results</li>
 		 *            </ul>
-		 * @param [options.readPreference]
-		 *            See {@link MongoDB#readPreference}
+		 * @param [options.readPreference] See {@link MongoDB#readPreference}
 		 * @returns {MongoDB.MapReduceResult}
 		 */
 		this.mapReduce = function(mapFn, reduceFn, options) {
@@ -2006,10 +1839,8 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Creates an index if it does not exist.
 		 * 
-		 * @param index
-		 *            The index to create
-		 * @param [options]
-		 *            Index options
+		 * @param index The index to create
+		 * @param [options] Index options
 		 * @returns {MongoDB.Collection}
 		 */
 		this.ensureIndex = function(index, options) {
@@ -2038,8 +1869,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Removes an index.
 		 * 
-		 * @param {String|Object}
-		 *            index The index name or descriptor
+		 * @param {String|Object} index The index name or descriptor
 		 * @returns {MongoDB.Collection}
 		 */
 		this.dropIndex = function(index) {
@@ -2115,8 +1945,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Sets the collection's options.
 		 * 
-		 * @param {String[]|Number}
-		 *            options The options
+		 * @param {String[]|Number} options The options
 		 * @returns {MongoDB.Collection} This collection
 		 * @see MongoDB.QueryOption
 		 */
@@ -2151,8 +1980,7 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Adds a collection option.
 		 * 
-		 * @param {String|Number}
-		 *            option The option to add
+		 * @param {String|Number} option The option to add
 		 * @returns {MongoDB.Collection} This collection
 		 * @see MongoDB.QueryOption
 		 */

@@ -11,10 +11,12 @@
 
 package com.mongodb.jvm.rhino;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import jdk.nashorn.internal.objects.NativeString;
 
 import org.bson.BSONObject;
 import org.bson.types.Symbol;
@@ -84,12 +86,12 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 			NativeArray nativeArray = (NativeArray) object;
 			int length = (int) nativeArray.getLength();
-			ArrayList<Object> bson = new ArrayList<Object>( length );
+			Object[] bson = new Object[length];
 
 			for( int i = 0; i < length; i++ )
-				bson.add( to( ScriptableObject.getProperty( nativeArray, i ) ) );
+				bson[i] = to( ScriptableObject.getProperty( nativeArray, i ) );
 
-			return bson;
+			return Arrays.asList( bson );
 		}
 		else if( object instanceof ScriptableObject )
 		{
