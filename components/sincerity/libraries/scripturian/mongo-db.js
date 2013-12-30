@@ -27,7 +27,7 @@
  * @namespace
  * 
  * @author Tal Liron
- * @version 1.79
+ * @version 1.80
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -550,6 +550,7 @@ var MongoDB = MongoDB || function() {
 	 * @see MongoDB.Error
 	 */
 	Public.exception = function(exception, client, swallow) {
+		exception = exception.javaException || exception
 		if (exception instanceof com.mongodb.MongoException.Network) {
 			if (Public.getLastStatus(client)) {
 				Public.setLastStatus(client, false)
@@ -674,8 +675,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(collection) ? new MongoDB.Collection(null, {collection: collection, swallow: this.swallow}) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -704,8 +705,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -727,8 +728,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(cursor) ? new MongoDB.Cursor(cursor, this.swallow) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -751,8 +752,8 @@ var MongoDB = MongoDB || function() {
 				}
 				return r
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -800,8 +801,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return hasNext
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -821,8 +822,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return Public.BSON.from(doc)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -841,8 +842,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return Public.BSON.from(doc)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -862,8 +863,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -883,8 +884,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -904,8 +905,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -924,8 +925,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return count
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -944,8 +945,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return count
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -964,8 +965,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -984,8 +985,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return new Public.Cursor(copy)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1004,8 +1005,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return Public.BSON.from(doc)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1020,8 +1021,8 @@ var MongoDB = MongoDB || function() {
 			try {
 				return Public.BSON.from(this.cursor.keysWanted)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1040,8 +1041,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1066,8 +1067,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1088,8 +1089,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1124,8 +1125,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1152,8 +1153,8 @@ var MongoDB = MongoDB || function() {
 				}
 				return options
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1187,8 +1188,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1219,8 +1220,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1242,8 +1243,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1260,8 +1261,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.cursor.collection.getDB().mongo, true)
 				return count
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.cursor.collection.getDB().mongo, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.cursor.collection.getDB().mongo, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1312,8 +1313,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.BSON.from(result).results : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1339,8 +1340,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return new MongoDB.Cursor(cursor, this.swallow)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1370,8 +1371,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1433,8 +1434,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1462,11 +1463,12 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				if (x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
-					throw MongoDB.exception(x.javaException, this.client, false)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = x.javaException || x
+				if (x instanceof com.mongodb.MongoException.DuplicateKey) {
+					throw MongoDB.exception(x, this.client, false)
 				}
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1510,11 +1512,12 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				if (x.javaException instanceof com.mongodb.MongoException.DuplicateKey) {
-					throw MongoDB.exception(x.javaException, this.client, false)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = x.javaException || x
+				if (x instanceof com.mongodb.MongoException.DuplicateKey) {
+					throw MongoDB.exception(x, this.client, false)
 				}
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1552,12 +1555,12 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(doc)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
+			catch (x if isException(x, com.mongodb.MongoException)) {
 				if (x.javaException.code == MongoDB.Error.NotFound) {
 					// TODO?
 					return null
 				}
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1584,8 +1587,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1617,8 +1620,8 @@ var MongoDB = MongoDB || function() {
 			try {
 				this.collection.drop()
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1649,8 +1652,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return count
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1675,8 +1678,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(list)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1700,8 +1703,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.aggregationOutput(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1735,8 +1738,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? Public.result(result) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1805,8 +1808,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return exists(result) ? new MongoDB.MapReduceResult(result, this.client, this.swallow) : null
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1827,8 +1830,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return Public.BSON.from(info)
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1857,8 +1860,8 @@ var MongoDB = MongoDB || function() {
 				// Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1883,8 +1886,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1905,8 +1908,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1933,8 +1936,8 @@ var MongoDB = MongoDB || function() {
 				}
 				return options
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -1968,8 +1971,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -2000,8 +2003,8 @@ var MongoDB = MongoDB || function() {
 				Public.setLastStatus(this.client, true)
 				return this
 			}
-			catch (x if x.javaException instanceof com.mongodb.MongoException) {
-				x = MongoDB.exception(x.javaException, this.client, this.swallow)
+			catch (x if isException(x, com.mongodb.MongoException)) {
+				x = MongoDB.exception(x, this.client, this.swallow)
 				if (x) {
 					throw x
 				}
@@ -2061,6 +2064,10 @@ var MongoDB = MongoDB || function() {
 	
 	function isDict(value) {
 		return (typeof value === 'object') && !(value instanceof Date) && !(value instanceof RegExp) && !isArray(value)
+	}
+	
+	function isException(x, c) {
+		return (x.javaException || x) instanceof c
 	}
 	
 	function removeGlobal(name) {
