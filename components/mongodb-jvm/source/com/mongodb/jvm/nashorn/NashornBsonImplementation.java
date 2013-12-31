@@ -36,7 +36,7 @@ import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
 /**
  * Conversion between native Nashorn values and BSON-compatible values.
  * <p>
- * Recognizes Rhino's {@link NativeArray}, {@link NativeJavaObject},
+ * Recognizes Nashorn's {@link NativeArray}, {@link NativeJavaObject},
  * {@link NativeString}, {@link ConsString}, {@link NativeRegExp},
  * {@link Undefined}, {@link ScriptObject} and {@link Function}.
  * <p>
@@ -84,7 +84,7 @@ public class NashornBsonImplementation implements BsonImplementation
 		}
 		else if( object instanceof NativeArray )
 		{
-			// Convert Rhino array to list
+			// Convert Nashorn array to list
 
 			ArrayData array = ( (NativeArray) object ).getArray();
 			int length = (int) array.length();
@@ -108,7 +108,7 @@ public class NashornBsonImplementation implements BsonImplementation
 			if( r != null )
 				return r;
 
-			// Convert regular Rhino object
+			// Convert regular Nashorn object
 
 			BasicDBObject bson = new BasicDBObject();
 
@@ -152,13 +152,13 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			int index = 0;
 			for( Object item : list )
-				array.getArray().set( index++, from( item, extendedJSON ), false );
+				array.set( index++, from( item, extendedJSON ), false );
 
 			return array;
 		}
 		else if( object instanceof BSONObject )
 		{
-			// Convert BSON object to NativeObject
+			// Convert BSON object to ScriptObject
 
 			BSONObject bsonObject = (BSONObject) object;
 			ScriptObject nativeObject = NashornNativeUtil.newObject();

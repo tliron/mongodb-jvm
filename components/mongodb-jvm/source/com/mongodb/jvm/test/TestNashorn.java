@@ -48,6 +48,7 @@ public class TestNashorn
 		run( base + "x={name: {$regex: 'pattern'}};System.out.println(BSON.to(x));" );
 		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 		run( base + "x={s:'hello'};x.s += ' world';System.out.println(BSON.to(x));" );
+		run( base + "x={x:[{t:1},2,3]};System.out.println(JSON.to(BSON.from(BSON.to(x))));" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
