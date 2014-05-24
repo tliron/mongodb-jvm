@@ -137,7 +137,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			long dateTimestamp;
 
 			if( dateValue instanceof NativeNumber )
-				dateTimestamp = ( (NativeNumber) dateValue ).longValue();
+				dateTimestamp = (long) ( (NativeNumber) dateValue ).doubleValue();
 			else if( dateValue instanceof ScriptObject )
 			{
 				longValue = getProperty( (ScriptObject) dateValue, "$long" );
@@ -441,7 +441,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 		{
 			// Convert MongoDB ObjectId to extended JSON $oid format
 
-			String oid = ( (ObjectId) object ).toStringMongod();
+			String oid = ( (ObjectId) object ).toHexString();
 			if( nashorn )
 			{
 				ScriptObject scriptObject = NashornNativeUtil.newObject();
@@ -451,7 +451,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			else
 			{
 				HashMap<String, String> map = new HashMap<String, String>( 1 );
-				map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
+				map.put( "$oid", ( (ObjectId) object ).toHexString() );
 				return map;
 			}
 		}
@@ -508,7 +508,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			Object id = BSON.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )
-				idString = ( (ObjectId) id ).toStringMongod();
+				idString = ( (ObjectId) id ).toHexString();
 			else
 				// Seems like this will break for aggregate _ids, but this is
 				// what the MongoDB documentation says!

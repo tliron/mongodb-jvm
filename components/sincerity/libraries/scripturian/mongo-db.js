@@ -27,7 +27,7 @@
  * @namespace
  * 
  * @author Tal Liron
- * @version 1.80
+ * @version 1.81
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -768,7 +768,7 @@ var MongoDB = MongoDB || function() {
 		this.result = result
 		this.client = connection
 		this.swallow = exists(swallow) ? swallow : Public.defaultSwallow
-				
+
 		// The following is a necessary workaround because the Java driver does
 		// not properly deal with map reduce outputs
 		// in a replica set (see https://jira.mongodb.org/browse/JAVA-364 and
@@ -1842,22 +1842,32 @@ var MongoDB = MongoDB || function() {
 		/**
 		 * Creates an index if it does not exist.
 		 * 
+		 * Deprecated: use createIndex instead.
+		 * 
 		 * @param index The index to create
 		 * @param [options] Index options
 		 * @returns {MongoDB.Collection}
 		 */
 		this.ensureIndex = function(index, options) {
+			this.createIndex(index, options)
+		}
+
+		/**
+		 * Creates an index.
+		 * 
+		 * @param index The index to create
+		 * @param [options] Index options
+		 * @returns {MongoDB.Collection}
+		 */
+		this.createIndex = function(index, options) {
 			try {
 				if (options) {
-					this.collection.ensureIndex(Public.BSON.to(index), Public.BSON.to(options))
+					this.collection.createIndex(Public.BSON.to(index), Public.BSON.to(options))
 				}
 				else {
-					this.collection.ensureIndex(Public.BSON.to(index))
+					this.collection.createIndex(Public.BSON.to(index))
 				}
-				// Will not do any operation if the cached collection instance
-				// thinks there is an index, so we cannot reliably assume the
-				// connection is working:
-				// Public.setLastStatus(this.client, true)
+				Public.setLastStatus(this.client, true)
 				return this
 			}
 			catch (x if isException(x, com.mongodb.MongoException)) {
@@ -2031,6 +2041,10 @@ var MongoDB = MongoDB || function() {
 		}
 
 		this.collection = exists(config.collection) ? config.collection : (exists(this.db) ? this.db.getCollection(name) : null)
+
+		if (!exists(this.collection)) {
+			throw {message: 'Could not create collection object'}
+		}
 		
 		if (config.uniqueId) {
 			var index = {}
@@ -2180,8 +2194,15 @@ var MongoDB = MongoDB || function() {
 		Public.defaultSwallow = false
 	}
 	
-	// Support for extended JSON
-	Public.BSON.enableExtendedJSON()
+	// Initialize BSON and extended JSON conversion
+	if (executable.context.adapter.attributes.get('name') == 'Rhino') {
+		Public.BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation()
+		com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation()
+	}
+	else {
+		Public.BSON.implementation = new com.mongodb.jvm.nashorn.NashornBsonImplementation()
+		com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation()
+	}
 	
 	return Public
 }()

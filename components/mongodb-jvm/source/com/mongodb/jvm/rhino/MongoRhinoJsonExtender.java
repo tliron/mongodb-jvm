@@ -448,7 +448,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 		{
 			// Convert MongoDB ObjectId to extended JSON $oid format
 
-			String oid = ( (ObjectId) object ).toStringMongod();
+			String oid = ( (ObjectId) object ).toHexString();
 			if( rhino )
 			{
 				Scriptable scriptableObject = RhinoNativeUtil.newObject();
@@ -458,7 +458,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			else
 			{
 				HashMap<String, String> map = new HashMap<String, String>( 1 );
-				map.put( "$oid", ( (ObjectId) object ).toStringMongod() );
+				map.put( "$oid", ( (ObjectId) object ).toHexString() );
 				return map;
 			}
 		}
@@ -515,7 +515,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 			Object id = BSON.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )
-				idString = ( (ObjectId) id ).toStringMongod();
+				idString = ( (ObjectId) id ).toHexString();
 			else
 				// Seems like this will break for aggregate _ids, but this is
 				// what the MongoDB documentation says!
