@@ -16,11 +16,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.objects.NativeArray;
 import jdk.nashorn.internal.objects.NativeRegExp;
 import jdk.nashorn.internal.objects.NativeString;
 import jdk.nashorn.internal.objects.annotations.Function;
 import jdk.nashorn.internal.runtime.ConsString;
+import jdk.nashorn.internal.runtime.Context;
 import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 import jdk.nashorn.internal.runtime.arrays.ArrayData;
@@ -64,6 +66,10 @@ public class NashornBsonImplementation implements BsonImplementation
 
 	public Object to( Object object )
 	{
+		// Unwrap if necessary
+		if( object instanceof ScriptObjectMirror )
+			object = ScriptObjectMirror.unwrap( object, Context.getGlobal() );
+
 		if( object instanceof NativeRegExp )
 		{
 			String[] regExp = NashornNativeUtil.from( (NativeRegExp) object );
@@ -152,7 +158,7 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			int index = 0;
 			for( Object item : list )
-				array.set( index++, from( item, extendedJSON ), false );
+				array.set( index++, from( item, extendedJSON ), 0 );
 
 			return array;
 		}

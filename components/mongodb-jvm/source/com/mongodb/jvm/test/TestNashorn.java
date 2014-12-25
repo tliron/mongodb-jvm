@@ -48,13 +48,13 @@ public class TestNashorn
 		run( base + "x={name: {$regex: 'pattern'}};System.out.println(BSON.to(x));" );
 		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 		run( base + "x={s:'hello'};x.s += ' world';System.out.println(BSON.to(x));" );
-		run( base + "x={x:[{t:1},2,3]};System.out.println(JSON.to(BSON.from(BSON.to(x))));" );
+		run( base + "x=[{id:1},2,3];System.out.println(JSON.to(BSON.from(BSON.to(x))));" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); importClass(com.threecrickets.jvm.json.JSON); JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation();";
+	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); importClass(com.threecrickets.jvm.json.JSON); BSON.enableExtendedJSON();";
 
 	private static void toJSON( String object )
 	{
@@ -86,7 +86,7 @@ public class TestNashorn
 		Context context = new Context( options, errors, out, err, Thread.currentThread().getContextClassLoader() );
 		ScriptObject globalScope = context.createGlobal();
 		Context.setGlobal( globalScope );
-		ScriptFunction fn = context.compileScript( new Source( TestNashorn.class.getCanonicalName(), script ), globalScope );
+		ScriptFunction fn = context.compileScript( Source.sourceFor( TestNashorn.class.getCanonicalName(), script ), globalScope );
 		ScriptRuntime.apply( fn, globalScope );
 	}
 }

@@ -15,9 +15,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.objects.NativeDate;
 import jdk.nashorn.internal.objects.NativeNumber;
 import jdk.nashorn.internal.objects.NativeRegExp;
+import jdk.nashorn.internal.runtime.Context;
 import jdk.nashorn.internal.runtime.NumberToString;
 import jdk.nashorn.internal.runtime.ScriptFunction;
 import jdk.nashorn.internal.runtime.ScriptObject;
@@ -275,6 +277,10 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 	public Object to( Object object, boolean nashorn, boolean javaScript )
 	{
+		// Unwrap if necessary
+		if( object instanceof ScriptObjectMirror )
+			object = ScriptObjectMirror.unwrap( object, Context.getGlobal() );
+
 		if( object instanceof Long )
 		{
 			// Convert Long to extended JSON $long format
