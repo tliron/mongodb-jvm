@@ -14,8 +14,8 @@
 	<inceptionYear>2010</inceptionYear>
 
 	<scm>
-		<connection>scm:git:https://code.google.com/p/mongodb-jvm/</connection>
-		<url>http://code.google.com/p/mongodb-jvm/source/browse/</url>
+		<connection>scm:git:git://github.com/tliron/mongodb-jvm.git</connection>
+		<url>https://github.com/tliron/mongodb-jvm</url>
 	</scm>
 
 	<organization>
