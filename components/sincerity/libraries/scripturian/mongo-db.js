@@ -22,12 +22,12 @@
  * <a href="http://www.mongodb.org/">MongoDB site</a> API for <a href="http://threecrickets.com/sincerity/">Sincerity</a>.
  * <p>
  * Uses the <a href="https://github.com/mongodb/mongo-java-driver">MongoDB Java driver</a>
- * and the <a href="http://code.google.com/p/mongodb-jvm/">MongoDB JVM project</a>.
+ * and the <a href="https://github.com/tliron/mongodb-jvm">MongoDB JVM project</a>.
  * 
  * @namespace
  * 
  * @author Tal Liron
- * @version 1.81
+ * @version 2.0
  */
 var MongoDB = MongoDB || function() {
 	/** @exports Public as MongoDB */
@@ -212,13 +212,20 @@ var MongoDB = MongoDB || function() {
 	 *            Options are only used if you are <i>not</i> using a MongoDB
 	 *            connection string for 'uris'
 	 * @param {Boolean} [options.alwaysUseMBeans] Sets whether JMX beans registered by the driver should always be MBeans
-	 * @param {Boolean} [options.autoConnectRetry=true] True if failed connections are retried
 	 * @param {Number} [options.connectionsPerHost] Pool size per URI
 	 * @param {Number} [options.connectTimeout] Milliseconds allowed for connection to be made before an exception is thrown
 	 * @param {Boolean} [options.cursorFinalizerEnabled] Sets whether cursor finalizers are enabled
 	 * @param {String} [options.description] A description of this connection (for debugging)
-	 * @param {Number} [options.maxAutoConnectRetryTime] Milliseconds for the maximum auto connect retry time
+	 * @param {Number} [options.heartbeatConnectTimeout] Milliseconds connect timeout for the cluster heartbeat
+	 * @param {Number} [options.heartbeatFrequency] Milliseconds heartbeat frequency
+	 * @param {Number} [options.heartbeatSocketTimeout] Milliseconds socket timeout for for the cluster heartbeat
+	 * @param {Number} [options.localThreshold] Milliseconds local threshold
+	 * @param {Number} [options.maxConnectionIdleTime] Milliseconds allowed for idle pooled connection
+	 * @param {Number} [options.maxConnectionLifeTime] Milliseconds allowed for pooled connection
 	 * @param {Number} [options.maxWaitTime] Milliseconds allowed for a thread to block before an exception is thrown
+	 * @param {Number} [options.minConnectionsPerHost] Minimum number of connections per host
+	 * @param {Number} [options.minHeartbeatFrequency] Milliseconds minimum heartbeat frequency
+	 * @param {Number} [options.serverSelectionTimeout] Milliseconds allowed for a server to be selected before an exception is thrown
 	 * @param {Boolean} [options.socketKeepalive] Sets whether socket keep alive is enabled
 	 * @param {Number} [options.socketTimeout] Milliseconds allowed for a socket operation before an exception is thrown
 	 * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier]
@@ -257,7 +264,6 @@ var MongoDB = MongoDB || function() {
 		if (!exists(options)) {
 			// Default options
 			options = {
-				autoConnectRetry: true
 			}
 		}
 		
@@ -1295,7 +1301,7 @@ var MongoDB = MongoDB || function() {
 	 *            connections
 	 * @param {String|<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">com.mongodb.MongoClient</a>} [config.client=MongoDb.defaultClient]
 	 *            The MongoDB client instance (see {@link MongoDB#connect})
-	 * @param {String} [config.uniqueId] If supplied, {@link #ensureIndex} will automatically be called on the key
+	 * @param {String} [config.uniqueId] If supplied, {@link #createIndex} will automatically be called on the key
 	 * @param {Boolean} [config.swallow=MongoDB.defaultSwallow] If true, do not throw exceptions
 	 */
 	Public.Collection = function(name, config) {
@@ -2049,7 +2055,7 @@ var MongoDB = MongoDB || function() {
 		if (config.uniqueId) {
 			var index = {}
 			index[config.uniqueId] = 1
-			this.ensureIndex(index, {unique: true})
+			this.createIndex(index, {unique: true})
 		}
 	}
 	
