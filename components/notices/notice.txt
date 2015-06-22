@@ -3,7 +3,7 @@
 Copyright notice
 ================
 
-Version 1.1, January 2010
+Version 1.2, June 2015
 
 This software distribution is covered by this copyright notice.
   
@@ -12,8 +12,8 @@ of their respective copyright owners and are subject to separate license
 agreements. For questions, please contact the copyright holder:
    
     Three Crickets LLC
-    3021 W. Wilson Ave. #3
-    Chicago, IL 60625
+    1109 N. Wood St. #2R
+    Chicago, IL 60622
     USA
 	http://threecrickets.com/
     mailto:legal@threecrickets.com

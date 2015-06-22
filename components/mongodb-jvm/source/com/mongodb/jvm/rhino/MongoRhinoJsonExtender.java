@@ -26,7 +26,7 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
-import com.mongodb.DBRefBase;
+import com.mongodb.DBRef;
 import com.mongodb.jvm.BSON;
 import com.mongodb.jvm.internal.Base64;
 import com.threecrickets.jvm.json.rhino.RhinoJsonExtender;
@@ -265,7 +265,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 				if( idString == null )
 					idString = id.toString();
 
-				return new DBRefBase( null, ref.toString(), idString );
+				return new DBRef( ref.toString(), idString );
 			}
 		}
 
@@ -506,12 +506,12 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 				return map;
 			}
 		}
-		else if( object instanceof DBRefBase )
+		else if( object instanceof DBRef )
 		{
 			// Convert MongoDB ref to extended JSON $ref format
 
-			DBRefBase ref = (DBRefBase) object;
-			String collection = ref.getRef();
+			DBRef ref = (DBRef) object;
+			String collection = ref.getCollectionName();
 			Object id = BSON.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )

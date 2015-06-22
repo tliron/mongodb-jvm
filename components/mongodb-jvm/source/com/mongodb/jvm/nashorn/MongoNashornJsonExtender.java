@@ -29,7 +29,7 @@ import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 
-import com.mongodb.DBRefBase;
+import com.mongodb.DBRef;
 import com.mongodb.jvm.BSON;
 import com.mongodb.jvm.internal.Base64;
 import com.threecrickets.jvm.json.nashorn.NashornJsonExtender;
@@ -268,7 +268,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 				if( idString == null )
 					idString = id.toString();
 
-				return new DBRefBase( null, ref.toString(), idString );
+				return new DBRef( ref.toString(), idString );
 			}
 		}
 
@@ -505,12 +505,12 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 				return map;
 			}
 		}
-		else if( object instanceof DBRefBase )
+		else if( object instanceof DBRef )
 		{
 			// Convert MongoDB ref to extended JSON $ref format
 
-			DBRefBase ref = (DBRefBase) object;
-			String collection = ref.getRef();
+			DBRef ref = (DBRef) object;
+			String collection = ref.getCollectionName();
 			Object id = BSON.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )
