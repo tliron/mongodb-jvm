@@ -54,8 +54,8 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.mongodb</groupId>
-			<artifactId>jvm-driver</artifactId>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-jvm-driver</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
 	</dependencies>

@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.mongodb</groupId>
-	<artifactId>jvm-driver</artifactId>
+	<groupId>org.mongodb</groupId>
+	<artifactId>mongodb-jvm-driver</artifactId>
 	<version>@VERSION@</version>
 	<packaging>pom</packaging>
 
@@ -42,9 +42,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.mongodb</groupId>
-			<artifactId>java-driver</artifactId>
-			<version>[2,3)</version>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver</artifactId>
+			<version>[3.0,3.1)</version>
 		</dependency>
 	</dependencies>
 
