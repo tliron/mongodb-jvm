@@ -381,10 +381,10 @@ var MongoUtil = function() {
 					i.cursorType(com.mongodb.CursorType.NonTailable)
 					break
 				case 'tailable':
-					i.cursorType(com.mongodb.CursorType.tailable)
+					i.cursorType(com.mongodb.CursorType.Tailable)
 					break
 				case 'tailableAwait':
-					i.cursorType(com.mongodb.CursorType.tailableAwait)
+					i.cursorType(com.mongodb.CursorType.TailableAwait)
 					break
 				default:
 					throw new MongoException('Unsupported cursor type: ' + options.cursorType)
@@ -553,7 +553,7 @@ var MongoClient = function(client) {
 		}
 	}
 	
-	this.database = function(name) {
+	this.database = this.db = function(name) {
 		try {
 			return new MongoDatabase(this.client.getDatabase(name), this)
 		}
