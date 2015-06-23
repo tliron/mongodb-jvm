@@ -15,16 +15,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.objects.NativeDate;
 import jdk.nashorn.internal.objects.NativeNumber;
 import jdk.nashorn.internal.objects.NativeRegExp;
-import jdk.nashorn.internal.runtime.Context;
 import jdk.nashorn.internal.runtime.NumberToString;
 import jdk.nashorn.internal.runtime.ScriptFunction;
 import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 
+import org.bson.BsonTimestamp;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
@@ -278,8 +277,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 	public Object to( Object object, boolean nashorn, boolean javaScript )
 	{
 		// Unwrap if necessary
-		if( object instanceof ScriptObjectMirror )
-			object = ScriptObjectMirror.unwrap( object, Context.getGlobal() );
+		object = NashornNativeUtil.unwrap( object );
 
 		if( object instanceof Long )
 		{
@@ -293,6 +291,8 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 			// convert to extended JSON
 
 			String convertedString = NumberToString.stringFor( longValue );
+			if( convertedString.equals( "0.0" ) )
+				convertedString = "0";
 			if( longValue.equals( Long.valueOf( convertedString ) ) )
 				return null;
 
@@ -535,11 +535,11 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 				return map;
 			}
 		}
-		else if( object instanceof BSONTimestamp )
+		else if( object instanceof BsonTimestamp )
 		{
 			// Convert MongoDB BSONTimestamp to extended JSON $timestamp format
 
-			BSONTimestamp timestamp = (BSONTimestamp) object;
+			BsonTimestamp timestamp = (BsonTimestamp) object;
 			int t = timestamp.getTime();
 			int i = timestamp.getInc();
 

@@ -1,5 +1,5 @@
 //
-// MongoDB API for Prudence
+// MongoDB API for Nashorn/Rhino in Scripturian
 //
 // Copyright 2010-2015 Three Crickets LLC.
 //
@@ -20,19 +20,17 @@
 
 if (!MongoClient) {
 
-var BSON = function() {
-	// Initialize BSON and extended JSON conversion
-	if (executable.context.adapter.attributes.get('name') == 'Rhino') {
-		com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation()
-		com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation()
-	}
-	else {
-		com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.nashorn.NashornBsonImplementation()
-		com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation()
-	}
-	
-	return com.mongodb.jvm.BSON
-}()
+// Initialize BSON and extended JSON conversion
+if (executable.context.adapter.attributes.get('name') == 'Rhino') {
+	com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation()
+	com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation()
+}
+else {
+	com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.nashorn.NashornBsonImplementation()
+	com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation()
+}
+
+var BSON = com.mongodb.jvm.BSON
 
 /**
  * @namespace
@@ -40,6 +38,10 @@ var BSON = function() {
 var MongoUtil = function() {
 	/** @exports Public as MongoUtil */
 	var Public = {}
+	
+	Public.id = function() {
+		return new org.bson.types.ObjectId()
+	}
 
 	Public.exists = function(value) {
 		// Note the order: we need the value on the right side for Rhino not to
@@ -130,6 +132,12 @@ var MongoUtil = function() {
 		if (!(options instanceof com.mongodb.MongoClientOptions.Builder)) {
 			var clientOptions = com.mongodb.MongoClientOptions.builder()
 			Public.applyOptions(clientOptions, options, ['alwaysUseMBeans', 'connectionsPerHost', 'connectTimeout', 'cursorFinalizerEnabled', 'description', 'heartbeatConnectTimeout', 'heartbeatFrequency', 'heartbeatSocketTimeout', 'localThreshold', 'maxConnectionIdleTime', 'maxConnectionLifeTime', 'maxWaitTime', 'minConnectionsPerHost', 'minHeartbeatFrequency', 'requiredReplicaSetName', 'serverSelectionTimeout', 'socketKeepAlive', 'socketTimeout', 'sslEnabled', 'sslInvalidHostNameAllowed', 'threadsAllowedToBlockForConnectionMultiplier'])
+			if (Public.exists(options.readPreference)) {
+				clientOptions.readPreference(Public.readPreference(options.readPreference))
+			}
+			if (Public.exists(options.writeConcern)) {
+				clientOptions.writeConcern(Public.writeConcern(options.writeConcern))
+			}
 			options = clientOptions
 		}
 		return options
@@ -283,6 +291,14 @@ var MongoUtil = function() {
 			options = insertManyOptions
 		}
 		return options
+	}
+	
+	Public.writeConcern = function(options) {
+		var w = Public.exists(options.w) ? options.w : 0
+		var wtimeout = Public.exists(options.wtimeout) ? options.wtimeout : 0
+		var fsync = Public.exists(options.fsync) ? options.fsync : false
+		var j = Public.exists(options.j) ? options.j : false
+		return new com.mongodb.WriteConcern(w, wtimeout, fsync, j)
 	}
 
 	Public.readPreference = function(options) {
@@ -580,6 +596,9 @@ var MongoClient = function(client) {
  * @param {Number} [options.maxWaitTime]
  * @param {Number} [options.minConnectionsPerHost]
  * @param {Number} [options.minHeartbeatFrequency]
+ * @param {Object} [options.readPreference]
+ * @param {String} [options.readPreference.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
+ * @param {Object} [options.readPreference.tags]
  * @param {String} [options.requiredReplicaSetName]
  * @param {Number} [options.serverSelectionTimeout]
  * @param {Number} [options.socketKeepAlive]
@@ -587,6 +606,11 @@ var MongoClient = function(client) {
  * @param {Boolean} [options.sslEnabled]
  * @param {Boolean} [options.sslInvalidHostNameAllowed]
  * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier]
+ * @param {Object} [options.writeConcern]
+ * @param {Number} [options.writeConcern.w] Number of writes
+ * @param {Number} [options.writeConcern.wtimeout] Timeout for writes
+ * @param {Boolean} [options.writeConcern.fsync] Whether writes should wait for fsync
+ * @param {Boolean} [options.writeConcern.j] Whether writes should wait for a journaling group commit
  */
 MongoClient.connect = function(uri, options) {
 	try {
@@ -859,6 +883,28 @@ var MongoDatabase = function(database, client) {
 			throw new MongoError(x)
 		}
 	}*/
+	
+	/**
+	 * @param {Object} [options]
+	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
+	 * @param {Object} [options.tags]
+	 */
+	this.withReadPreference = function(options) {
+		var readPreference = MongoUtil.readPreference(options)
+		return new MongoDatabase(this.database.withReadPreference(readPreference), this.client)
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.w] Number of writes
+	 * @param {Number} [options.wtimeout] Timeout for writes
+	 * @param {Boolean} [options.fsync] Whether writes should wait for fsync
+	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
+	 */
+	this.withWriteConcern = function(options) {
+		var writeConcern = MongoUtil.writeConcern(options)
+		return new MongoDatabase(this.database.withWriteConcern(writeConcern), this.client)
+	}
 }
 
 /**
@@ -1371,6 +1417,7 @@ var MongoCollection = function(collection, client) {
 			if (!MongoUtil.exists(doc._id)) {
 				// Insert
 				this.insertOne(doc)
+				return null
 			}
 			else {
 				// Update
@@ -1380,7 +1427,15 @@ var MongoCollection = function(collection, client) {
 				else {
 					options.upsert = true
 				}
-				this.updateOne(doc, {$set: doc}, options)
+				var id = doc._id
+				delete doc._id
+				var update = {$set: doc}
+				try {
+					return this.updateOne({_id: id}, update, options)
+				}
+				finally {
+					doc._id = id
+				}
 			}
 		}
 		catch (x) {
@@ -1442,6 +1497,28 @@ var MongoCollection = function(collection, client) {
 		catch (x) {
 			throw new MongoError(x)
 		}
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
+	 * @param {Object} [options.tags]
+	 */
+	this.withReadPreference = function(options) {
+		var readPreference = MongoUtil.readPreference(options)
+		return new MongoCollection(this.collection.withReadPreference(readPreference), this.client)
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.w] Number of writes
+	 * @param {Number} [options.wtimeout] Timeout for writes
+	 * @param {Boolean} [options.fsync] Whether writes should wait for fsync
+	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
+	 */
+	this.withWriteConcern = function(options) {
+		var writeConcern = MongoUtil.writeConcern(options)
+		return new MongoCollection(this.collection.withWriteConcern(writeConcern), this.client)
 	}
 }
 

@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import jdk.nashorn.internal.objects.NativeString;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.ConsString;
@@ -30,6 +31,7 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
+import com.mongodb.jvm.BSON;
 import com.mongodb.jvm.BsonImplementation;
 import com.threecrickets.jvm.json.rhino.util.RhinoNativeUtil;
 
@@ -146,6 +148,12 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 	public Object from( Object object, boolean extendedJSON )
 	{
+		if( object instanceof BsonDocument )
+		{
+			Document document = BSON.toDocument( (BsonDocument) object );
+			return from( document, extendedJSON );
+		}
+
 		if( object instanceof List<?> )
 		{
 			// Convert list to NativeArray

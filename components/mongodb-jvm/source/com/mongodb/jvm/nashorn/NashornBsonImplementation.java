@@ -17,13 +17,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.objects.NativeArray;
 import jdk.nashorn.internal.objects.NativeRegExp;
 import jdk.nashorn.internal.objects.NativeString;
 import jdk.nashorn.internal.objects.annotations.Function;
 import jdk.nashorn.internal.runtime.ConsString;
-import jdk.nashorn.internal.runtime.Context;
 import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 import jdk.nashorn.internal.runtime.arrays.ArrayData;
@@ -72,8 +70,7 @@ public class NashornBsonImplementation implements BsonImplementation
 	public Object to( Object object )
 	{
 		// Unwrap if necessary
-		if( object instanceof ScriptObjectMirror )
-			object = ScriptObjectMirror.unwrap( object, Context.getGlobal() );
+		object = NashornNativeUtil.unwrap( object );
 
 		if( object instanceof NativeRegExp )
 		{
@@ -159,6 +156,7 @@ public class NashornBsonImplementation implements BsonImplementation
 			Document document = BSON.toDocument( (BsonDocument) object );
 			return from( document, extendedJSON );
 		}
+
 		if( object instanceof List<?> )
 		{
 			// Convert list to NativeArray

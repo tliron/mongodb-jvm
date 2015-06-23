@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
+import org.bson.BsonTimestamp;
 import org.bson.types.BSONTimestamp;
 import org.bson.types.Binary;
 import org.bson.types.ObjectId;
@@ -536,11 +537,11 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 				return map;
 			}
 		}
-		else if( object instanceof BSONTimestamp )
+		else if( object instanceof BsonTimestamp )
 		{
 			// Convert MongoDB BSONTimestamp to extended JSON $timestamp format
 
-			BSONTimestamp timestamp = (BSONTimestamp) object;
+			BsonTimestamp timestamp = (BsonTimestamp) object;
 			int t = timestamp.getTime();
 			int i = timestamp.getInc();
 
