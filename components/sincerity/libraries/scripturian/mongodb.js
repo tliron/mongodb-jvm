@@ -18,7 +18,9 @@
 // at http://threecrickets.com/
 //
 
-var BSON = BSON || function() {
+if (!MongoClient) {
+
+var BSON = function() {
 	// Initialize BSON and extended JSON conversion
 	if (executable.context.adapter.attributes.get('name') == 'Rhino') {
 		com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation()
@@ -35,7 +37,7 @@ var BSON = BSON || function() {
 /**
  * @namespace
  */
-var MongoUtil = MongoUtil || function() {
+var MongoUtil = function() {
 	/** @exports Public as MongoUtil */
 	var Public = {}
 
@@ -110,6 +112,18 @@ var MongoUtil = MongoUtil || function() {
 				target[option](source[option])
 			}
 		}
+	}
+	
+	Public.prune = function(o, keys) {
+		var r = {}
+		for (var k in keys) {
+			var key = keys[k]
+			var value = o[key]
+			if (Public.exists(value)) {
+				r[key] = value
+			}
+		}
+		return r
 	}
 	
 	Public.clientOptions = function(options) {
@@ -318,7 +332,33 @@ var MongoUtil = MongoUtil || function() {
 		}
 		return updateResult
 	}
-	
+
+	Public.bulkWriteResult = function(result) {
+		var bulkWriteResult = {
+			wasAcknowledged: result.wasAcknowledged()
+		}
+		if (bulkWriteResult.wasAcknowledged) {
+			bulkWriteResult.modifiedCountAvailable = result.modifiedCountAvailable
+			if (bulkWriteResult.modifiedCountAvailable) {
+				bulkWriteResult.modifiedCount = result.modifiedCount
+			}
+			bulkWriteResult.deletedCount = result.deletedCount
+			bulkWriteResult.insertedCount = result.insertedCount
+			var upserts = result.upserts
+			if (Public.exists(upserts)) {
+				bulkWriteResult.upserts = []
+				for (var i = upserts.iterator(); i.hasNext(); ) {
+					var upsert = i.next()
+					bulkWriteResult.upserts.push({
+						id: BSON.from(upsert.id),
+						index: upsert.index
+					})
+				}
+			}
+		}
+		return bulkWriteResult
+	}
+
 	Public.distinctIterable = function(i, options) {
 		Public.applyOptions(i, options, ['batchSize'])
 		if (Public.exists(options.filter)) {
@@ -385,41 +425,109 @@ var MongoUtil = MongoUtil || function() {
 /**
  * @class
  */
-var MongoError = MongoError || function(x) {
+var MongoError = function(x) {
 	if (x instanceof com.mongodb.MongoCommandException) {
-		this.message = x.message
 		this.code = x.code
+		this.message = x.message
 		this.serverAddress = String(x.serverAddress)
 		this.response = BSON.from(x.response)
 	}
-	else if (x instanceof com.mongodb.MongoServerException) {
-		this.message = x.message
+	else if (x instanceof com.mongodb.MongoBulkWriteException) {
 		this.code = x.code
+		this.message = x.message
+		this.serverAddress = String(x.serverAddress)
+		var writeConcern = x.writeConcernError
+		if (MongoUtil.exists(writeConcern)) {
+			this.writeConcern = {
+				code: writeConcern.code,
+				message: writeConcern.message,
+				details: BSON.from(writeConcern.details)
+			}
+		}
+		var writeErrors = x.writeErrors
+		if (MongoUtil.exists(writeErrors)) {
+			this.writeErrors = []
+			for (var i = writeErrors.iterator(); i.hasNext(); ) {
+				var writeError = i.next()
+				this.writeErrors.push({
+					index: writeError.index,
+					code: writeError.code,
+					message: writeError.message,
+					category: String(writeError.category),
+					details: BSON.from(writeError.details)
+				})
+			}
+		}
+		var writeResult = x.writeResult
+		if (MongoUtil.exists(writeResult)) {
+			this.writeResult = MongoUtil.bulkWriteResult(writeResult)
+		}
+	}
+	else if (x instanceof com.mongodb.MongoServerException) {
+		this.code = x.code
+		this.message = x.message
 		this.serverAddress = String(x.serverAddress)
 	}
 	else if (x instanceof com.mongodb.MongoException) {
-		this.message = x.message
 		this.code = x.code
+		this.message = x.message
 	}
 	else if (x instanceof java.lang.Throwable) {
 		this.message = x.message
 	}
 	else if (x instanceof MongoError) {
-		this.message = x.message
 		this.code = x.code
+		this.message = x.message
 		this.serverAddress = x.serverAddress
 		this.response = x.response
+		this.writeConcern = x.writeConcern
+		this.writeErrors = x.writeErrors
+		this.writeResult = x.writeResult
 		this.cause = x
 	}
 	else {
 		this.message = x
 	}
+	
+	this.hasCode = function(code) {
+		if (code == this.code) {
+			return true
+		}
+		if (MongoUtil.exists(this.writeConcern)) {
+			if (code == this.writeConcern.code) {
+				return true
+			}
+		}
+		if (MongoUtil.exists(this.writeErrors)) {
+			for (var e in this.writeErrors) {
+				if (code == this.writeErrors[e].code) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	
+	this.clean = function() {
+		return MongoUtil.prune(this, ['code', 'message', 'serverAddress', 'response', 'writeConcern', 'writeErrors', 'writeResult', 'cause'])
+	}
 }
+
+/** @constant */
+MongoError.GONE = -2
+/** @constant */
+MongoError.NOT_FOUND = -5
+/** @constant */
+MongoError.CAPPED = 10003
+/** @constant */
+MongoError.DUPLICATE_KEY = 11000
+/** @constant */
+MongoError.DUPLICATE_KEY_ON_UPDATE = 11001
 
 /**
  * @class
  */
-var MongoClient = MongoClient || function(client) {
+var MongoClient = function(client) {
 	this.client = client
 	
 	this.description = this.client.mongoClientOptions.description
@@ -480,7 +588,7 @@ var MongoClient = MongoClient || function(client) {
  * @param {Boolean} [options.sslInvalidHostNameAllowed]
  * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier]
  */
-MongoClient.connect = MongoClient.connect || function(uri, options) {
+MongoClient.connect = function(uri, options) {
 	try {
 		if (!uri) {
 			uri = 'mongodb://localhost:27017/test'
@@ -513,7 +621,7 @@ MongoClient.connect = MongoClient.connect || function(uri, options) {
 /**
  * 
  */
-MongoClient.global = MongoClient.global || function(application, component) {
+MongoClient.global = function(application, component) {
 	var client = MongoUtil.getGlobal('client', application, component)
 	if (!MongoUtil.exists(client)) {
 		var uri =  MongoUtil.getGlobal('uri', application, component)
@@ -536,7 +644,7 @@ MongoClient.global = MongoClient.global || function(application, component) {
 /**
  * @class
  */
-var MongoDatabase = MongoDatabase || function(database, client) {
+var MongoDatabase = function(database, client) {
 	this.database = database
 	this.client = client
 	
@@ -756,7 +864,7 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 /**
  * @class
  */
-var MongoCollection = MongoCollection || function(collection, client) {
+var MongoCollection = function(collection, client) {
 	this.collection = collection
 	this.client = client
 	
@@ -1248,20 +1356,32 @@ var MongoCollection = MongoCollection || function(collection, client) {
 	}
 
 	/**
-	 * A utility function. Internally calls updateOne with upsert=true.
+	 * Update an existing document or, if it doesn't exist, inserts it.
+	 * <p>
+	 * This is a convenience function. If the document <i>does not</i> have an _id,
+	 * it will call insertOne. If the document <i>does</i> have an _id, it will
+	 * call updateOne with upsert=true. The upsert is there to guarantee that
+	 * the object is saved even if it has been deleted.
 	 * 
 	 * @param {Object} [doc]
-	 * @param {Object} [options]
+	 * @param {Object} [options] Only used when updateOne is called
 	 */
 	this.save = function(doc, options) {
 		try {
-			if (!MongoUtil.exists(options)) {
-				options = {upsert: true}
+			if (!MongoUtil.exists(doc._id)) {
+				// Insert
+				this.insertOne(doc)
 			}
 			else {
-				options.upsert = true
+				// Update
+				if (!MongoUtil.exists(options)) {
+					options = {upsert: true}
+				}
+				else {
+					options.upsert = true
+				}
+				this.updateOne(doc, {$set: doc}, options)
 			}
-			return this.updateOne(doc, {$set: doc}, options)
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1328,7 +1448,7 @@ var MongoCollection = MongoCollection || function(collection, client) {
 /**
  * @class
  */
-var MongoCursor = MongoCursor || function(iterable, options) {
+var MongoCursor = function(iterable, options) {
 	if (MongoUtil.exists(options)) {
 		MongoUtil.findIterable(iterable, options)
 	}
@@ -1361,4 +1481,6 @@ var MongoCursor = MongoCursor || function(iterable, options) {
 			throw new MongoError(x)
 		}
 	}
+}
+
 }

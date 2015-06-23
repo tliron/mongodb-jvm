@@ -89,7 +89,7 @@ function mongotest(command) {
 			collection.insertOne({name: 'Lennart'})
 		}
 		catch (x) {
-			if (x.code != 11000) {
+			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
 				throw x
 			}
 		}
@@ -97,11 +97,18 @@ function mongotest(command) {
 			collection.insertMany([{name: 'Linus'}, {name: 'Richard'}])
 		}
 		catch (x) {
-			if (x.code != -3) {
+			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
 				throw x
 			}
 		}
-		collection.save({name: 'Mark'})
+		try {
+			collection.save({name: 'Mark'})
+		}
+		catch (x) {
+			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
+				throw x
+			}
+		}
 		
 		// Find
 		command.sincerity.out.println('Documents in ' + collection.name + ' with name:')
@@ -119,11 +126,8 @@ function mongotest(command) {
 	}
 	catch (x) {
 		if (x instanceof MongoError) {
-			command.sincerity.err.println('MongoError:' )
-			command.sincerity.err.println('  Message:  ' + x.message)
-			command.sincerity.err.println('  Code:     ' + x.code)
-			command.sincerity.err.println('  Server:   ' + x.serverAddress)
-			command.sincerity.err.println('  Response: ' + Sincerity.JSON.to(x.response))
+			command.sincerity.err.println('MongoError:')
+			command.sincerity.err.println(Sincerity.JSON.to(x.clean(), true))
 		}
 		else {
 			command.sincerity.err.println(x)

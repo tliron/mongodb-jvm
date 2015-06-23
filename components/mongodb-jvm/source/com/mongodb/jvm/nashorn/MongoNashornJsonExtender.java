@@ -70,10 +70,10 @@ import com.threecrickets.jvm.json.util.Literal;
 public class MongoNashornJsonExtender implements NashornJsonExtender
 {
 	//
-	// RhinoJsonExtender
+	// NashornJsonExtender
 	//
 
-	public Object from( ScriptObject scriptObject, boolean rhino )
+	public Object from( ScriptObject scriptObject, boolean nashorn )
 	{
 		Object longValue = getProperty( scriptObject, "$long" );
 		if( longValue != null )
@@ -176,7 +176,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			Date date = new Date( dateTimestamp );
 
-			if( rhino )
+			if( nashorn )
 				return NashornNativeUtil.to( date );
 			else
 				return date;
@@ -208,13 +208,13 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			BSONTimestamp timestamp = new BSONTimestamp( t, i );
 
-			if( rhino )
+			if( nashorn )
 				return NashornNativeUtil.to( new Date( timestamp.getTime() * 1000L ) );
 			else
 				return timestamp;
 		}
 
-		if( rhino )
+		if( nashorn )
 		{
 			Object regex = getProperty( scriptObject, "$regex" );
 			if( regex != null )

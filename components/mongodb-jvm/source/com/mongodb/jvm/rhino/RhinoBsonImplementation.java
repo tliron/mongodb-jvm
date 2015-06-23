@@ -14,11 +14,12 @@ package com.mongodb.jvm.rhino;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import jdk.nashorn.internal.objects.NativeString;
 
-import org.bson.BSONObject;
+import org.bson.Document;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.ConsString;
 import org.mozilla.javascript.Function;
@@ -29,7 +30,6 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.jvm.BsonImplementation;
 import com.threecrickets.jvm.json.rhino.util.RhinoNativeUtil;
 
@@ -75,7 +75,7 @@ public class RhinoBsonImplementation implements BsonImplementation
 			// the MongoDB does driver support Pattern instances (which we think
 			// is a bad idea).
 
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 			bson.put( "$regex", regExp[0] );
 			bson.put( "$options", regExp[1] );
 			return bson;
@@ -108,7 +108,7 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 			// Convert regular Rhino object
 
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 
 			Object[] ids = scriptableObject.getAllIds();
 			for( Object id : ids )
@@ -122,7 +122,7 @@ public class RhinoBsonImplementation implements BsonImplementation
 		}
 		else if( object instanceof Undefined )
 		{
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 			bson.put( "$undefined", true );
 			return bson;
 		}
@@ -159,24 +159,27 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 			return scriptable;
 		}
-		else if( object instanceof BSONObject )
+		else if( object instanceof Map<?, ?> )
 		{
-			// Convert BSON object to NativeObject
+			// Convert map to NativeObject
 
-			BSONObject bsonObject = (BSONObject) object;
+			Map<?, ?> document = (Map<?, ?>) object;
 			Scriptable scriptable = RhinoNativeUtil.newObject();
 
-			for( String key : bsonObject.keySet() )
+			for( Map.Entry<?, ?> entry : document.entrySet() )
 			{
-				Object value = from( bsonObject.get( key ), extendedJSON );
-				ScriptableObject.putProperty( scriptable, key, value );
+				Object value = from( entry.getValue(), extendedJSON );
+				ScriptableObject.putProperty( scriptable, entry.getKey().toString(), value );
 			}
 
 			return scriptable;
 		}
-		else if( object instanceof Symbol )
+		else if( object instanceof Long )
 		{
-			return ( (Symbol) object ).getSymbol();
+			// Wrap Long so to avoid conversion into a NativeNumber (which would
+			// risk losing precision!)
+
+			return RhinoNativeUtil.wrap( (Long) object );
 		}
 		else if( object instanceof Date )
 		{
@@ -186,12 +189,9 @@ public class RhinoBsonImplementation implements BsonImplementation
 		{
 			return RhinoNativeUtil.to( (Pattern) object );
 		}
-		else if( object instanceof Long )
+		else if( object instanceof Symbol )
 		{
-			// Wrap Long so to avoid conversion into a NativeNumber (which would
-			// risk losing precision!)
-
-			return RhinoNativeUtil.wrap( (Long) object );
+			return ( (Symbol) object ).getSymbol();
 		}
 		else
 		{

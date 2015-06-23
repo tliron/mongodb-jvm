@@ -11,6 +11,12 @@
 
 package com.mongodb.jvm;
 
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentReader;
+import org.bson.Document;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.DocumentCodec;
+
 import com.mongodb.jvm.nashorn.MongoNashornJsonImplementation;
 import com.mongodb.jvm.nashorn.NashornBsonImplementation;
 import com.mongodb.jvm.rhino.MongoRhinoJsonImplementation;
@@ -86,6 +92,22 @@ public class BSON
 	public static Object from( Object object, boolean extendedJSON )
 	{
 		return getImplementation().from( object, extendedJSON );
+	}
+
+	/**
+	 * Utility method to convert low-level {@link BsonDocument} to high-level
+	 * {@link Document}.
+	 * 
+	 * @param bsonDocument
+	 *        The BsonDocument
+	 * @return The document
+	 */
+	public static Document toDocument( BsonDocument bsonDocument )
+	{
+		BsonDocumentReader reader = new BsonDocumentReader( bsonDocument );
+		DocumentCodec codec = new DocumentCodec();
+		DecoderContext context = DecoderContext.builder().build();
+		return codec.decode( reader, context );
 	}
 
 	/**

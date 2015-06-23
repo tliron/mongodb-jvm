@@ -14,6 +14,7 @@ package com.mongodb.jvm.nashorn;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
@@ -27,10 +28,12 @@ import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 import jdk.nashorn.internal.runtime.arrays.ArrayData;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.NativeJavaObject;
 
+import com.mongodb.jvm.BSON;
 import com.mongodb.jvm.BsonImplementation;
 import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
 
@@ -40,6 +43,9 @@ import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
  * Recognizes Nashorn's {@link NativeArray}, {@link NativeJavaObject},
  * {@link NativeString}, {@link ConsString}, {@link NativeRegExp},
  * {@link Undefined}, {@link ScriptObject} and {@link Function}.
+ * <p>
+ * For BSON, recognizes both the high-level Document types and the low-level
+ * BsonValue types.
  * <p>
  * Also recognizes <a
  * href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/"
@@ -148,6 +154,11 @@ public class NashornBsonImplementation implements BsonImplementation
 
 	public Object from( Object object, boolean extendedJSON )
 	{
+		if( object instanceof BsonDocument )
+		{
+			Document document = BSON.toDocument( (BsonDocument) object );
+			return from( document, extendedJSON );
+		}
 		if( object instanceof List<?> )
 		{
 			// Convert list to NativeArray
@@ -161,24 +172,27 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			return array;
 		}
-		else if( object instanceof Document )
+		else if( object instanceof Map<?, ?> )
 		{
-			// Convert BSON object to ScriptObject
+			// Convert map to ScriptObject
 
-			Document document = (Document) object;
+			Map<?, ?> document = (Map<?, ?>) object;
 			ScriptObject nativeObject = NashornNativeUtil.newObject();
 
-			for( String key : document.keySet() )
+			for( Map.Entry<?, ?> entry : document.entrySet() )
 			{
-				Object value = from( document.get( key ), extendedJSON );
-				nativeObject.put( key, value, false );
+				Object value = from( entry.getValue(), extendedJSON );
+				nativeObject.put( entry.getKey(), value, false );
 			}
 
 			return nativeObject;
 		}
-		else if( object instanceof Symbol )
+		else if( object instanceof Long )
 		{
-			return ( (Symbol) object ).getSymbol();
+			// Wrap Long so to avoid conversion into a NativeNumber (which would
+			// risk losing precision!)
+
+			return NashornNativeUtil.wrap( (Long) object );
 		}
 		else if( object instanceof Date )
 		{
@@ -188,12 +202,9 @@ public class NashornBsonImplementation implements BsonImplementation
 		{
 			return NashornNativeUtil.to( (Pattern) object );
 		}
-		else if( object instanceof Long )
+		else if( object instanceof Symbol )
 		{
-			// Wrap Long so to avoid conversion into a NativeNumber (which would
-			// risk losing precision!)
-
-			return NashornNativeUtil.wrap( (Long) object );
+			return ( (Symbol) object ).getSymbol();
 		}
 		else
 		{
