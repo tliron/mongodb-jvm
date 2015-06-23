@@ -27,11 +27,10 @@ import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 import jdk.nashorn.internal.runtime.arrays.ArrayData;
 
-import org.bson.BSONObject;
+import org.bson.Document;
 import org.bson.types.Symbol;
 import org.mozilla.javascript.NativeJavaObject;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.jvm.BsonImplementation;
 import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
 
@@ -83,7 +82,7 @@ public class NashornBsonImplementation implements BsonImplementation
 			// the MongoDB does driver support Pattern instances (which we think
 			// is a bad idea).
 
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 			bson.put( "$regex", regExp[0] );
 			bson.put( "$options", regExp[1] );
 			return bson;
@@ -116,7 +115,7 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			// Convert regular Nashorn object
 
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 
 			for( String key : scriptObject.getOwnKeys( true ) )
 			{
@@ -128,7 +127,7 @@ public class NashornBsonImplementation implements BsonImplementation
 		}
 		else if( object instanceof Undefined )
 		{
-			BasicDBObject bson = new BasicDBObject();
+			Document bson = new Document();
 			bson.put( "$undefined", true );
 			return bson;
 		}
@@ -162,16 +161,16 @@ public class NashornBsonImplementation implements BsonImplementation
 
 			return array;
 		}
-		else if( object instanceof BSONObject )
+		else if( object instanceof Document )
 		{
 			// Convert BSON object to ScriptObject
 
-			BSONObject bsonObject = (BSONObject) object;
+			Document document = (Document) object;
 			ScriptObject nativeObject = NashornNativeUtil.newObject();
 
-			for( String key : bsonObject.keySet() )
+			for( String key : document.keySet() )
 			{
-				Object value = from( bsonObject.get( key ), extendedJSON );
+				Object value = from( document.get( key ), extendedJSON );
 				nativeObject.put( key, value, false );
 			}
 

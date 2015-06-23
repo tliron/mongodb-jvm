@@ -46,6 +46,11 @@
 			<artifactId>mongodb-driver</artifactId>
 			<version>[3.0,3.1)</version>
 		</dependency>
+		<dependency>
+			<groupId>com.threecrickets.jvm</groupId>
+			<artifactId>json-jvm</artifactId>
+			<version>[1.1,1.2)</version>
+		</dependency>
 	</dependencies>
 
 	<build>
