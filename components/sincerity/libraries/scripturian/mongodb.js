@@ -54,6 +54,55 @@ var MongoUtil = MongoUtil || function() {
 		}
 	}
 
+	Public.getGlobal = function(name, application, component) {
+		var fullName = 'mongoDb.' + name
+		var value = null
+		// In Prudence initialization scripts
+		try {
+			value = app.globals.mongoDb[name]
+		}
+		catch (x) {}
+		if (!Public.exists(value)) {
+			try {
+				value = app.globals[fullName]
+			}
+			catch (x) {}
+		}
+		if (!Public.exists(value)) {
+			try {
+				value = app.sharedGlobals.mongoDb[name]
+			}
+			catch (x) {}
+		}
+		if (!Public.exists(value)) {
+			try {
+				value = app.sharedGlobals[fullName]
+			}
+			catch (x) {}
+		}
+		// In Scripturian
+		if (!Public.exists(value)) {
+			try {
+				value = application.globals.get(fullName)
+			}
+			catch (x) {}
+		}
+		if (!Public.exists(value)) {
+			try {
+				value = application.sharedGlobals.get(fullName)
+			}
+			catch (x) {}
+		}
+		// In Prudence
+		if (!Public.exists(value)) {
+			try {
+				value = component.context.attributes.get(fullName)
+			}
+			catch (x) {}
+		}
+		return value
+	}
+
 	Public.applyOptions = function(target, source, options) {
 		for (var o in options) {
 			var option = options[o]
@@ -271,7 +320,7 @@ var MongoUtil = MongoUtil || function() {
 	}
 	
 	Public.distinctIterable = function(i, options) {
-		Public.apply(i, options, ['batchSize'])
+		Public.applyOptions(i, options, ['batchSize'])
 		if (Public.exists(options.filter)) {
 			i.filter(BSON.to(options.filter))
 		}
@@ -281,7 +330,7 @@ var MongoUtil = MongoUtil || function() {
 	}
 	
 	Public.findIterable = function(i, options) {
-		Public.apply(i, options, ['batchSize', 'limit', 'noCursorTimeout', 'oplogReplay', 'partial', 'skip'])
+		Public.applyOptions(i, options, ['batchSize', 'limit', 'noCursorTimeout', 'oplogReplay', 'partial', 'skip'])
 		if (Public.exists(options.cursorType)) {
 			if (options.cursorType instanceof com.mongodb.CursorType) {
 				i.cursorType(options.cursorType)
@@ -320,11 +369,11 @@ var MongoUtil = MongoUtil || function() {
 	}
 
 	Public.mongoIterable = function(i, options) {
-		Public.apply(i, options, ['batchSize'])
+		Public.applyOptions(i, options, ['batchSize'])
 	}
 
 	Public.listIndexesIterable = function(i, options) {
-		Public.apply(i, options, ['batchSize'])
+		Public.applyOptions(i, options, ['batchSize'])
 		if (Public.exists(options.maxTime)) {
 			i.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
 		}
@@ -336,34 +385,34 @@ var MongoUtil = MongoUtil || function() {
 /**
  * @class
  */
-var MongoError = MongoError || function(e) {
-	if (e instanceof com.mongodb.MongoCommandException) {
-		this.message = e.message
-		this.code = e.code
-		this.serverAddress = String(e.serverAddress)
-		this.response = BSON.from(e.response)
+var MongoError = MongoError || function(x) {
+	if (x instanceof com.mongodb.MongoCommandException) {
+		this.message = x.message
+		this.code = x.code
+		this.serverAddress = String(x.serverAddress)
+		this.response = BSON.from(x.response)
 	}
-	else if (e instanceof com.mongodb.MongoServerException) {
-		this.message = e.message
-		this.code = e.code
-		this.serverAddress = String(e.serverAddress)
+	else if (x instanceof com.mongodb.MongoServerException) {
+		this.message = x.message
+		this.code = x.code
+		this.serverAddress = String(x.serverAddress)
 	}
-	else if (e instanceof com.mongodb.MongoException) {
-		this.message = e.message
-		this.code = e.code
+	else if (x instanceof com.mongodb.MongoException) {
+		this.message = x.message
+		this.code = x.code
 	}
-	else if (e instanceof java.lang.Throwable) {
-		this.message = e.message
+	else if (x instanceof java.lang.Throwable) {
+		this.message = x.message
 	}
-	else if (e instanceof MongoError) {
-		this.message = e.message
-		this.code = e.code
-		this.serverAddress = e.serverAddress
-		this.response = e.response
-		this.cause = e
+	else if (x instanceof MongoError) {
+		this.message = x.message
+		this.code = x.code
+		this.serverAddress = x.serverAddress
+		this.response = x.response
+		this.cause = x
 	}
 	else {
-		this.message = e
+		this.message = x
 	}
 }
 
@@ -376,6 +425,7 @@ var MongoClient = MongoClient || function(client) {
 	this.description = this.client.mongoClientOptions.description
 	
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 */
 	this.databases = function(options) {
@@ -390,8 +440,8 @@ var MongoClient = MongoClient || function(client) {
 			}
 			return databases
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
@@ -399,8 +449,8 @@ var MongoClient = MongoClient || function(client) {
 		try {
 			return new MongoDatabase(this.client.getDatabase(name), this)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 }
@@ -455,9 +505,32 @@ MongoClient.connect = MongoClient.connect || function(uri, options) {
 		}
 		return database.collection(uri.collection)
 	}
-	catch (e) {
-		throw new MongoError(e)
+	catch (x) {
+		throw new MongoError(x)
 	}
+}
+
+/**
+ * 
+ */
+MongoClient.global = MongoClient.global || function(application, component) {
+	var client = MongoUtil.getGlobal('client', application, component)
+	if (!MongoUtil.exists(client)) {
+		var uri =  MongoUtil.getGlobal('uri', application, component)
+		var options =  MongoUtil.getGlobal('options', application, component)
+		if (MongoUtil.exists(uri)) {
+			client = MongoClient.connect(uri, options)
+			// In Prudence
+			client = application.getGlobal('mongoDb.client', client)
+			try {
+				// In Prudence initialization scripts
+				app.globals.mongoDb = app.globals.mongoDb || {}
+				app.globals.mongoDb.client = Public.client
+			}
+			catch (x) {}
+		}
+	}
+	return client
 }
 
 /**
@@ -472,46 +545,50 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 	/*this.addUser = function(username, password, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.admin = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.authenticate = function(username, password, options, callback) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.close = function(force) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
-	this.collection = function(name, options) {
+	/**
+	 * @param {String} name
+	 */
+	this.collection = function(name) {
 		try {
 			var collection = this.database.getCollection(name)
 			return new MongoCollection(collection, this.client)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 */
 	this.collections = function(options) {
@@ -526,13 +603,13 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 			}
 			return collections
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
 	/**
-	/**
+	 * @param {Object} [options]
 	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
 	 * @param {Object} [options.tags]
 	 */
@@ -549,12 +626,13 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 			}
 			return BSON.from(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
 	/**
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.autoIndex]
 	 * @param {Boolean} [options.capped]
 	 * @param {Number} [options.maxDocuments]
@@ -572,32 +650,32 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 				this.database.createCollection(name, options)
 			}
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
 	/*this.createIndex = function(name, fieldOrSpec, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.db = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.dropCollection = function(name) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
@@ -605,72 +683,72 @@ var MongoDatabase = MongoDatabase || function(database, client) {
 		try {
 			this.database.drop()
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
 	/*this.eval = function(code, parameters, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.executeDbAdminCommand = function(command, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.indexInformation = function(name, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.logout = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.open = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.removeUser = function(username, options) {		
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.renameCollection = function(fromCollection, toCollection, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 	
 	/*this.stats = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 }
@@ -691,21 +769,22 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			var i = this.collection.aggregate(BSON.to(pipeline))
 			// TODO
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.bulkWrite = function(operations, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
 	 * @param {Object} [filter]
+	 * @param {Object} [options]
 	 * @param {Object} [options.hint]
 	 * @param {String} [options.hintString]
 	 * @param {Number} [options.limit]
@@ -728,13 +807,14 @@ var MongoCollection = MongoCollection || function(collection, client) {
 				}
 			}
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
 	 * @param {String|Object} fieldOrSpec
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.background]
 	 * @param {Number} [options.bits]
 	 * @param {Number} [options.bucketSize]
@@ -771,16 +851,16 @@ var MongoCollection = MongoCollection || function(collection, client) {
 				return this.collection.createIndex(spec, options)
 			}
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.createIndexes = function(indexSpecs) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -792,8 +872,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			var result = this.collection.deleteMany(BSON.to(filter))
 			return MongoUtil.deleteResult(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -802,8 +882,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			var result = this.collection.deleteOne(BSON.to(filter))
 			return MongoUtil.deleteResult(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -820,8 +900,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			// TODO
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -829,8 +909,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 		try {
 			this.collection.drop()
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -843,8 +923,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 				this.collection.dropIndex(BSON.to(fieldOrSpec))
 			}
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -852,12 +932,13 @@ var MongoCollection = MongoCollection || function(collection, client) {
 		try {
 			this.collection.dropIndexes()
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @param {String|com.mongodb.CursorType} [options.cursorType] 'nonTailable', 'tailable', or 'tailableAwait'
 	 * @param {Object} [options.filter]
@@ -882,8 +963,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return new MongoCursor(i, options)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
@@ -892,12 +973,13 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			return find(filter, options).first()
 			// TODO
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.maxTime]
 	 * @param {Object} [options.projection]
 	 * @param {Object} [options.sort]
@@ -914,12 +996,13 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return BSON.from(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.maxTime]
 	 * @param {Object} [options.projection]
 	 * @param {String|com.mongodb.client.model.ReturnDocument} [options.returnDocument] 'after' or 'before'
@@ -939,11 +1022,19 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return BSON.from(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.maxTime]
+	 * @param {Object} [options.projection]
+	 * @param {String|com.mongodb.client.model.ReturnDocument} [options.returnDocument] 'after' or 'before'
+	 * @param {Object} [options.sort]
+	 * @param {Boolean} [options.upsert]
+	 */
 	this.findOneAndUpdate = function(filter, update, options) {
 		try {
 			filter = BSON.to(filter)
@@ -957,36 +1048,37 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return BSON.from(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/*this.geoHaystackSearch = function(x, y, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 
 	/*this.geoNear = function(x, y, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 
 	/*this.group = function(keys, condition, initial, reduce, finalize, command, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 
 	/**
+	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @param {Number} [options.maxTime]
 	 */
@@ -1002,44 +1094,46 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return indexes
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.indexExists = function(indexes) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.indexInformation = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.initializeOrderedBulkOp = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.initializeUnorderedBulkOp = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object[]} [docs]
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.ordered]
 	 */
 	this.insertMany = function(docs, options) {
@@ -1056,77 +1150,83 @@ var MongoCollection = MongoCollection || function(collection, client) {
 				this.collection.insertMany(list, options)
 			}
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @param {Object} [doc]
+	 */
 	this.insertOne = function(doc) {
 		try {
 			this.collection.insertOne(BSON.to(doc))
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.isCapped = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
-	this.listIndexes = function(options) {
+	/*this.listIndexes = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
-	}
+	}*/
 
 	this.mapReduce = function(map, reduce, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.options = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.parallelCollectionScan = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.reIndex = function() {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	this.rename = function(newName, options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [filter]
+	 * @param {Object} [replacement]
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 */
 	this.replaceOne = function(filter, replacement, options) {
@@ -1142,29 +1242,44 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * A utility function. Internally calls updateOne with upsert=true.
+	 * 
+	 * @param {Object} [doc]
+	 * @param {Object} [options]
+	 */
 	this.save = function(doc, options) {
 		try {
-			return this.updateOne(doc, doc, {upsert: true})
+			if (!MongoUtil.exists(options)) {
+				options = {upsert: true}
+			}
+			else {
+				options.upsert = true
+			}
+			return this.updateOne(doc, {$set: doc}, options)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/*this.stats = function(options) {
 		try {
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}*/
 
 	/**
+	 * @param {Object} [filter]
+	 * @param {Object} [update]
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 */
 	this.updateMany = function(filter, update, options) {
@@ -1180,12 +1295,15 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 
 	/**
+	 * @param {Object} [filter]
+	 * @param {Object} [update]
+	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 */
 	this.updateOne = function(filter, update, options) {
@@ -1201,8 +1319,8 @@ var MongoCollection = MongoCollection || function(collection, client) {
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 }
@@ -1221,8 +1339,8 @@ var MongoCursor = MongoCursor || function(iterable, options) {
 		try {
 			return this.cursor.hasNext()
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
@@ -1230,8 +1348,8 @@ var MongoCursor = MongoCursor || function(iterable, options) {
 		try {
 			return BSON.from(this.cursor.next())
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 	
@@ -1239,8 +1357,8 @@ var MongoCursor = MongoCursor || function(iterable, options) {
 		try {
 			this.cursor.close()
 		}
-		catch (e) {
-			throw new MongoError(e)
+		catch (x) {
+			throw new MongoError(x)
 		}
 	}
 }

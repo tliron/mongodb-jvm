@@ -1,7 +1,8 @@
 
 document.require(
 	'/mongodb/',
-	'/sincerity/json/')
+	'/sincerity/json/',
+	'/sincerity/objects/')
 
 function getInterfaceVersion() {
 	return 1
@@ -24,8 +25,18 @@ function mongotest(command) {
 	
 	try {
 		// Connections
+		application.globals.put('mongoDb.client', MongoClient.connect('mongodb://localhost:27017', {description: 'global'}))
+
+		var global = MongoClient.global(application)
+		if (Sincerity.Objects.exists(global)) {
+			command.sincerity.out.println('Global client: ' + global.description)
+		}
+		else {
+			command.sincerity.out.println('No global client set')
+		}
+		
 		var client = MongoClient.connect('mongodb://localhost:27017', {description: 'test'})
-		command.sincerity.out.println('Client: ' + client.description)
+		command.sincerity.out.println('Local client: ' + client.description)
 
 		var db = MongoClient.connect('mongodb://localhost:27017/test')
 		command.sincerity.out.println('Database: ' + db.name)
@@ -59,9 +70,9 @@ function mongotest(command) {
 		try {
 			db.createCollection('test2', {maxDocuments: 10})
 		}
-		catch (e) {
-			if (e.code != -1) {
-				throw e
+		catch (x) {
+			if (x.code != -1) {
+				throw x
 			}
 		}
 
@@ -73,30 +84,49 @@ function mongotest(command) {
 			command.sincerity.out.println('  ' + Sincerity.JSON.to(indexes[i]))
 		}
 				
-		// Documents
+		// Create documents
+		try {
+			collection.insertOne({name: 'Lennart'})
+		}
+		catch (x) {
+			if (x.code != 11000) {
+				throw x
+			}
+		}
 		try {
 			collection.insertMany([{name: 'Linus'}, {name: 'Richard'}])
 		}
-		catch (e) {
-			if (e.code != -3) {
-				throw e
+		catch (x) {
+			if (x.code != -3) {
+				throw x
 			}
 		}
-		command.sincerity.out.println('Documents in ' + collection.name + ':')
-		for (var cursor = collection.find(); cursor.hasNext(); ) {
-			command.sincerity.out.println('  ' + Sincerity.JSON.to(cursor.next()))
+		collection.save({name: 'Mark'})
+		
+		// Find
+		command.sincerity.out.println('Documents in ' + collection.name + ' with name:')
+		var cursor = collection.find({name: {$exists: true}}, {sort: {name: -1}})
+		try {
+			while (cursor.hasNext()) {
+				command.sincerity.out.println('  ' + Sincerity.JSON.to(cursor.next()))
+			}
 		}
+		finally {
+			cursor.close()
+		}
+		
+		command.sincerity.out.println('All tests succeeded!')
 	}
-	catch (e) {
-		if (e instanceof MongoError) {
+	catch (x) {
+		if (x instanceof MongoError) {
 			command.sincerity.err.println('MongoError:' )
-			command.sincerity.err.println('  Message:  ' + e.message)
-			command.sincerity.err.println('  Code:     ' + e.code)
-			command.sincerity.err.println('  Server:   ' + e.serverAddress)
-			command.sincerity.err.println('  Response: ' + Sincerity.JSON.to(e.response))
+			command.sincerity.err.println('  Message:  ' + x.message)
+			command.sincerity.err.println('  Code:     ' + x.code)
+			command.sincerity.err.println('  Server:   ' + x.serverAddress)
+			command.sincerity.err.println('  Response: ' + Sincerity.JSON.to(x.response))
 		}
 		else {
-			command.sincerity.err.println(e)
+			command.sincerity.err.println(x)
 		}
 	}
 }
