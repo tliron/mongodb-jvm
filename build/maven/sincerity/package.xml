@@ -20,6 +20,7 @@
 			</includes>
 			<excludes>
 				<exclude>**/.gitignore</exclude>
+				<exclude>**/mongo-db.js</exclude>
 			</excludes>
 		</fileSet>
 	</fileSets>

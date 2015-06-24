@@ -117,7 +117,7 @@ var MongoClient = function(client) {
 MongoClient.connect = function(uri, options) {
 	try {
 		if (!uri) {
-			uri = 'mongodb://localhost:27017/test'
+			uri = 'mongodb://localhost:27017/'
 		}
 		if (!(uri instanceof com.mongodb.MongoClientURI)) {
 			if (MongoUtil.exists(options)) {
@@ -147,11 +147,11 @@ MongoClient.connect = function(uri, options) {
 /**
  * 
  */
-MongoClient.global = function(application, component) {
-	var client = MongoUtil.getGlobal('client', application, component)
+MongoClient.global = function(application) {
+	var client = MongoUtil.getGlobal('client', application)
 	if (!MongoUtil.exists(client)) {
-		var uri =  MongoUtil.getGlobal('uri', application, component)
-		var options =  MongoUtil.getGlobal('options', application, component)
+		var uri =  MongoUtil.getGlobal('uri', application)
+		var options =  MongoUtil.getGlobal('options', application)
 		if (MongoUtil.exists(uri)) {
 			client = MongoClient.connect(uri, options)
 			// In Prudence
@@ -570,19 +570,7 @@ var MongoCollection = function(collection, client) {
 	 */
 	this.createIndexes = function(fieldsOrSpecs) {
 		try {
-			var specs = new java.util.ArrayList()
-			for (var i in fieldsOrSpecs) {
-				var fieldOrSpec = fieldsOrSpecs[i]
-				var spec
-				if (MongoUtil.isString(fieldOrSpec)) {
-					spec = {}
-					spec[fieldOrSpec] = 1
-				}
-				else {
-					spec = fieldOrSpec
-				}
-				specs.add(BSON.to(spec))
-			}
+			var specs = MongoUtil.indexSpecsList(fieldsOrSpecs)
 			return this.collection.createIndexes(specs)
 		}
 		catch (x) {
@@ -767,7 +755,7 @@ var MongoCollection = function(collection, client) {
 	 */
 	this.aggregate = function(pipeline, options) {
 		try {
-			pipeline = MongoUtil.bsonList(pipeline)
+			pipeline = MongoUtil.documentList(pipeline)
 			var i = this.collection.aggregate(BSON.to(pipeline))
 			if (MongoUtil.exists(options)) {
 				MongoUtil.aggregateIterable(i, options)
@@ -790,7 +778,7 @@ var MongoCollection = function(collection, client) {
 	 */
 	this.insertMany = function(docs, options) {
 		try {
-			docs = MongoUtil.bsonList(docs)
+			docs = MongoUtil.documentList(docs)
 			if (!MongoUtil.exists(options)) {
 				this.collection.insertMany(docs)
 			}
@@ -1039,8 +1027,23 @@ var MongoCollection = function(collection, client) {
 	// Bulk write
 	//
 
+	/**
+	 * type can be 'deleteMany', 'deleteOne', 'insertOne', 'replaceOne', 'updateMany', 'updateOne'
+	 *
+	 *
+	 * @param {Object} [options]
+	 * @param {Boolean} [options.ordered]
+	 */
 	this.bulkWrite = function(operations, options) {
 		try {
+			operations = MongoUtil.writeModels(operations)
+			if (!MongoUtil.exists(options)) {
+				this.collection.bulkeWrite(operations)
+			}
+			else {
+				options = MongoUtil.bulkWriteOptions(options)
+				this.collection.bulkeWrite(operations, options)
+			}
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1373,15 +1376,6 @@ var MongoUtil = function() {
 		return new org.bson.types.ObjectId()
 	}
 	
-	Public.bsonList = function(array) {
-		var list = new java.util.ArrayList(array.length)
-		for (var a in array) {
-			var entry = array[a]
-			list.add(BSON.to(entry))
-		}
-		return list
-	}
-	
 	//
 	// General-purpose JavaScript utilities
 	//
@@ -1401,7 +1395,7 @@ var MongoUtil = function() {
 		}
 	}
 
-	Public.getGlobal = function(name, application, component) {
+	Public.getGlobal = function(name, application) {
 		var fullName = 'mongoDb.' + name
 		var value = null
 		// In Prudence initialization scripts
@@ -1434,16 +1428,10 @@ var MongoUtil = function() {
 			}
 			catch (x) {}
 		}
-		if (!Public.exists(value)) {
-			try {
-				value = application.sharedGlobals.get(fullName)
-			}
-			catch (x) {}
-		}
 		// In Prudence
 		if (!Public.exists(value)) {
 			try {
-				value = component.context.attributes.get(fullName)
+				value = application.sharedGlobals.get(fullName)
 			}
 			catch (x) {}
 		}
@@ -1474,6 +1462,43 @@ var MongoUtil = function() {
 	//
 	// Driver utilities
 	//
+
+	// Arguments
+	
+	Public.documentList = function(array) {
+		var list = new java.util.ArrayList(array.length)
+		for (var a in array) {
+			var entry = array[a]
+			entry = BSON.to(entry)
+			list.add(entry)
+		}
+		return list
+	}
+	
+	Public.indexSpecsList = function(fieldsOrSpecs) {
+		var list = new java.util.ArrayList(fieldsOrSpecs.length)
+		for (var f in fieldsOrSpecs) {
+			var fieldOrSpec = fieldsOrSpecs[f]
+			if (Public.isString(fieldOrSpec)) {
+				var spec = {}
+				spec[fieldOrSpec] = 1
+				fieldOrSpec = spec
+			}
+			fieldOrSpec = BSON.to(fieldOrSpec)
+			list.add(fieldOrSpec)
+		}
+		return list
+	}
+	
+	Public.writeModelList = function(array) {
+		var list = new java.util.ArrayList(array.length)
+		for (var a in array) {
+			var entry = array[a]
+			entry = Public.writeModel(entry)
+			list.add(entry)
+		}
+		return list
+	}
 	
 	// Options
 	
@@ -1651,6 +1676,15 @@ var MongoUtil = function() {
 		return options
 	}
 
+	Public.bulkWriteOptions = function(options) {
+		if (!(options instanceof com.mongodb.client.model.BulkWriteOptions)) {
+			var bulkWriteOptions = new com.mongodb.client.model.BulkWriteOptions()
+			Public.applyOptions(renameCollectionOptions, options, ['ordered'])
+			options = bulkWriteOptions
+		}
+		return options
+	}
+	
 	// Behavior
 	
 	Public.readPreference = function(options) {
@@ -1684,6 +1718,60 @@ var MongoUtil = function() {
 		return new com.mongodb.WriteConcern(w, wtimeout, fsync, j)
 	}
 	
+	// Models
+
+	Public.writeModel = function(model) {
+		if (!(model instanceof com.mongodb.client.model.WriteModel)) {
+			switch (model.type) {
+			case 'deleteMany':
+				model = new com.mongodb.client.model.DeleteManyModel(BSON.to(model.filter))
+				break
+			case 'deleteOne':
+				model = new com.mongodb.client.model.DeleteOneModel(BSON.to(model.filter))
+				break
+			case 'insertOne':
+				model = new com.mongodb.client.model.InsertOneModel(BSON.to(model.document))
+				break
+			case 'replaceOne':
+				var filter = BSON.to(model.filter)
+				var replacement = BSON.to(model.replacement)
+				if (!Public.exists(model.options)) {
+					model = new com.mongodb.client.model.ReplaceOneModel(filter, replacement)
+				}
+				else {
+					var options = Public.updateOptions(model.options)
+					model = new com.mongodb.client.model.ReplaceOneModel(filter, replacement, options)
+				}
+				break
+			case 'updateMany':
+				var filter = BSON.to(model.filter)
+				var update = BSON.to(model.update)
+				if (!Public.exists(model.options)) {
+					model = new com.mongodb.client.model.UpdateManyModel(filter, update)
+				}
+				else {
+					var options = Public.updateOptions(model.options)
+					model = new com.mongodb.client.model.UpdateManyModel(filter, update, options)
+				}
+				break
+			case 'updateOne':
+				var filter = BSON.to(model.filter)
+				var update = BSON.to(model.update)
+				if (!Public.exists(model.options)) {
+					model = new com.mongodb.client.model.UpdateOneModel(filter, update)
+				}
+				else {
+					var options = Public.updateOptions(model.options)
+					model = new com.mongodb.client.model.UpdateOneModel(filter, update, options)
+				}
+				break
+			default:
+				throw new MongoException('Unsupported write model type: ' + model.type)
+			}
+		}
+		return model
+	}
+
 	// Results
 
 	Public.deleteResult = function(result) {
