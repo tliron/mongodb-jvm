@@ -83,6 +83,9 @@ function mongotest(command) {
 		for (var i in indexes) {
 			command.sincerity.out.println('  ' + Sincerity.JSON.to(indexes[i]))
 		}
+		
+		// Deletion
+		//collection.deleteMany({name: {$exists: true}})
 				
 		// Create documents
 		try {
@@ -125,12 +128,6 @@ function mongotest(command) {
 		command.sincerity.out.println('All tests succeeded!')
 	}
 	catch (x) {
-		if (x instanceof MongoError) {
-			command.sincerity.err.println('MongoError:')
-			command.sincerity.err.println(Sincerity.JSON.to(x.clean(), true))
-		}
-		else {
-			command.sincerity.err.println(x)
-		}
+		command.sincerity.err.println(MongoError.represent(x))
 	}
 }
