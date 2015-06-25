@@ -9,14 +9,173 @@ function getInterfaceVersion() {
 }
 
 function getCommands() {
-	return ['mongotest']
+	return ['mongo', 'mongotest']
 }
 
 function run(command) {
 	switch (String(command.name)) {
+		case 'mongo':
+			mongo(command)
+			break
 		case 'mongotest':
 			mongotest(command)
 			break
+	}
+}
+
+function mongo(command) {
+	var jline = Packages.jline
+	importClass(
+		jline.TerminalFactory,
+		jline.console.ConsoleReader,
+		jline.console.UserInterruptException,
+		com.mongodb.jvm.jline.InitialCompleter,
+		com.mongodb.jvm.jline.PropertyCompleter)
+	
+	var terminal = TerminalFactory.create()
+	var console = new ConsoleReader()
+	var out = console
+	var showIndent = false
+	var showMax = 20
+	var showAll = false
+	var showStackTrace = false
+
+	var commands = ['exit', 'help', 'help(', 'show(', 'db.', 'client.', 'showIndent', 'showMax', 'showAll', 'showStackTrace']
+	
+	var EvalPropertyCompleter = Java.extend(PropertyCompleter, {
+		getCandidatesFor: function(value) {
+			try {
+				value = eval(value)
+			}
+			catch (x) {
+				return []
+			}
+			
+			var candidates = []
+
+			for (var property in value) {
+				if (typeof value[property] == 'function') {
+					candidates.push(property + '(')
+				}
+				else {
+					candidates.push(property)
+				}
+			}
+
+			return candidates
+		}
+	})
+
+	console.addCompleter(new InitialCompleter(commands))
+	console.addCompleter(new EvalPropertyCompleter())
+
+	console.handleUserInterrupt = true
+	console.prompt = '> '
+
+	application.globals.put('mongoDb.client', new MongoClient('mongodb://localhost:27017', {description: 'shell'}))
+	var client = MongoClient.global()
+	var db = client.database('test')
+	db.collectionsToProperties()
+
+	out.println('MongoDB shell')
+
+	while (true) {
+		try {
+			var line = console.readLine()
+			r = eval(line)
+			var type = typeof r
+
+			if (r instanceof MongoCursor) {
+				try {
+					var count = 0
+					while (r.hasNext()) {
+						out.println(String(Sincerity.JSON.to(r.next(), showIndent)))
+						if (++count == showMax) {
+							if (r.hasNext()) {
+								out.println('...')
+							}
+							break
+						}
+					}
+				}
+				finally {
+					r.close()
+				}
+			}
+			else if (type == 'function') {
+				// Call all functions (they are commands)
+				r()
+			}
+			else if (MongoUtil.isString(r) || (type == 'boolean') || (type == 'number')) {
+				// Print all primitives
+				out.println(String(r))
+			}
+			else if (MongoUtil.exists(r)) {
+				// Print dicts that are purely data
+				var printable = true
+				for (var k in r) {
+					if (typeof r[k] == 'function') {
+						// TODO Recursive
+						printable = false
+						break
+					}
+				}
+				if (printable || showAll) {
+					out.println(String(Sincerity.JSON.to(r), showIndent))					
+				}
+			}
+		}
+		catch (x) {
+			if ((x instanceof UserInterruptException) || (x.javaException instanceof UserInterruptException)) {
+				exit()
+			}
+			out.println(MongoError.represent(x, showStackTrace))
+		}
+	}
+	
+	function exit() {
+		out.println('Bye!')
+		client.close()
+		terminal.reset()
+		java.lang.System.exit(0)
+	}
+	
+	function show(o, indent) {
+		if (!MongoUtil.exists(indent)) {
+			indent = showIndent
+		}
+		if (MongoUtil.exists(o)) {
+			out.println(String(Sincerity.JSON.to(o, indent)))
+		}
+	}
+	
+	function help(o) {
+		if (MongoUtil.exists(o)) {
+			for (var k in o) {
+				if (typeof o[k] == 'function') {
+					out.println('.' + k + '()')
+				}
+				else {
+					out.println('.' + k)
+				}
+			}
+		}
+		else {
+			out.println('Commands:')
+			out.println(' exit: exits the shell')
+			out.println(' help or help(o): shows this help, or shows specific help about an object')
+			out.println(' show(o) or show(o, true): shows the object by encoding it into JSON')
+			out.println()
+			out.println('Objects:')
+			out.println(' db: access the current MongoDatabase')
+			out.println(' client: access the current MongoClient; its current MongoCollections are available as properties')
+			out.println()
+			out.println('Options:')
+			out.println(' showIndent = ' + showIndent + ': whether to indent encoded JSON')
+			out.println(' showMax = ' + showMax + ': how many entries to show from returned cursors')
+			out.println(' showAll = ' + showAll + ': whether to force showing of all returned results, even those that are not JSON-friendly')
+			out.println(' showStackTrace = ' + showStackTrace + ': whether to show the stack trace in case of errors')
+		}
 	}
 }
 
@@ -176,6 +335,6 @@ function mongotest(command) {
 		command.sincerity.out.println('\nAll tests succeeded!')
 	}
 	catch (x) {
-		command.sincerity.err.println(MongoError.represent(x))
+		command.sincerity.err.println(MongoError.represent(x, true))
 	}
 }

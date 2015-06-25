@@ -14,5 +14,6 @@
 		<dependency org="com.threecrickets.jvm" name="json-jvm" rev="1.1+" transitive="false" />
 		<dependency org="org.mongodb" name="mongodb-driver" rev="3.0.2+" transitive="false" />
 		<dependency org="org.mongodb" name="bson" rev="3.0.2+" transitive="false" />
+		<dependency org="jline" name="jline" rev="2.12+" transitive="false" />
 	</dependencies>
 </ivy-module>

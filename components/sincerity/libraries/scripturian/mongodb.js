@@ -58,8 +58,6 @@ var MongoClient = function(uri /* or client */, options) {
 		client = connection.client
 	}
 
-	this._flatten = false
-	
 	/** @field */
 	this.client = client
 	
@@ -118,33 +116,6 @@ var MongoClient = function(uri /* or client */, options) {
 	//
 
 	/**
-	 * @param {Object} [options]
-	 * @param {Number} [options.batchSize]
-	 * @returns {MongoDatabase[]}
-	 */
-	this.databases = function(options) {
-		try {
-			var databases = []
-			var i = this.client.listDatabaseNames().iterator()
-			try {
-				if (MongoUtil.exists(options)) {
-					MongoUtil.mongoIterable(i, options)
-				}
-				while (i.hasNext()) {
-					databases.push(this.database(i.next()))
-				}
-			}
-			finally {
-				i.close()
-			}
-			return databases
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	/**
 	 * Direct access to a database.
 	 * <p>
 	 * The database will inherit the readPreference and writeConcern for its operations
@@ -181,6 +152,60 @@ var MongoClient = function(uri /* or client */, options) {
 			}
 			var database = this.database(fullName.databaseName)
 			return database.collection(fullName.collectionName)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.batchSize]
+	 * @returns {MongoDatabase[]}
+	 */
+	this.databases = function(options) {
+		try {
+			var databases = []
+			var i = this.client.listDatabaseNames().iterator()
+			try {
+				if (MongoUtil.exists(options)) {
+					MongoUtil.mongoIterable(i, options)
+				}
+				while (i.hasNext()) {
+					databases.push(this.database(i.next()))
+				}
+			}
+			finally {
+				i.close()
+			}
+			return databases
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.batchSize]
+	 * @returns {String[]}
+	 */
+	this.databaseNames = function(options) {
+		try {
+			var databaseNames = []
+			var i = this.client.listDatabaseNames().iterator()
+			try {
+				if (MongoUtil.exists(options)) {
+					MongoUtil.mongoIterable(i, options)
+				}
+				while (i.hasNext()) {
+					databaseNames.push(i.next())
+				}
+			}
+			finally {
+				i.close()
+			}
+			return databaseNames
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -337,8 +362,6 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		database = connection.database
 	}
 
-	this._flatten = false
-	
 	/** @field */
 	this.database = database
 
@@ -495,6 +518,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	/**
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
+	 * @returns {MongoCollection[]}
 	 */
 	this.collections = function(options) {
 		try {
@@ -512,6 +536,33 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 				i.close()
 			}
 			return collections
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+	
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.batchSize]
+	 * @returns {String[]}
+	 */
+	this.collectionNames = function(options) {
+		try {
+			var collectionNames = []
+			var i = this.database.listCollectionNames().iterator()
+			try {
+				if (MongoUtil.exists(options)) {
+					MongoUtil.mongoIterable(i, options)
+				}
+				while (i.hasNext()) {
+					collectionNames.push(i.next())
+				}
+			}
+			finally {
+				i.close()
+			}
+			return collectionNames
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -541,6 +592,41 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			throw new MongoError(x)
 		}
 	}
+	
+	this.collectionsToProperties = function(options) {
+		try {
+			var names = this.collectionNames(options)
+			names.sort() // we want them in order, so that sub-collections will be added to their parents
+			for (var n in names) {
+				var name = names[n]
+				var parts = name.split('.')
+				var location = this
+				for (var p in parts) {
+					var part = parts[p]
+					part = safeProperteryName(location, part)
+					if (p == parts.length - 1) {
+						location[part] = this.collection(name)
+					}
+					else {
+						location[part] = location[part] || {}
+						location = location[part]
+					}
+				}
+			}
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+
+		function safeProperteryName(o, name) {
+			while (true) {
+				if (!MongoUtil.exists(o[name]) || (o[name] instanceof MongoCollection)) {
+					return name
+				}
+				name += '_'
+			}
+		}
+	}
 }
 
 /**
@@ -564,8 +650,6 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		collection = connection.collection
 	}
 
-	this._flatten = false
-	
 	/** @field */
 	this.collection = collection
 
@@ -1421,6 +1505,27 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 }
 
 /**
+ * This class does not exactly represent a cursor: it will create a cursor in the database only
+ * when data is accessed, and will keep it open until {@link MongoCursor#close} is called.
+ * <p>
+ * Thus, you can access data again even <i>after</i> calling {@link MongoCursor#close}, which
+ * would cause a fresh new cursor to be created.
+ * <p>
+ * It is recommended to use try/finally semantics when iterating a cursor, to ensure that it is
+ * closed when finished, even if an exception is thrown:
+ * <p>
+ * <pre>
+ * var c = collection.find()
+ * try {
+ *   while (c.hasNext()) {
+ *     println(c.next().name)
+ *   }
+ * }
+ * finally {
+ *   c.close()
+ * }
+ * </pre>
+ * 
  * http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCursor.html
  *
  * @class
@@ -1431,6 +1536,10 @@ var MongoCursor = function(iterable, collection, filter) {
 	this.filter = filter
 	this.cursor = null
 	
+	/**
+	 * A convenience function to get the first entry in the cursor, after which it is immediately
+	 * closed.
+	 */
 	this.first = function() {
 		try {
 			var first = this.iterable.first()
@@ -1439,10 +1548,6 @@ var MongoCursor = function(iterable, collection, filter) {
 		catch (x) {
 			throw new MongoError(x)
 		}
-	}
-	
-	this.rewind = function() {
-		this.close()
 	}
 	
 	/**
@@ -1488,6 +1593,7 @@ var MongoCursor = function(iterable, collection, filter) {
 		try {
 			if (null !== this.cursor) {
 				this.cursor.close()
+				this.cursor = null
 			}
 		}
 		catch (x) {
@@ -1594,28 +1700,43 @@ var MongoError = function(x) {
 	}
 }
 
-MongoError.represent = function(x) {
+MongoError.represent = function(x, full) {
 	var s = new java.io.StringWriter()
 	var out = new java.io.PrintWriter(s)
 	if (x instanceof MongoError) {
 		out.println('MongoDB error:')
-		out.println(Sincerity.JSON.to(x.clean(), true))
+		out.println(String(Sincerity.JSON.to(x.clean(), true)))
 	}
 	else if (x instanceof java.lang.Throwable) {
 		out.println('JVM error:')
-		x.printStackTrace(out)
+		if (!full) {
+			out.println(String(x))
+		}
+		else {
+			x.printStackTrace(out)
+		}
 	}
 	else if (x.nashornException) {
 		out.println('JavaScript error:')
-		x.nashornException.printStackTrace(out)
+		if (!full) {
+			out.println(String(x.nashornException))
+		}
+		else {
+			x.nashornException.printStackTrace(out)
+		}
 	}
 	else if (x.javaException) {
 		out.println('JavaScript error:')
-		x.javaException.printStackTrace(out)
+		if (!full) {
+			out.println(String(x.javaException))
+		}
+		else {
+			x.javaException.printStackTrace(out)
+		}
 	}
 	else {
 		out.println('Error:')
-		out.println(Sincerity.JSON.to(x, true))
+		out.println(String(Sincerity.JSON.to(x, true)))
 	}
 	return String(s)
 }
@@ -1674,6 +1795,31 @@ var MongoUtil = function() {
 			return false
 		}
 	}
+
+	Public.applyOptions = function(target, source, options) {
+		for (var o in options) {
+			var option = options[o]
+			if (Public.exists(source[option])) {
+				target[option](source[option])
+			}
+		}
+	}
+	
+	Public.prune = function(o, keys) {
+		var r = {}
+		for (var k in keys) {
+			var key = keys[k]
+			var value = o[key]
+			if (Public.exists(value)) {
+				r[key] = value
+			}
+		}
+		return r
+	}
+
+	//
+	// Scripturian utilities
+	//
 
 	Public.getGlobal = function(name, applicationService) {
 		if (!MongoUtil.exists(applicationService)) {
@@ -1735,27 +1881,6 @@ var MongoUtil = function() {
 		}
 		catch (x) {}
 		return value
-	}
-	
-	Public.applyOptions = function(target, source, options) {
-		for (var o in options) {
-			var option = options[o]
-			if (Public.exists(source[option])) {
-				target[option](source[option])
-			}
-		}
-	}
-	
-	Public.prune = function(o, keys) {
-		var r = {}
-		for (var k in keys) {
-			var key = keys[k]
-			var value = o[key]
-			if (Public.exists(value)) {
-				r[key] = value
-			}
-		}
-		return r
 	}
 	
 	//
