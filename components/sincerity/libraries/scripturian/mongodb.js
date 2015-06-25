@@ -21,33 +21,106 @@
 if (!MongoClient) {
 
 /**
+ * A single client instance manages a pool of connections to a MongoDB sever or cluster.
+ * All {@link MongoDatabase}, {@link MongoConnection}, and {@link MongoCursor} instances
+ * derived from the client will use its shared pool of connections.
+ * <p>
+ * The connection pool is created when the instance is constructed, and exists until
+ * {@link MongoClient#close} is called.
+ * <p>
+ * See the {@link MongoClient#connect} static method for an explanation of constructor
+ * arguments. Note that there is no difference between constructing instances directly
+ * using the 'new' keyword or calling {@link MongoClient#connect}. Both options are
+ * supported.
+ * <p>
+ * The client's readPreference and writeConcern are used as default values for
+ * operations in {@link MongoDatabase} and {@link MongoCollection}. As with other
+ * options, you cannot change these defaults after the client has been created, but
+ * you can use the withReadPreference and withWriteConcern methods in
+ * {@link MongoDatabase} and {@link MongoCollection} to change their default values.
+ * 
  * http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html
  *
  * @class
+ * @param [uri]
+ * @param [options]
  */
-var MongoClient = function(client) {
+var MongoClient = function(uri /* or client */, options) {
+
+	var client
+	if (uri instanceof com.mongodb.MongoClient) {
+		// Just wrap
+		client = uri // first argument
+	}
+	else {
+		// Connect
+		var connection = MongoUtil.connectClient(uri, options)
+		client = connection.client
+	}
+
+	this._flatten = false
+	
+	/** @field */
 	this.client = client
 	
+	/** @field */
 	this.description = this.client.mongoClientOptions.description
 	
 	/**
-	 * http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientOptions.html
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientOptions.html">com.mongodb.MongoClientOptions</a>}
 	 */
 	this.options = function() {
-		return this.client.mongoClientOptions
+		try {
+			return this.client.mongoClientOptions
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
+	
+	//
+	// Behavior
+	//
 
 	this.readPreference = function() {
-		return MongoUtil.readPreference(this.client.mongoClientOptions.readPreference)
+		try {
+			return MongoUtil.readPreference(this.client.mongoClientOptions.readPreference)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	this.writeConcern = function() {
-		return MongoUtil.writeConcern(this.client.mongoClientOptions.writeConcern)
+		try {
+			return MongoUtil.writeConcern(this.client.mongoClientOptions.writeConcern)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
+	
+	//
+	// Operations
+	//
+	
+	this.close = function() {
+		try {
+			this.client.close()
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
+	//
+	// Databases and collections
+	//
 
 	/**
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
+	 * @returns {MongoDatabase[]}
 	 */
 	this.databases = function(options) {
 		try {
@@ -70,7 +143,16 @@ var MongoClient = function(client) {
 			throw new MongoError(x)
 		}
 	}
-	
+
+	/**
+	 * Direct access to a database.
+	 * <p>
+	 * The database will inherit the readPreference and writeConcern for its operations
+	 * from this client, but these defaults can be changed by calling
+	 * {@link MongoDatabase#withReadPreference} and {@link MongoDatabase#withWriteConcern}.
+	 * 
+	 * @returns {MongoDatabase}
+	 */
 	this.database = this.db = function(name) {
 		try {
 			return new MongoDatabase(this.client.getDatabase(name), this)
@@ -79,89 +161,158 @@ var MongoClient = function(client) {
 			throw new MongoError(x)
 		}
 	}
+	
+	/**
+	 * Direct access to a collection.
+	 * <p>
+	 * The collection will inherit the readPreference and writeConcern for its operations
+	 * from this client, but these defaults can be changed by calling
+	 * {@link MongoCollection#withReadPreference} and {@link MongoCollection#withWriteConcern}.
+	 * 
+	 * @param {String|com.mongodb.MongoNamespace) fullName
+	 *  The full name of the collection. For example, the collection 'mycollection'
+	 *  in database 'mydatabase' would be 'mydatabase.mycollection' 
+	 * @returns {MongoCollection}
+	 */
+	this.collection = function(fullName) {
+		try {
+			if(!(fullName instanceof com.mongodb.MongoNamespace)) {
+				fullName = new com.mongodb.MongoNamespace(fullName)
+			}
+			var database = this.database(fullName.databaseName)
+			return database.collection(fullName.collectionName)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
 }
 
 /**
- * @param {String|com.mongodb.MongoClientURI} [uri='mongodb://localhost:27017/test']
+ * Creates a {@link MongoClient} instance.
+ * 
+ * @param {String|com.mongodb.MongoClientURI} [uri='mongodb://localhost:27017/']
  * @param {Object|com.mongodb.MongoClientOptions.Builder} [options]
- * @param {Boolean} [options.alwaysUseMBeans]
- * @param {Number} [options.connectionsPerHost]
- * @param {Number} [options.connectTimeout]
- * @param {Boolean} [options.cursorFinalizerEnabled]
  * @param {String} [options.description]
- * @param {Number} [options.heartbeatConnectTimeout]
- * @param {Number} [options.heartbeatFrequency]
- * @param {Number} [options.heartbeatSocketTimeout]
- * @param {Number} [options.localThreshold]
- * @param {Number} [options.maxConnectionIdleTime]
- * @param {Number} [options.maxConnectionLifeTime]
- * @param {Number} [options.maxWaitTime]
- * @param {Number} [options.minConnectionsPerHost]
- * @param {Number} [options.minHeartbeatFrequency]
+ *  A description of this connection (useful for debugging)
  * @param {Object} [options.readPreference]
- * @param {String} [options.readPreference.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
+ * @param {String} [options.readPreference.mode='primary'] 
+ *  <ul>
+ *   <li>'primary': read only from the primary</li>
+ *   <li>'primaryPreferred': read from the primary if available, otherwise from a secondary</li>
+ *   <li>'secondary': read only from a secondary</li>
+ *   <li>'secondaryPreferred': read from a secondary if available, otherwise from the primary</li>
+ *   <li>'nearest'</li>: allow reads from either the primary the secondaries
+ *  </ul>
  * @param {Object} [options.readPreference.tags]
- * @param {String} [options.requiredReplicaSetName]
- * @param {Number} [options.serverSelectionTimeout]
- * @param {Number} [options.socketKeepAlive]
- * @param {Number} [options.socketTimeout]
- * @param {Boolean} [options.sslEnabled]
- * @param {Boolean} [options.sslInvalidHostNameAllowed]
- * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier]
+ *  The set of tags allowed for selection of secondaries. Not usable for 'primary' mode.
  * @param {Object} [options.writeConcern]
- * @param {Number} [options.writeConcern.w] Number of writes
- * @param {Number} [options.writeConcern.wtimeout] Timeout for writes
- * @param {Boolean} [options.writeConcern.fsync] Whether writes should wait for fsync
- * @param {Boolean} [options.writeConcern.j] Whether writes should wait for a journaling group commit
+ * @param {Number} [options.writeConcern.w=1]
+ *  The write strategy.
+ *  <ul>
+ *   <li>0: Don't wait for acknowledgement from the server</li>
+ *   <li>1: Wait for acknowledgement, but don't wait for secondaries to replicate</li>
+ *   <li>&gt;=2: Wait for one or more secondaries to also acknowledge </li>
+ *  </ul>
+ * @param {Number} [options.writeConcern.wtimeout=0]
+ *  How long to wait for slaves before failing.
+ *  <ul>
+ *   <li>0: indefinite </li>
+ *   <li>&gt;0: time to wait in milliseconds</li>
+ *  </ul>
+ * @param {Boolean} [options.writeConcern.j=false]
+ *  If true block until write operations have been committed to the journal. Cannot be used in combination with fsync. Prior to MongoDB 2.6 this option was ignored if
+ *  the server was running without journaling. Starting with MongoDB 2.6 write operations will fail with an exception if this option is used when the server is running
+ *  without journaling.
+ * @param {Boolean} [options.writeConcern.fsync=false]
+ *  If true and the server is running without journaling, blocks until the server has synced all data files to disk. If the server is running with journaling, this acts
+ *  the same as the j option, blocking until write operations have been committed to the journal. Cannot be used in combination with j. In almost all cases the j flag
+ *  should be used in preference to this one.
+ * @param {Boolean} [options.cursorFinalizerEnabled=true]
+ *  Whether there is a a finalize method created that cleans up instances of MongoCursor that the client does not close. If you are careful to always call the close
+ *  method of MongoCursor, then this can safely be set to false.
+ * @param {Boolean} [options.alwaysUseMBeans=false]
+ *  Whether JMX beans registered by the driver should always be MBeans.
+ * @param {Boolean} [options.sslEnabled=false]
+ *  Whether to use SSL.
+ * @param {Boolean} [options.sslInvalidHostNameAllowed=false]
+ *  Whether invalid host names should be allowed if SSL is enabled. Take care before setting this to true, as it makes the application susceptible to man-in-the-middle
+ *  attacks.
+ * @param {String} [options.requiredReplicaSetName]
+ *  The required replica set name. With this option set, the MongoClient instance will
+ *  <ol>
+ *   <li>Connect in replica set mode, and discover all members of the set based on the given servers</li>
+ *   <li>Make sure that the set name reported by all members matches the required set name.</li>
+ *   <li>Refuse to service any requests if any member of the seed list is not part of a replica set with the required name.</li>
+ *  </ol>
+ * @param {Number} [options.localThreshold=15]
+ *  The local threshold. When choosing among multiple MongoDB servers to send a request, the MongoClient will only send that request to a server whose ping time is
+ *  less than or equal to the server with the fastest ping time plus the local threshold. For example, let's say that the client is choosing a server to send a query
+ *  when the read preference is 'secondary', and that there are three secondaries, server1, server2, and server3, whose ping times are 10, 15, and 16 milliseconds,
+ *  respectively.  With a local threshold of 5 milliseconds, the client will send the query to either server1 or server2 (randomly selecting between the two).
+ * @param {Number} [options.serverSelectionTimeout=30000]
+ *  The server selection timeout in milliseconds, which defines how long the driver will wait for server selection to succeed before throwing an exception. A value of
+ *  0 means that it will timeout immediately if no server is available. A negative value means to wait indefinitely.
+ * @param {Number} [options.minConnectionsPerHost=0]
+ *  The minimum number of connections per host for this MongoClient instance. Those connections will be kept in a pool when idle, and the pool will ensure over time
+ *  that it contains at least this minimum number.
+ * @param {Number} [options.connectionsPerHost=100]
+ *  The maximum number of connections allowed per host for this MongoClient instance. Those connections will be kept in a pool when idle. Once the pool is exhausted,
+ *  any operation requiring a connection will block waiting for an available connection.
+ * @param {Number} [options.threadsAllowedToBlockForConnectionMultiplier=5]
+ *  This multiplier, multiplied with the connectionsPerHost setting, gives the maximum number of threads that may be waiting for a connection to become available from
+ *  the pool. All further threads will get an exception right away. For example if connectionsPerHost is 10 and threadsAllowedToBlockForConnectionMultiplier is 5, then
+ *  up to 50 threads can wait for a connection.
+ * @param {Number} [options.connectTimeout=10000]
+ *  The connection timeout in milliseconds. A value of 0 means no timeout. It is used solely when establishing a new connection.
+ * @param {Number} [options.maxWaitTime=120000]
+ *  The maximum wait time in milliseconds that a thread may wait for a connection to become available. A value of 0 means that it will not wait. A negative value means
+ *  to wait indefinitely.
+ * @param {Number} [options.maxConnectionIdleTime=0]
+ *  The maximum idle time of a pooled connection. A zero value indicates no limit to the idle time. A pooled connection that has exceeded its idle time will be closed
+ *  and replaced when necessary by a new connection.
+ * @param {Number} [options.maxConnectionLifeTime=0]
+ *  The maximum life time of a pooled connection. A zero value indicates no limit to the life time. A pooled connection that has exceeded its life time will be closed
+ *  and replaced when necessary by a new connection.
+ * @param {Boolean} [options.socketKeepAlive=false]
+ *  This flag controls the socket keep alive feature that keeps a connection alive through firewalls.
+ * @param {Number} [options.minHeartbeatFrequency=500]
+ *  Gets the minimum heartbeat frequency. In the event that the driver has to frequently re-check a server's availability, it will wait at least this long since the
+ *  previous check to avoid wasted effort.
+ * @param {Number} [options.heartbeatFrequency=10000]
+ *  The heartbeat frequency. This is the frequency that the driver will attempt to determine the current state of each server in the cluster.
+ * @param {Number} [options.heartbeatConnectTimeout=20000]
+ *  The connect timeout for connections used for the cluster heartbeat.
+ * @param {Number} [options.heartbeatSocketTimeout=20000]
+ *  The socket timeout for connections used for the cluster heartbeat.
+ * @param {Number} [options.socketTimeout=0]
+ *  The socket timeout in milliseconds. It is used for I/O socket read and write operations. 0 means no timeout.
+ * @returns {MongoClient}
  */
 MongoClient.connect = function(uri, options) {
-	try {
-		if (!uri) {
-			uri = 'mongodb://localhost:27017/'
-		}
-		if (!(uri instanceof com.mongodb.MongoClientURI)) {
-			if (MongoUtil.exists(options)) {
-				options = MongoUtil.clientOptions(options)
-				uri = new com.mongodb.MongoClientURI(uri, options)
-			}
-			else {
-				uri = new com.mongodb.MongoClientURI(uri)
-			}
-		}
-		var client = new com.mongodb.MongoClient(uri)
-		client = new MongoClient(client)
-		if (!MongoUtil.exists(uri.database)) {
-			return client
-		}
-		var database = client.database(uri.database)
-		if (!MongoUtil.exists(uri.collection)) {
-			return database
-		}
-		return database.collection(uri.collection)
-	}
-	catch (x) {
-		throw new MongoError(x)
-	}
+	return new MongoClient(uri, options)
 }
 
 /**
- * 
+ * Fetches the global {@link MongoClient} singleton, or lazily creates and sets a new one if
+ * it hasn't yet been set.
+ * <p>
+ * The client is set as 'mongoDb.client' in {@link applications.globals}. You can set it there
+ * directly, or you can set 'mongoDb.uri' and optionally 'mongoDb.options' to support lazy
+ * creation.
+ * <p>
+ * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
+ * all applications to have access the same client. Note that {@link applications.globals}
+ * is checked first, so it has precedence.
  */
-MongoClient.global = function(application) {
-	var client = MongoUtil.getGlobal('client', application)
+MongoClient.global = function(applicationService) {
+	var client = MongoUtil.getGlobal('client', applicationService)
 	if (!MongoUtil.exists(client)) {
-		var uri =  MongoUtil.getGlobal('uri', application)
-		var options =  MongoUtil.getGlobal('options', application)
+		var uri =  MongoUtil.getGlobal('uri', applicationService)
 		if (MongoUtil.exists(uri)) {
-			client = MongoClient.connect(uri, options)
-			// In Prudence
-			client = application.getGlobal('mongoDb.client', client)
-			try {
-				// In Prudence initialization scripts
-				app.globals.mongoDb = app.globals.mongoDb || {}
-				app.globals.mongoDb.client = Public.client
-			}
-			catch (x) {}
+			var options =  MongoUtil.getGlobal('options', applicationService)
+			client = new MongoClient(uri, options)
+			client = MongoUtil.setGlobal('client', client)
 		}
 	}
 	return client
@@ -172,10 +323,29 @@ MongoClient.global = function(application) {
  *
  * @class
  */
-var MongoDatabase = function(database, client) {
+var MongoDatabase = function(uri /* or database */, options /* or client */) {
+	var database, client
+	if (uri instanceof com.mongodb.client.MongoDatabase) {
+		// Just wrap
+		database = uri // first argument
+		client = options // second argument
+	}
+	else {
+		// Connect
+		var connection = MongoUtil.connectDatabase(uri, options)
+		client = new MongoClient(connection.client)
+		database = connection.database
+	}
+
+	this._flatten = false
+	
+	/** @field */
 	this.database = database
+
+	/** @field */
 	this.client = client
 	
+	/** @field */
 	this.name = this.database.name
 	
 	//
@@ -183,11 +353,21 @@ var MongoDatabase = function(database, client) {
 	//
 
 	this.readPreference = function() {
-		return MongoUtil.readPreference(this.database.readPreference)
+		try {
+			return MongoUtil.readPreference(this.database.readPreference)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	this.writeConcern = function() {
-		return MongoUtil.writeConcern(this.database.writeConcern)
+		try {
+			return MongoUtil.writeConcern(this.database.writeConcern)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	/**
@@ -196,8 +376,13 @@ var MongoDatabase = function(database, client) {
 	 * @param {Object} [options.tags]
 	 */
 	this.withReadPreference = function(options) {
-		var readPreference = MongoUtil.readPreference(options)
-		return new MongoDatabase(this.database.withReadPreference(readPreference), this.client)
+		try {
+			var readPreference = MongoUtil.readPreference(options)
+			return new MongoDatabase(this.database.withReadPreference(readPreference), this.client)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	/**
@@ -208,8 +393,13 @@ var MongoDatabase = function(database, client) {
 	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
 	 */
 	this.withWriteConcern = function(options) {
-		var writeConcern = MongoUtil.writeConcern(options)
-		return new MongoDatabase(this.database.withWriteConcern(writeConcern), this.client)
+		try {
+			var writeConcern = MongoUtil.writeConcern(options)
+			return new MongoDatabase(this.database.withWriteConcern(writeConcern), this.client)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 	
 	//
@@ -226,8 +416,8 @@ var MongoDatabase = function(database, client) {
 	}
 
 	/**
-	 * @param {Object} [options]
-	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
+	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
+	 * @param {String} [options.mode]
 	 * @param {Object} [options.tags]
 	 */
 	this.command = function(command, options) {
@@ -246,6 +436,10 @@ var MongoDatabase = function(database, client) {
 		catch (x) {
 			throw new MongoError(x)
 		}
+	}
+	
+	this.ping = function(options) {
+		return this.command({ping: 1}, options)
 	}
 
 	/*this.addUser = function(username, password, options) {
@@ -271,14 +465,15 @@ var MongoDatabase = function(database, client) {
 			throw new MongoError(x)
 		}
 	}*/
-	
-	/*this.close = function(force) {
+
+	/*this.removeUser = function(username, options) {		
 		try {
 		}
 		catch (x) {
 			throw new MongoError(x)
 		}
 	}*/
+
 	
 	//
 	// Collections
@@ -290,7 +485,7 @@ var MongoDatabase = function(database, client) {
 	this.collection = function(name) {
 		try {
 			var collection = this.database.getCollection(name)
-			return new MongoCollection(collection, this.client)
+			return new MongoCollection(collection, this)
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -346,95 +541,6 @@ var MongoDatabase = function(database, client) {
 			throw new MongoError(x)
 		}
 	}
-	
-
-	/*this.createIndex = function(name, fieldOrSpec, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.db = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.dropCollection = function(name) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.eval = function(code, parameters, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.executeDbAdminCommand = function(command, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.indexInformation = function(name, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.logout = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.open = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.removeUser = function(username, options) {		
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.renameCollection = function(fromCollection, toCollection, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.stats = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
 }
 
 /**
@@ -442,12 +548,40 @@ var MongoDatabase = function(database, client) {
  *
  * @class
  */
-var MongoCollection = function(collection, client) {
+var MongoCollection = function(uri /* or collection */, options /* or database */, database) {
+	var collection, database, client
+	if (uri instanceof com.mongodb.client.MongoCollection) {
+		// Just wrap
+		collection = uri // first argument
+		database = options // second argument
+		client = database.client
+	}
+	else {
+		// Connect
+		var connection = MongoUtil.connectCollection(uri, options)
+		client = new MongoClient(connection.client)
+		database = new MongoDatabase(connection.database, client)
+		collection = connection.collection
+	}
+
+	this._flatten = false
+	
+	/** @field */
 	this.collection = collection
+
+	/** @field */
+	this.database = database
+
+	/** @field */
 	this.client = client
 	
+	/** @field */
 	this.name = this.collection.namespace.collectionName
+	
+	/** @field */
 	this.databaseName = this.collection.namespace.databaseName
+	
+	/** @field */
 	this.fullName = this.collection.namespace.fullName
 	
 	//
@@ -455,11 +589,21 @@ var MongoCollection = function(collection, client) {
 	//
 
 	this.readPreference = function() {
-		return MongoUtil.readPreference(this.collection.readPreference)
+		try {
+			return MongoUtil.readPreference(this.collection.readPreference)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	this.writeConcern = function() {
-		return MongoUtil.writeConcern(this.collection.writeConcern)
+		try {
+			return MongoUtil.writeConcern(this.collection.writeConcern)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	/**
@@ -468,8 +612,13 @@ var MongoCollection = function(collection, client) {
 	 * @param {Object} [options.tags]
 	 */
 	this.withReadPreference = function(options) {
-		var readPreference = MongoUtil.readPreference(options)
-		return new MongoCollection(this.collection.withReadPreference(readPreference), this.client)
+		try {
+			var readPreference = MongoUtil.readPreference(options)
+			return new MongoCollection(this.collection.withReadPreference(readPreference), this.database)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
 
 	/**
@@ -480,10 +629,15 @@ var MongoCollection = function(collection, client) {
 	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
 	 */
 	this.withWriteConcern = function(options) {
-		var writeConcern = MongoUtil.writeConcern(options)
-		return new MongoCollection(this.collection.withWriteConcern(writeConcern), this.client)
+		try {
+			var writeConcern = MongoUtil.writeConcern(options)
+			return new MongoCollection(this.collection.withWriteConcern(writeConcern), this.database)
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
 	}
-
+	
 	//
 	// Operations
 	//
@@ -511,6 +665,9 @@ var MongoCollection = function(collection, client) {
 				options = MongoUtil.renameCollectionOptions(options)
 				this.renameCollection(namespace, options)
 			}
+			this.name = this.collection.namespace.collectionName
+			this.databaseName = this.collection.namespace.databaseName
+			this.fullName = this.collection.namespace.fullName
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -693,28 +850,10 @@ var MongoCollection = function(collection, client) {
 		return cursor.first()
 	}
 
-	/**
-	 * @param {Number} [options.batchSize]
-	 * @param {Object} [options.filter]
-	 * @param {Number} [options.maxTime]
-	 */
-	this.distinct = function(key, options) {
-		try {
-			var i = this.collection.distinct(key, java.lang.Object)
-			if (MongoUtil.exists(options)) {
-				MongoUtil.distinctIterable(i, options)
-			}
-			// TODO
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
 	//
 	// Aggregate queries
 	//
-
+	
 	/**
 	 * @param {Object} [filter]
 	 * @param {Object} [options]
@@ -746,6 +885,24 @@ var MongoCollection = function(collection, client) {
 	}
 
 	/**
+	 * @param {Number} [options.batchSize]
+	 * @param {Object} [options.filter]
+	 * @param {Number} [options.maxTime]
+	 */
+	this.distinct = function(key, options) {
+		try {
+			var i = this.collection.distinct(key, java.lang.Object)
+			if (MongoUtil.exists(options)) {
+				MongoUtil.distinctIterable(i, options)
+			}
+			// TODO
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
+	/**
 	 * @param {Object[]} pipeline
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.allowDiskUse]
@@ -767,6 +924,121 @@ var MongoCollection = function(collection, client) {
 		}
 	}
 	
+	/**
+	 * @param {Object} key
+	 * @param {Function} [reduce=function(c,r){}]
+	 * @param {Object} [initial]
+	 * @param {Function} [keyf]
+	 * @param {Object} [filter]
+	 * @param {Function} [finalize]
+	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
+	 * @param {String} [options.mode]
+	 * @param {Object} [options.tags]
+	 */
+	this.group = function(args, options) {
+		if (!MongoUtil.exists(args.initial)) {
+			args.initial = {}
+		}
+		if (!MongoUtil.exists(args.reduce)) {
+			args.reduce = function(c,r){}
+		}
+		var command = {
+			group: {
+				ns: this.name,
+				key: args.key,
+				initial: args.initial,
+				$reduce: String(args.reduce)
+			}
+		}
+		if (MongoUtil.exists(args.keyf)) {
+			command.group.$keyf = String(args.keyf)
+		}
+		if (MongoUtil.exists(args.filter)) {
+			command.group.cond = args.filter
+		}
+		if (MongoUtil.exists(args.finalize)) {
+			command.group.finalize = String(args.finalize)
+		}
+		return this.database.command(command, options)
+	}
+	
+	/**
+	 * @param {Function} map
+	 * @param {Function} reduce
+	 * @param {String|Object} [out={inline: 1}]
+	 * @param {Object} [filter]
+	 * @param {Object} [sort]
+	 * @param {Number} [limit]
+	 * @param {Object} [scope]
+	 * @param {Function} [finalize]
+	 * @param {Boolean} [jsMode=false]
+	 * @param {Boolean} [verbose=true]
+	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
+	 * @param {String} [options.mode]
+	 * @param {Object} [options.tags]
+	 */
+	this.mapReduce = function(args, options) {
+		if (!MongoUtil.exists(args.out)) {
+			args.out = {inline: 1}
+		}
+		var command = {
+			mapReduce: this.name,
+			map: String(args.map),
+			reduce: String(args.reduce),
+			out: args.out
+		}
+		if (MongoUtil.exists(args.filter)) {
+			command.query = args.filter
+		}
+		if (MongoUtil.exists(args.sort)) {
+			command.sort = args.sort
+		}
+		if (MongoUtil.exists(args.limit)) {
+			command.limit = args.limit
+		}
+		if (MongoUtil.exists(args.scope)) {
+			command.scope = args.scope
+		}
+		if (MongoUtil.exists(args.finalize)) {
+			command.finalize = String(args.finalize)
+		}
+		if (MongoUtil.exists(args.jsMode)) {
+			command.jsMode = args.jsMode
+		}
+		if (MongoUtil.exists(args.verbose)) {
+			command.verbose = args.verbose
+		}
+		return this.database.command(command, options)
+	}
+	
+	//
+	// Geospatial queries
+	//
+	
+	/**
+	 * @param {Object} [options]
+	 * @param {Boolean} [options.spherical]
+	 * @param {Number} [options.distanceMultiplier]
+	 * @param {Object} [options.filter]
+	 * @param {Boolean} [options.includeLocations]
+	 * @param {Number} [options.limit]
+	 * @param {Number} [options.maxDistance]
+	 * @param {Number} [options.minDistance]
+	 * @param {Number} [options.num]
+	 * @param {Boolean} [options.uniqueDocs]
+	 */
+	this.geoNear = function(x, y, options) {
+	}
+
+	/**
+	 * @param {Object} [options]
+	 * @param {Object} [options.filter]
+	 * @param {Number} [options.maxDistance]
+	 * @param {Number} [options.limit]
+	 */
+	this.geoHaystackSearch = function(x, y, options) {
+	}
+
 	//
 	// Insertion
 	//
@@ -1050,104 +1322,102 @@ var MongoCollection = function(collection, client) {
 		}
 	}
 	
+	//
+	// Diagnostics
+	//
 	
-	
-	/*this.geoHaystackSearch = function(x, y, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
+	/**
+	 * @param {String} [verbosity='allPlansExecution'] 'queryPlanner', 'executionStats', or 'allPlansExecution'
+	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
+	 * @param {String} [options.mode]
+	 * @param {Object} [options.tags]
+	 */
+	this.explain = function(verbosity, options) {
+		var collection = this
+		var explainOptions = options
+		return {
+			find: function(filter) {
+				filter = filter || {}
+				return collection.explainRaw('find', {filter: filter}, verbosity, options)
+			},
 
-	/*this.geoNear = function(x, y, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
+			count: function(filter) {
+				filter = filter || {}
+				return collection.explainRaw('count', {query: filter}, verbosity, options)
+			},
 
-	/*this.group = function(keys, condition, initial, reduce, finalize, command, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
+			group: function(args) {
+				if (!MongoUtil.exists(args.initial)) {
+					args.initial = {}
+				}
+				if (!MongoUtil.exists(args.reduce)) {
+					args.reduce = function(c,r){}
+				}
+				var group = {
+					ns: collection.name,
+					key: args.key,
+					initial: args.initial,
+					$reduce: String(args.reduce)
+				}
+				if (MongoUtil.exists(args.keyf)) {
+					group.$keyf = String(args.keyf)
+				}
+				if (MongoUtil.exists(args.filter)) {
+					group.cond = args.filter
+				}
+				if (MongoUtil.exists(args.finalize)) {
+					group.finalize = String(args.finalize)
+				}
+				return collection.explainRaw('group', {group: group}, verbosity, options)
+			},
 
-	this.initializeOrderedBulkOp = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
+			deleteOne: function(filter) {
+				filter = filter || {}
+				return collection.explainRaw('delete', {deletes: [{q: filter, limit: 1}]}, verbosity, options)
+			},
+		
+			deleteMany: function(filter) {
+				filter = filter || {}
+				return collection.explainRaw('delete', {deletes: [{q: filter, limit: 0}]}, verbosity, options)
+			},
+		
+			updateMany: function(filter, update, options) {
+				filter = filter || {}
+				update = update || {}
+				var upsert = MongoUtil.exists(options) && options.upsert
+				return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: true}]}, verbosity, explainOptions)
+			},
+
+			updateOne: function(filter, update, options) {
+				filter = filter || {}
+				update = update || {}
+				var upsert = MongoUtil.exists(options) && options.upsert
+				return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: false}]}, verbosity, explainOptions)
+			}
 		}
 	}
 
-	this.initializeUnorderedBulkOp = function(options) {
-		try {
+	/**
+	 * @param {String} operation
+	 * @param {String} [verbosity='allPlansExecution'] 'queryPlanner', 'executionStats', or 'allPlansExecution'
+	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
+	 * @param {String} [options.mode]
+	 * @param {Object} [options.tags]
+	 */
+	this.explainRaw = function(operation, args, verbosity, options) {
+		var command = {explain: {}}
+		// Note: the order *matters*, and the operation *must* be the first key in the dict
+		command.explain[operation] = this.name
+		for (var k in args) {
+			if (args.hasOwnProperty(k)) {
+				command.explain[k] = args[k]
+			}
 		}
-		catch (x) {
-			throw new MongoError(x)
+		if (MongoUtil.exists(verbosity)) {
+			command.verbosity = verbosity
 		}
+		return this.database.command(command, options)
 	}
-
-	this.isCapped = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	/*this.listIndexes = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-
-	this.mapReduce = function(map, reduce, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	this.options = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	this.parallelCollectionScan = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	this.reIndex = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}
-
-	/*this.stats = function(options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-
 }
 
 /**
@@ -1355,6 +1625,8 @@ MongoError.GONE = -2
 /** @constant */
 MongoError.NOT_FOUND = -5
 /** @constant */
+MongoError.COLLECTION_ALREADY_EXISTS = 48
+/** @constant */
 MongoError.CAPPED = 10003
 /** @constant */
 MongoError.DUPLICATE_KEY = 11000
@@ -1372,10 +1644,18 @@ var MongoUtil = function() {
 	// MongoDB utilities
 	//
 	
-	Public.id = function() {
-		return new org.bson.types.ObjectId()
+	/**
+	 * @param {String|byte[]} [raw]
+	 */
+	Public.id = function(raw) {
+		if (!Public.exists(raw)) {
+			return new org.bson.types.ObjectId()
+		}
+		else {
+			return new org.bson.types.ObjectId(raw)
+		}
 	}
-	
+
 	//
 	// General-purpose JavaScript utilities
 	//
@@ -1395,14 +1675,31 @@ var MongoUtil = function() {
 		}
 	}
 
-	Public.getGlobal = function(name, application) {
+	Public.getGlobal = function(name, applicationService) {
+		if (!MongoUtil.exists(applicationService)) {
+			applicationService = application
+		}
 		var fullName = 'mongoDb.' + name
 		var value = null
-		// In Prudence initialization scripts
+		// In Scripturian
 		try {
-			value = app.globals.mongoDb[name]
+			value = applicationService.globals.get(fullName)
 		}
 		catch (x) {}
+		// In Prudence
+		if (!Public.exists(value)) {
+			try {
+				value = applicationService.sharedGlobals.get(fullName)
+			}
+			catch (x) {}
+		}
+		// In Prudence initialization scripts
+		if (!Public.exists(value)) {
+			try {
+				value = app.globals.mongoDb[name]
+			}
+			catch (x) {}
+		}
 		if (!Public.exists(value)) {
 			try {
 				value = app.globals[fullName]
@@ -1421,20 +1718,22 @@ var MongoUtil = function() {
 			}
 			catch (x) {}
 		}
+		return value
+	}
+	
+	Public.setGlobal = function(name, value, applicationService) {
+		if (!MongoUtil.exists(applicationService)) {
+			applicationService = application
+		}
+		var fullName = 'mongoDb.' + name
 		// In Scripturian
-		if (!Public.exists(value)) {
-			try {
-				value = application.globals.get(fullName)
-			}
-			catch (x) {}
+		value = applicationService.getGlobal(fullName, value)
+		try {
+			// In Prudence initialization scripts
+			app.globals.mongoDb = app.globals.mongoDb || {}
+			app.globals.mongoDb.client = Public.client
 		}
-		// In Prudence
-		if (!Public.exists(value)) {
-			try {
-				value = application.sharedGlobals.get(fullName)
-			}
-			catch (x) {}
-		}
+		catch (x) {}
 		return value
 	}
 	
@@ -1462,9 +1761,82 @@ var MongoUtil = function() {
 	//
 	// Driver utilities
 	//
+	
+	// Connection
+	
+	Public.connectClient = function(uri, options) {
+		if (!Public.exists(uri)) {
+			uri = 'mongodb://localhost:27017/'
+		}
+		uri = Public.clientUri(uri, options)
+		try {
+			var client = new com.mongodb.MongoClient(uri)
+			return {client: client}
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+	
+	Public.connectDatabase = function(uri, options) {
+		if (!Public.exists(uri)) {
+			uri = 'mongodb://localhost:27017/default'
+		}
+		uri = Public.clientUri(uri, options)
+		if (!Public.exists(uri.database)) {
+			throw new MongoError('URI does not specify database')
+		}
+		var connection = Public.connectClient(uri)
+		try {
+			connection.database = connection.client.getDatabase(uri.database)
+			return connection
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
+	Public.connectCollection = function(uri, options) {
+		if (!Public.exists(uri)) {
+			uri = 'mongodb://localhost:27017/default.default'
+		}
+		uri = Public.clientUri(uri, options)
+		if (!Public.exists(uri.collection)) {
+			throw new MongoError('URI does not specify collection')
+		}
+		var connection = Public.connectDatabase(uri)
+		try {
+			connection.collection = connection.database.getCollection(uri.collection)
+			return connection
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
 
 	// Arguments
-	
+
+	/**
+	 * @return {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientURI.html">com.mongodb.MongoClientURI</a>}
+	 */
+	Public.clientUri = function(uri, options) {
+		try {
+			if (!(uri instanceof com.mongodb.MongoClientURI)) {
+				if (Public.exists(options)) {
+					options = Public.clientOptions(options)
+					uri = new com.mongodb.MongoClientURI(uri, options)
+				}
+				else {
+					uri = new com.mongodb.MongoClientURI(uri)
+				}
+			}
+			return uri
+		}
+		catch (x) {
+			throw new MongoError(x)
+		}
+	}
+
 	Public.documentList = function(array) {
 		var list = new java.util.ArrayList(array.length)
 		for (var a in array) {
