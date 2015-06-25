@@ -45,21 +45,25 @@ if (!MongoClient) {
  * @param [uri]
  * @param [options]
  */
-var MongoClient = function(uri /* or client */, options) {
+var MongoClient = function(uri, options) {
 
-	var client
+	var connection
 	if (uri instanceof com.mongodb.MongoClient) {
 		// Just wrap
-		client = uri // first argument
+		connection = {
+			client: uri
+		}
 	}
 	else {
 		// Connect
-		var connection = MongoUtil.connectClient(uri, options)
-		client = connection.client
+		connection = MongoUtil.connectClient(uri, options)
 	}
 
 	/** @field */
-	this.client = client
+	this.client = connection.client
+	
+	/** @field */
+	this.uri = connection.uri 
 	
 	/** @field */
 	this.description = this.client.mongoClientOptions.description
@@ -216,7 +220,7 @@ var MongoClient = function(uri /* or client */, options) {
 /**
  * Creates a {@link MongoClient} instance.
  * 
- * @param {String|com.mongodb.MongoClientURI} [uri='mongodb://localhost:27017/']
+ * @param {String|com.mongodb.MongoClientURI} [uri='mongodb://localhost/']
  * @param {Object|com.mongodb.MongoClientOptions.Builder} [options]
  * @param {String} [options.description]
  *  A description of this connection (useful for debugging)
@@ -237,12 +241,12 @@ var MongoClient = function(uri /* or client */, options) {
  *  <ul>
  *   <li>0: Don't wait for acknowledgement from the server</li>
  *   <li>1: Wait for acknowledgement, but don't wait for secondaries to replicate</li>
- *   <li>&gt;=2: Wait for one or more secondaries to also acknowledge </li>
+ *   <li>&gt;=2: Wait for one or more secondaries to also acknowledge</li>
  *  </ul>
  * @param {Number} [options.writeConcern.wtimeout=0]
  *  How long to wait for slaves before failing.
  *  <ul>
- *   <li>0: indefinite </li>
+ *   <li>0: indefinite</li>
  *   <li>&gt;0: time to wait in milliseconds</li>
  *  </ul>
  * @param {Boolean} [options.writeConcern.j=false]
@@ -274,7 +278,7 @@ var MongoClient = function(uri /* or client */, options) {
  *  The local threshold. When choosing among multiple MongoDB servers to send a request, the MongoClient will only send that request to a server whose ping time is
  *  less than or equal to the server with the fastest ping time plus the local threshold. For example, let's say that the client is choosing a server to send a query
  *  when the read preference is 'secondary', and that there are three secondaries, server1, server2, and server3, whose ping times are 10, 15, and 16 milliseconds,
- *  respectively.  With a local threshold of 5 milliseconds, the client will send the query to either server1 or server2 (randomly selecting between the two).
+ *  respectively. With a local threshold of 5 milliseconds, the client will send the query to either server1 or server2 (randomly selecting between the two).
  * @param {Number} [options.serverSelectionTimeout=30000]
  *  The server selection timeout in milliseconds, which defines how long the driver will wait for server selection to succeed before throwing an exception. A value of
  *  0 means that it will timeout immediately if no server is available. A negative value means to wait indefinitely.
@@ -325,7 +329,6 @@ MongoClient.connect = function(uri, options) {
  * The client is set as 'mongoDb.client' in {@link applications.globals}. You can set it there
  * directly, or you can set 'mongoDb.uri' and optionally 'mongoDb.options' to support lazy
  * creation.
- * <p>
  * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
  * all applications to have access the same client. Note that {@link applications.globals}
  * is checked first, so it has precedence.
@@ -359,6 +362,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		// Connect
 		var connection = MongoUtil.connectDatabase(uri, options)
 		client = new MongoClient(connection.client)
+		client.uri = connection.uri
 		database = connection.database
 	}
 
@@ -437,22 +441,27 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			throw new MongoError(x)
 		}
 	}
-
+	
+	this.commandReadPreference = null
+	
 	/**
 	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
 	 * @param {String} [options.mode]
 	 * @param {Object} [options.tags]
 	 */
-	this.command = function(command, options) {
+	this.setCommandReadPreference = function(options) {
+		this.commandReadPreference = MongoUtil.readPreference(options)
+	}
+
+	this.command = function(command) {
 		try {
 			var result
 			command = BSON.to(command)
-			if (!MongoUtil.exists(options)) {
+			if (!MongoUtil.exists(this.commandReadPreference)) {
 				result = this.database.runCommand(command)				
 			}
 			else {
-				options = MongoUtil.readPreference(options)
-				result = this.database.runCommand(command, options)
+				result = this.database.runCommand(command, this.commandReadPreference)
 			}
 			return BSON.from(result)
 		}
@@ -461,43 +470,10 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		}
 	}
 	
-	this.ping = function(options) {
-		return this.command({ping: 1}, options)
+	this.ping = function() {
+		return this.command({ping: 1})
 	}
 
-	/*this.addUser = function(username, password, options) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.admin = function() {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-	
-	/*this.authenticate = function(username, password, options, callback) {
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-
-	/*this.removeUser = function(username, options) {		
-		try {
-		}
-		catch (x) {
-			throw new MongoError(x)
-		}
-	}*/
-
-	
 	//
 	// Collections
 	//
@@ -594,6 +570,8 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	}
 	
 	this.collectionsToProperties = function(options) {
+		var PlaceHolder = function() {} // Empty class
+		
 		try {
 			var names = this.collectionNames(options)
 			names.sort() // we want them in order, so that sub-collections will be added to their parents
@@ -608,7 +586,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 						location[part] = this.collection(name)
 					}
 					else {
-						location[part] = location[part] || {}
+						location[part] = location[part] || new PlaceHolder()
 						location = location[part]
 					}
 				}
@@ -620,13 +598,146 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 
 		function safeProperteryName(o, name) {
 			while (true) {
-				if (!MongoUtil.exists(o[name]) || (o[name] instanceof MongoCollection)) {
+				if (!MongoUtil.exists(o[name]) || (o[name] instanceof MongoCollection) || (o[name] instanceof PlaceHolder)) {
 					return name
 				}
 				name += '_'
 			}
 		}
 	}
+	
+	//
+	// Diagnostics
+	//
+
+	this.stats = function(scale) {
+		if (!MongoUtil.exists(scale)) {
+			scale = 1024
+		}
+		return this.command({dbStats: 1, scale: scale})
+	}
+	
+	// Server
+	
+	this.server = function(database) {
+		var Public = {}
+
+		/**
+		 * @param {Object} [sections] Enable or suppress sections (for example 'repl', 'metrics', or 'locks') 
+		 */
+		Public.status = function(sections) {
+			var command = {serverStatus: 1}
+			if (MongoUtil.exists(sections)) {
+				for (var k in sections) {
+					command[k] = sections[k]
+				}
+			}
+			return database.command(command)
+		}
+
+		Public.connectionStatus = function() {
+			return database.command({connectionStatus: 1})
+		}
+
+		Public.listCommands = function() {
+			return database.command({listCommands: 1})
+		}
+
+		Public.buildInfo = function() {
+			return database.command({buildInfo: 1})
+		}
+
+		Public.hostInfo = function() {
+			return database.command({hostInfo: 1})
+		}
+
+		Public.connPoolStats = function() {
+			return database.command({connPoolStats: 1})
+		}
+
+		Public.sharedConnPoolStats = function() {
+			return database.command({sharedConnPoolStats: 1})
+		}
+		
+		return Public
+	}(this)
+	
+	//
+	// Administration
+	//
+
+	// 'admin' database only
+
+	this.admin = function(database) {
+		var Public = {}
+
+		Public.listDatabases = function() {
+			return database.command({listDatabases: 1})
+		}
+
+		Public.top = function() {
+			return database.command({top: 1})
+		}
+
+		/**
+		 * @param {String} [log='global'] 'global', 'rs', 'startupWarnings', or '*'
+		 */
+		Public.getLog = function(log) {
+			if (!MongoUtil.exists(log)) {
+				log = 'global'
+			}
+			return database.command({getLog: log})
+		}
+
+		Public.getCmdLineOpts = function() {
+			return database.command({getCmdLineOpts: 1})
+		}
+
+		Public.getParameter = function(option) {
+			var command = {getParameter: 1}
+			command[option] = 1
+			return database.command(command)
+		}
+
+		Public.setParameter = function(option, value) {
+			var command = {setParameter: 1}
+			command[option] = value
+			return database.command(command)
+		}
+
+		Public.fsync = function() {
+			return database.command({fsync: 1, async: true})
+		}
+
+		Public.fsyncLock = function() {
+			return database.command({fsync: 1, async: false, lock: true})
+		}
+
+		Public.fsyncUnlock = function() {
+			return database.command({fsync: 1, async: true, lock: false})
+		}
+
+		Public.logRotate = function() {
+			return database.command({logRotate: 1})
+		}
+
+		/**
+		 * @param {Boolean} [force=false]
+		 * @param {Number} [timeoutSecs]
+		 */
+		Public.shutdown = function(force, timeoutSecs) {
+			var command = {shutdown: 1}
+			if (MongoUtil.exists(force)) {
+				command.force = force
+			}
+			if (MongoUtil.exists(timeoutSecs)) {
+				command.timeoutSecs = timeoutSecs
+			}
+			return database.command(command)
+		}
+
+		return Public
+	}(this)
 }
 
 /**
@@ -646,6 +757,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		// Connect
 		var connection = MongoUtil.connectCollection(uri, options)
 		client = new MongoClient(connection.client)
+		client.uri = connection.uri
 		database = new MongoDatabase(connection.database, client)
 		collection = connection.collection
 	}
@@ -756,6 +868,53 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		catch (x) {
 			throw new MongoError(x)
 		}
+	}
+	
+	/**
+	 * @param {Boolean} [data=false]
+	 * @param {Boolean} [index=false]
+	 */
+	this.touch = function(data, index) {
+		var command = {touch: this.name}
+		if (MongoUtil.exists(data)) {
+			command.data = data
+		}
+		if (MongoUtil.exists(index)) {
+			command.index = index
+		}
+		return this.database.command(command)
+	}
+	
+	/**
+	 * @param {Boolean} [force=false]
+	 * @param {Number} [paddingFactor]
+	 * @param {Number} [paddingBytes]
+	 */
+	this.compact = function(force, paddingFactor, paddingBytes) {
+		var command = {compact: this.name}
+		if (MongoUtil.exists(force)) {
+			command.force = force
+		}
+		if (MongoUtil.exists(paddingFactor)) {
+			command.paddingFactor = paddingFactor
+		}
+		if (MongoUtil.exists(paddingBytes)) {
+			command.paddingBytes = paddingBytes
+		}
+		return this.database.command(command)
+	}
+	
+	/**
+	 * @param {Number} size
+	 */
+	this.convertToCapped = function(size) {
+		return this.database.command({convertToCapped: this.name, size: size})
+	}
+	
+	this.setFlag = function(flag, value) {
+		var command = {collMod: this.name}
+		command[flag] = value
+		return this.database.command(command)
 	}
 
 	//
@@ -870,6 +1029,26 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		catch (x) {
 			throw new MongoError(x)
 		}
+	}
+	
+	this.reIndex = function() {
+		return this.database.command({reIndex: this.name})
+	}
+	
+	/**
+	 * Currently can only change expireAfterSeconds option.
+	 */
+	this.modifyIndex = function(fieldOrSpec, options) {
+		if (MongoUtil.isString(fieldOrSpec)) {
+			var spec = {}
+			spec[fieldOrSpec] = 1
+			fieldOrSpec = spec
+		}
+		var index = {keyPattern: fieldOrSpec}
+		for (var k in options) {
+			index[k] = options[k]
+		}
+		return this.setFlag('index', index)
 	}
 
 	//
@@ -1009,17 +1188,14 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	}
 	
 	/**
-	 * @param {Object} key
-	 * @param {Function} [reduce=function(c,r){}]
-	 * @param {Object} [initial]
-	 * @param {Function} [keyf]
-	 * @param {Object} [filter]
-	 * @param {Function} [finalize]
-	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
-	 * @param {String} [options.mode]
-	 * @param {Object} [options.tags]
+	 * @param {Object} args.key
+	 * @param {Function} [args.reduce=function(c,r){}]
+	 * @param {Object} [args.initial]
+	 * @param {Function} [args.keyf]
+	 * @param {Object} [args.filter]
+	 * @param {Function} [args.finalize]
 	 */
-	this.group = function(args, options) {
+	this.group = function(args) {
 		if (!MongoUtil.exists(args.initial)) {
 			args.initial = {}
 		}
@@ -1043,25 +1219,22 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		if (MongoUtil.exists(args.finalize)) {
 			command.group.finalize = String(args.finalize)
 		}
-		return this.database.command(command, options)
+		return this.database.command(command)
 	}
 	
 	/**
-	 * @param {Function} map
-	 * @param {Function} reduce
-	 * @param {String|Object} [out={inline: 1}]
-	 * @param {Object} [filter]
-	 * @param {Object} [sort]
-	 * @param {Number} [limit]
-	 * @param {Object} [scope]
-	 * @param {Function} [finalize]
-	 * @param {Boolean} [jsMode=false]
-	 * @param {Boolean} [verbose=true]
-	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
-	 * @param {String} [options.mode]
-	 * @param {Object} [options.tags]
+	 * @param {Function} args.map
+	 * @param {Function} args.reduce
+	 * @param {String|Object} [args.out={inline: 1}]
+	 * @param {Object} [args.filter]
+	 * @param {Object} [args.sort]
+	 * @param {Number} [args.limit]
+	 * @param {Object} [args.scope]
+	 * @param {Function} [args.finalize]
+	 * @param {Boolean} [args.jsMode=false]
+	 * @param {Boolean} [args.verbose=true]
 	 */
-	this.mapReduce = function(args, options) {
+	this.mapReduce = function(args) {
 		if (!MongoUtil.exists(args.out)) {
 			args.out = {inline: 1}
 		}
@@ -1092,7 +1265,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		if (MongoUtil.exists(args.verbose)) {
 			command.verbose = args.verbose
 		}
-		return this.database.command(command, options)
+		return this.database.command(command)
 	}
 	
 	//
@@ -1409,86 +1582,26 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	//
 	// Diagnostics
 	//
-	
+
 	/**
-	 * @param {String} [verbosity='allPlansExecution'] 'queryPlanner', 'executionStats', or 'allPlansExecution'
-	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
-	 * @param {String} [options.mode]
-	 * @param {Object} [options.tags]
+	 * @param {Number} [scale]
+	 * @param {Boolean} [verbose]
 	 */
-	this.explain = function(verbosity, options) {
-		var collection = this
-		var explainOptions = options
-		return {
-			find: function(filter) {
-				filter = filter || {}
-				return collection.explainRaw('find', {filter: filter}, verbosity, options)
-			},
-
-			count: function(filter) {
-				filter = filter || {}
-				return collection.explainRaw('count', {query: filter}, verbosity, options)
-			},
-
-			group: function(args) {
-				if (!MongoUtil.exists(args.initial)) {
-					args.initial = {}
-				}
-				if (!MongoUtil.exists(args.reduce)) {
-					args.reduce = function(c,r){}
-				}
-				var group = {
-					ns: collection.name,
-					key: args.key,
-					initial: args.initial,
-					$reduce: String(args.reduce)
-				}
-				if (MongoUtil.exists(args.keyf)) {
-					group.$keyf = String(args.keyf)
-				}
-				if (MongoUtil.exists(args.filter)) {
-					group.cond = args.filter
-				}
-				if (MongoUtil.exists(args.finalize)) {
-					group.finalize = String(args.finalize)
-				}
-				return collection.explainRaw('group', {group: group}, verbosity, options)
-			},
-
-			deleteOne: function(filter) {
-				filter = filter || {}
-				return collection.explainRaw('delete', {deletes: [{q: filter, limit: 1}]}, verbosity, options)
-			},
-		
-			deleteMany: function(filter) {
-				filter = filter || {}
-				return collection.explainRaw('delete', {deletes: [{q: filter, limit: 0}]}, verbosity, options)
-			},
-		
-			updateMany: function(filter, update, options) {
-				filter = filter || {}
-				update = update || {}
-				var upsert = MongoUtil.exists(options) && options.upsert
-				return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: true}]}, verbosity, explainOptions)
-			},
-
-			updateOne: function(filter, update, options) {
-				filter = filter || {}
-				update = update || {}
-				var upsert = MongoUtil.exists(options) && options.upsert
-				return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: false}]}, verbosity, explainOptions)
-			}
+	this.stats = function(scale, verbose) {
+		if (!MongoUtil.exists(scale)) {
+			scale = 1024
 		}
+		if (!MongoUtil.exists(verbose)) {
+			verbose = false
+		}
+		return this.database.command({collStats: this.name, scale: scale, verbose: verbose})
 	}
 
 	/**
 	 * @param {String} operation
 	 * @param {String} [verbosity='allPlansExecution'] 'queryPlanner', 'executionStats', or 'allPlansExecution'
-	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
-	 * @param {String} [options.mode]
-	 * @param {Object} [options.tags]
 	 */
-	this.explainRaw = function(operation, args, verbosity, options) {
+	this.explainRaw = function(operation, args, verbosity) {
 		var command = {explain: {}}
 		// Note: the order *matters*, and the operation *must* be the first key in the dict
 		command.explain[operation] = this.name
@@ -1500,8 +1613,82 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		if (MongoUtil.exists(verbosity)) {
 			command.verbosity = verbosity
 		}
-		return this.database.command(command, options)
+		return this.database.command(command)
 	}
+
+	this.explain = function(collection) {
+		var Public = {}
+		
+		/**
+		 * 'queryPlanner', 'executionStats', or 'allPlansExecution'
+		 * <p>
+		 * Defaults to 'allPlansExecution'
+		 * 
+		 * @field
+		 */
+		Public.verbosity = null
+		
+		Public.find = function(filter) {
+			filter = filter || {}
+			return collection.explainRaw('find', {filter: filter}, this.verbosity)
+		}
+
+		Public.count = function(filter) {
+			filter = filter || {}
+			return collection.explainRaw('count', {query: filter}, this.verbosity)
+		}
+
+		Public.group = function(args) {
+			if (!MongoUtil.exists(args.initial)) {
+				args.initial = {}
+			}
+			if (!MongoUtil.exists(args.reduce)) {
+				args.reduce = function(c,r){}
+			}
+			var group = {
+				ns: collection.name,
+				key: args.key,
+				initial: args.initial,
+				$reduce: String(args.reduce)
+			}
+			if (MongoUtil.exists(args.keyf)) {
+				group.$keyf = String(args.keyf)
+			}
+			if (MongoUtil.exists(args.filter)) {
+				group.cond = args.filter
+			}
+			if (MongoUtil.exists(args.finalize)) {
+				group.finalize = String(args.finalize)
+			}
+			return collection.explainRaw('group', {group: group}, this.verbosity)
+		}
+
+		Public.deleteOne = function(filter) {
+			filter = filter || {}
+			return collection.explainRaw('delete', {deletes: [{q: filter, limit: 1}]}, this.verbosity)
+		}
+	
+		Public.deleteMany = function(filter) {
+			filter = filter || {}
+			return collection.explainRaw('delete', {deletes: [{q: filter, limit: 0}]}, this.verbosity)
+		}
+	
+		Public.updateMany = function(filter, update, options) {
+			filter = filter || {}
+			update = update || {}
+			var upsert = MongoUtil.exists(options) && options.upsert
+			return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: true}]}, this.verbosity)
+		}
+
+		Public.updateOne = function(filter, update, options) {
+			filter = filter || {}
+			update = update || {}
+			var upsert = MongoUtil.exists(options) && options.upsert
+			return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: false}]}, this.verbosity)
+		}
+		
+		return Public
+	}(this)
 }
 
 /**
@@ -1609,7 +1796,7 @@ var MongoCursor = function(iterable, collection, filter) {
  */
 var MongoError = function(x) {
 	if (MongoUtil.exists(x.javaException)) {
-		// For Rhino
+		// For Rhino, unwrap
 		x = x.javaException
 	}
 	if (x instanceof com.mongodb.MongoCommandException) {
@@ -1670,7 +1857,6 @@ var MongoError = function(x) {
 		this.writeConcern = x.writeConcern
 		this.writeErrors = x.writeErrors
 		this.writeResult = x.writeResult
-		this.cause = x
 	}
 	else {
 		this.message = x
@@ -1891,12 +2077,15 @@ var MongoUtil = function() {
 	
 	Public.connectClient = function(uri, options) {
 		if (!Public.exists(uri)) {
-			uri = 'mongodb://localhost:27017/'
+			uri = 'mongodb://localhost/'
 		}
 		uri = Public.clientUri(uri, options)
 		try {
 			var client = new com.mongodb.MongoClient(uri)
-			return {client: client}
+			return {
+				uri: uri,
+				client: client
+			}
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1905,7 +2094,7 @@ var MongoUtil = function() {
 	
 	Public.connectDatabase = function(uri, options) {
 		if (!Public.exists(uri)) {
-			uri = 'mongodb://localhost:27017/default'
+			uri = 'mongodb://localhost/default'
 		}
 		uri = Public.clientUri(uri, options)
 		if (!Public.exists(uri.database)) {
@@ -1923,7 +2112,7 @@ var MongoUtil = function() {
 
 	Public.connectCollection = function(uri, options) {
 		if (!Public.exists(uri)) {
-			uri = 'mongodb://localhost:27017/default.default'
+			uri = 'mongodb://localhost/default.default'
 		}
 		uri = Public.clientUri(uri, options)
 		if (!Public.exists(uri.collection)) {
@@ -2012,6 +2201,46 @@ var MongoUtil = function() {
 			options = clientOptions
 		}
 		return options
+	}
+	
+	Public.clientOptionsFromStringMap = function(map, options) {
+		var json = ['readPreference.tags']
+		var boolean = ['writeConcern.j', 'writeConcern.fsync', 'cursorFinalizerEnabled', 'alwaysUseMBeans', 'sslEnabled', 'sslInvalidHostNameAllowed', 'socketKeepAlive']
+		var integer = ['writeConcern.w', 'writeConcern.wtimeout', 'localThreshold', 'serverSelectionTimeout', 'minConnectionsPerHost', 'connectionsPerHost', 'threadsAllowedToBlockForConnectionMultiplier', 'connectTimeout', 'maxWaitTime', 'maxConnectionIdleTime', 'maxConnectionLifeTime', 'minHeartbeatFrequency', 'heartbeatFrequency', 'heartbeatConnectTimeout', 'heartbeatSocketTimeout', 'socketTimeout']
+		
+		for (var i = map.entrySet().iterator(); i.hasNext(); ) {
+			var e = i.next()
+			var key = e.key, value = e.value
+			
+			for (var o in json) {
+				if (key == o) {
+					value = Sincerity.JSON.from(value)
+				}
+			}
+			for (var o in boolean) {
+				if (key == o) {
+					value = value == 'true' ? true : false
+				}
+			}
+			for (var o in integer) {
+				if (key == o) {
+					value = parseInt(value)
+				}
+			}
+			
+			var parts = key.split('.')
+			var location = options
+			for (var p in parts) {
+				var part = parts[p]
+				if (p == parts.length - 1) {
+					location[part] = value
+				}
+				else {
+					location[part] = location[part] || {}
+					location = location[part]
+				}
+			}
+		}
 	}
 	
 	Public.createCollectionOptions = function(options) {
