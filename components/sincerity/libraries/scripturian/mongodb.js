@@ -68,6 +68,9 @@ var MongoClient = function(uri, options) {
 	/** @field */
 	this.description = this.client.mongoClientOptions.description
 	
+	/** @field */
+	this.collectionsToProperties = false
+	
 	/**
 	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientOptions.html">com.mongodb.MongoClientOptions</a>}
 	 */
@@ -86,7 +89,7 @@ var MongoClient = function(uri, options) {
 
 	this.readPreference = function() {
 		try {
-			return MongoUtil.readPreference(this.client.mongoClientOptions.readPreference)
+			return this.client.mongoClientOptions.readPreference
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -95,7 +98,7 @@ var MongoClient = function(uri, options) {
 
 	this.writeConcern = function() {
 		try {
-			return MongoUtil.writeConcern(this.client.mongoClientOptions.writeConcern)
+			return this.client.mongoClientOptions.writeConcern
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -215,6 +218,14 @@ var MongoClient = function(uri, options) {
 			throw new MongoError(x)
 		}
 	}
+	
+	// Try to access the admin database
+	
+	this.admin
+	try {
+		this.admin = this.database('admin')
+	}
+	catch (x) {}
 }
 
 /**
@@ -381,7 +392,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 
 	this.readPreference = function() {
 		try {
-			return MongoUtil.readPreference(this.database.readPreference)
+			return this.database.readPreference
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -390,7 +401,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 
 	this.writeConcern = function() {
 		try {
-			return MongoUtil.writeConcern(this.database.writeConcern)
+			return this.database.writeConcern
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -470,10 +481,6 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		}
 	}
 	
-	this.ping = function() {
-		return this.command({ping: 1})
-	}
-
 	//
 	// Collections
 	//
@@ -569,6 +576,11 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		}
 	}
 	
+	/**
+	 * @param {Object} [options]
+	 * @param {Number} [options.batchSize]
+	 * @returns {String[]}
+	 */
 	this.collectionsToProperties = function(options) {
 		var PlaceHolder = function() {} // Empty class
 		
@@ -577,7 +589,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			names.sort() // we want them in order, so that sub-collections will be added to their parents
 			for (var n in names) {
 				var name = names[n]
-				var parts = name.split('.')
+				var parts = String(name).split('.')
 				var location = this
 				for (var p in parts) {
 					var part = parts[p]
@@ -617,15 +629,21 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		return this.command({dbStats: 1, scale: scale})
 	}
 	
-	// Server
-	
-	this.server = function(database) {
+	//
+	// Server administration
+	//
+
+	this.admin = function(database) {
 		var Public = {}
+
+		Public.ping = function() {
+			return database.command({ping: 1})
+		}
 
 		/**
 		 * @param {Object} [sections] Enable or suppress sections (for example 'repl', 'metrics', or 'locks') 
 		 */
-		Public.status = function(sections) {
+		Public.serverStatus = function(sections) {
 			var command = {serverStatus: 1}
 			if (MongoUtil.exists(sections)) {
 				for (var k in sections) {
@@ -658,18 +676,8 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		Public.sharedConnPoolStats = function() {
 			return database.command({sharedConnPoolStats: 1})
 		}
-		
-		return Public
-	}(this)
-	
-	//
-	// Administration
-	//
 
-	// 'admin' database only
-
-	this.admin = function(database) {
-		var Public = {}
+		// The following are available on the 'admin' database only
 
 		Public.listDatabases = function() {
 			return database.command({listDatabases: 1})
@@ -738,6 +746,10 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 
 		return Public
 	}(this)
+	
+	if (this.client.collectionsToProperties) {
+		this.collectionsToProperties()
+	}
 }
 
 /**
@@ -786,7 +798,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 
 	this.readPreference = function() {
 		try {
-			return MongoUtil.readPreference(this.collection.readPreference)
+			return this.collection.readPreference
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -795,7 +807,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 
 	this.writeConcern = function() {
 		try {
-			return MongoUtil.writeConcern(this.collection.writeConcern)
+			return this.collection.writeConcern
 		}
 		catch (x) {
 			throw new MongoError(x)

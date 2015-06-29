@@ -68,10 +68,53 @@
 	
 	<target name="libraries" depends="classes" description="Create jar">
 		<mkdir dir="${distribution.jars}" />
-		<jar destfile="${distribution.jars}/${component.group}/${component.artifact}/${component.version}${component.version.postfix}/${component.artifact}.jar" basedir="${cache.classes}" />
+		<jar destfile="${distribution.jars}/${component.group}/${component.artifact}/${component.version}${component.version.postfix}/${component.artifact}.jar" basedir="${cache.classes}">
+			<manifest>
+				<attribute name="Implementation-Title" value="${component.group}:${component.artifact}" />
+				<attribute name="Implementation-Version" value="${component.version}${component.version.postfix}" />
+				<attribute name="Implementation-Vendor" value="Three Crickets" />
+			</manifest>
+		</jar>
 	</target>
 
-	<target name="distribution" depends="libraries, javadocs" description="Assemble distribution">
+	<target name="distribution" depends="deploy-maven" description="Create Sincerity container">
+		<copy todir="${distribution.content}/configuration/sincerity">
+			<fileset dir="sincerity" />
+			<filterchain>
+				<replacetokens>
+					<token key="VERSION" value="${component.version}${component.version.postfix}" />
+					<token key="SINCERITY.VERSION" value="${sincerity.version}" />
+					<token key="PRUDENCE.VERSION" value="${prudence.version}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+		<exec executable="${sincerity}">
+			<arg value="container:create" />
+			<arg value="--force" />
+			<arg value="${distribution.content}" />
+			<arg value="${sincerity.template}" />
+			<arg value=":" />
+			<arg value="repositories:attach" />
+			<arg value="public" />
+			<arg value="${component}" />
+			<arg value="maven" />
+			<arg value="${distribution.repo}" />
+			<arg value=":" />
+			<arg value="repositories:attach" />
+			<arg value="public" />
+			<arg value="three-crickets" />
+			<arg value="maven" />
+			<arg value="${dependencies.repo}" />
+			<arg value=":" />
+			<arg value="artifacts:install" />
+			<arg value=":" />
+			<arg value="repositories:detach" />
+			<arg value="public" />
+			<arg value="${component}" />
+		</exec>
+	</target>
+
+	<target name="distribution-minimal" depends="libraries, javadocs" description="Assemble distribution">
 		<copy todir="${distribution.source}/${component.group}/${component.artifact}/${component.version}${component.version.postfix}">
 			<fileset dir="${component.source}" />
 		</copy>
@@ -84,7 +127,7 @@
 		<delete dir="${distribution.jars}/jdk.nashorn" />
 	</target>
 
-	<target name="deploy-maven" if="maven" depends="distribution" description="Deploy to Maven repository">
+	<target name="deploy-maven" if="maven" depends="libraries" description="Deploy to Maven repository">
 		<delete dir="${cache.maven.pom}" />
 		<delete dir="${cache.maven.build}" />
 		<copy todir="${cache.maven.pom}">
@@ -107,7 +150,8 @@
 
 	<target name="package-zip" depends="distribution" description="Create distribution package">
 		<zip destfile="${distribution}/${component}-${component.version}${component.version.postfix}.zip">
-			<fileset dir="${distribution.content}" />
+			<zipfileset dir="${distribution.content}" excludes="cache/, logs/, sincerity" />
+			<zipfileset dir="${distribution.content}" includes="sincerity" filemode="755" />
 		</zip>
 	</target>
 	

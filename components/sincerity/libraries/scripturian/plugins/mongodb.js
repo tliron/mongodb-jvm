@@ -1,15 +1,22 @@
 
 document.require(
 	'/mongodb/',
+	'/sincerity/repl/',
 	'/sincerity/json/',
+	'/sincerity/jvm/',
+	'/sincerity/files/',
 	'/sincerity/objects/')
+
+importClass(
+	com.mongodb.jvm.jline.InitialCompleter,
+	com.mongodb.jvm.jline.PropertyCompleter)
 
 function getInterfaceVersion() {
 	return 1
 }
 
 function getCommands() {
-	return ['mongo', 'mongotest']
+	return ['mongo']
 }
 
 function run(command) {
@@ -17,22 +24,245 @@ function run(command) {
 		case 'mongo':
 			mongo(command)
 			break
-		case 'mongotest':
-			mongotest(command)
-			break
 	}
 }
 
 function mongo(command) {
 	command.parse = true
-	var out = command.sincerity.out
-	var adapter = executable.context.adapter.attributes
 
-	out.println('MongoDB JVM shell')
-	out.println('JavaScript engine: ' + adapter.get('name') + ' ' + adapter.get('version'))
+	// Welcome
+	command.sincerity.out.println('MongoDB JVM console ' + Sincerity.JVM.getClass('com.mongodb.jvm.BSON').package.implementationVersion)
+	var adapter = executable.context.adapter.attributes
+	command.sincerity.out.println('JavaScript engine: ' + adapter.get('name') + ' ' + adapter.get('version'))
 
 	if (command.switches.contains('help')) {
-		out.println('\
+		helpCommandLine()
+		return
+	}
+	
+	// URI
+	var uri
+	if (command.arguments.length == 1) {
+		uri = command.arguments[0]
+	}
+	else {
+		uri = 'mongodb://localhost/test'
+	}
+	if (!Sincerity.Objects.startsWith(uri, 'mongodb://')) {
+		uri = 'mongodb://' + uri
+	}
+	
+	// Options
+	var options = {
+		description: 'console',
+		serverSelectionTimeout: 5000
+	}
+	var properties = command.properties
+	MongoUtil.clientOptionsFromStringMap(properties, options)
+
+	// Connection message
+	command.sincerity.out.println('Connecting to: ' + uri)
+	command.sincerity.out.println('Client options: ' + Sincerity.JSON.to(options))
+
+	// Logging
+	try {
+		command.sincerity.run(['logging:logging'])
+	}
+	catch (x) {
+		// If logging is not configured, at least avoid annoying log messages to the console
+		java.util.logging.Logger.getLogger('').level = java.util.logging.Level.WARNING
+	}
+
+	// Connect
+	var client, db = null
+	try {
+		client = new MongoClient(uri, options)
+		client.collectionsToProperties = true
+
+		application.globals.put('mongoDb.client', client)
+		client = MongoClient.global()
+		
+		var databaseName = client.uri.database
+		if (databaseName === null) {
+			databaseName = 'test'
+		}
+		db = client.database(databaseName)
+		command.sincerity.out.println('Using database: ' + db.name)
+	}
+	catch (x) {
+		command.sincerity.err.println(MongoError.represent(x, true))
+		return
+	}
+
+	// Admin
+	var admin = client.admin
+	try {
+		admin = admin.admin
+		var warnings = admin.getLog('startupWarnings')
+		if (Sincerity.Objects.exists(warnings) && Sincerity.Objects.exists(warnings.log) && (warnings.log.length > 0)) {
+			command.sincerity.out.println('Server has startup warnings:')
+			for (var w in warnings.log) {
+				command.sincerity.out.println(warnings.log[w])
+			}
+		}
+	}
+	catch (x) {
+		command.sincerity.err.println(MongoError.represent(x))
+	}
+
+	// Script parameter?
+	var script = properties.get('script')
+	if (Sincerity.Objects.exists(script)) {
+		script = Sincerity.Files.loadText(script)
+		try {
+			eval(String(script))
+		}
+		catch (x) {
+			command.sincerity.out.println(MongoError.represent(x, true))
+		}
+		client.close()
+		return
+	}
+
+	// REPL
+	var Mongo = Sincerity.Classes.define(function() {
+	    var Public = {}
+	    
+	    Public._inherit = Sincerity.REPL
+	
+	    Public._construct = function() {
+	    	arguments.callee.overridden.call(this)
+	    	this.showMax = 20
+	    }
+	
+	    Public.initialize = function() {
+	    	arguments.callee.overridden.call(this)
+	    	var commands = ['exit', 'help', 'help(', 'use(', 'show(', 'db.', 'admin.', 'client.', 'this.showIndent', 'this.showMax', 'this.showAll', 'this.showStackTrace']
+
+	    	var evalPropertyCompleter = new JavaAdapter(PropertyCompleter, {
+	    		getCandidatesFor: function(value) {
+	    			try {
+	    				value = eval(String(value)) // Rhino requires a string
+	    			}
+	    			catch (x) {
+	    				return []
+	    			}
+	    			
+	    			var candidates = []
+
+	    			for (var property in value) {
+	    				if (typeof value[property] == 'function') {
+	    					candidates.push(property + '(')
+	    				}
+	    				else {
+	    					candidates.push(property)
+	    				}
+	    			}
+
+	    			return candidates
+	    		}
+	    	})
+
+	    	this.console.addCompleter(new InitialCompleter(commands))
+	    	this.console.addCompleter(evalPropertyCompleter)
+	    }
+	    
+	    Public.finalize = function() {
+	    	command.sincerity.out.println('Bye!')
+	    }
+	
+	    Public.evaluate = function(line) {
+	    	return eval(line)
+	    }
+	    
+	    Public.onError = function(x) {
+			this.out.println(MongoError.represent(x, this.showStackTrace))
+	    }
+		
+		Public.use = function(name) {
+			db = client.database(name)
+			this.out.println('Using database: ' + db.name)
+		}
+
+		Public.help = function(o) {
+			if (Sincerity.Objects.exists(o)) {
+				for (var k in o) {
+					if (typeof o[k] == 'function') {
+						this.out.println('.' + k + '()')
+					}
+					else {
+						this.out.println('.' + k)
+					}
+				}
+			}
+			else {
+				this.out.println('\
+Commands:\n\
+ exit: exits the shell\n\
+ help or help(o): shows this help, or shows specific help about an object\n\
+ use(name): use a different database for this client\n\
+ show(o) or show(o, true): shows the object by encoding it into JSON\n\
+\n\
+Objects:\n\
+ db: the current MongoDatabase; its current MongoCollections are available as properties\n\
+ client: the current MongoClient\n\
+ admin: admin commands (shortcut to \'client.admin.admin\')\n\
+\n\
+Settings:\n\
+ this.showIndent = ' + this.showIndent + ': whether to indent encoded JSON\n\
+ this.showMax = ' + this.showMax + ': how many entries to show from returned cursors\n\
+ this.showAll = ' + this.showAll + ': whether to force showing of all returned results, even those that are not JSON-friendly\n\
+ this.showStackTrace = ' + this.showStackTrace + ': whether to show the stack trace in case of errors')
+			}
+
+			Public.show = function(o, indent) {
+				if (o instanceof MongoCursor) {
+					try {
+						var count = 0
+						if (!Sincerity.Objects.exists(indent)) {
+							indent = this.showIndent
+						}
+						while (o.hasNext()) {
+							this.out.println(String(Sincerity.JSON.to(o.next(), indent)))
+							if (++count == this.showMax) {
+								if (o.hasNext()) {
+									this.out.println('...')
+								}
+								break
+							}
+						}
+					}
+					finally {
+						o.close()
+					}
+				}
+				else {
+					return arguments.callee.overridden.call(this, o, indent)
+				}
+			}
+		}
+
+		return Public
+	}())
+
+	function exit() {
+		repl.exit()
+	}
+	
+	function help(o) {
+		repl.help(o)
+	}
+
+	function use(name) {
+		repl.use(name)
+	}
+	
+	function show(o, indent) {
+		repl.show(o, indent)
+	}
+	
+	function helpCommandLine() {
+		command.sincerity.out.println('\
 Usage: mongo [uri] [options]\n\
 \n\
 uri\n\
@@ -43,7 +273,13 @@ uri\n\
   For documentation, see:\n\
   http://docs.mongodb.org/manual/reference/connection-string/\n\
 \n\
-options\n\
+general options\n\
+  --help\n\
+    Shows this help\n\
+  --script=path\n\
+    Run a script from a file\n\
+\n\
+connection options\n\
   --description=shell\n\
     A description of this connection (useful for debugging)\n\
   --readPreference.mode=primary\n\
@@ -164,376 +400,8 @@ options\n\
   --socketTimeout=0\n\
     The socket timeout in milliseconds. It is used for I/O socket read and\n\
     write operations. 0 means no timeout.')
-		java.lang.System.exit(0)
-	}
-	
-	// URI
-	var uri
-	if (command.arguments.length == 1) {
-		uri = command.arguments[0]
-		if (!Sincerity.Objects.startsWith(uri, 'mongodb://')) {
-			uri = 'mongodb://' + uri
-		}
-	}
-	
-	// Options
-	var options = {
-		description: 'shell',
-		serverSelectionTimeout: 5000
-	}
-	var properties = command.properties
-	MongoUtil.clientOptionsFromStringMap(properties, options)
-
-	// Connection message
-	out.println('Connecting to: ' + uri)
-	out.println('Options: ' + Sincerity.JSON.to(options))
-
-	// Logging
-	try {
-		sincerity.run(['logging:logging'])
-	}
-	catch (x) {
-		// If logging is not configured, at least avoid annoying log messages to the console
-		java.util.logging.Logger.getLogger('').level = java.util.logging.Level.WARNING
 	}
 
-	// Connect
-	var client, db = null
-	try {
-		client = new MongoClient(uri, options)
-		application.globals.put('mongoDb.client', client)
-		client = MongoClient.global()
-
-		var databaseName = client.uri.database
-		if (databaseName === null) {
-			databaseName = 'test'
-		}
-		use(databaseName)
-		
-		var admin = client.database('admin')
-		var warnings = admin.admin.getLog('startupWarnings')
-		if (Sincerity.Objects.exists(warnings) && Sincerity.Objects.exists(warnings.log) && (warnings.log.length > 0)) {
-			out.println('Server has startup warnings:')
-			for (var w in warnings.log) {
-				out.println(warnings.log[w])
-			}
-		}
-	}
-	catch (x) {
-		command.sincerity.err.println(MongoError.represent(x, true))
-		java.lang.System.exit(0)
-	}
-
-	var jline = Packages.jline
-	importClass(
-		jline.TerminalFactory,
-		jline.console.ConsoleReader,
-		jline.console.UserInterruptException,
-		com.mongodb.jvm.jline.InitialCompleter,
-		com.mongodb.jvm.jline.PropertyCompleter)
-	
-	var evalPropertyCompleter = new JavaAdapter(PropertyCompleter, {
-		getCandidatesFor: function(value) {
-			try {
-				value = eval(value)
-			}
-			catch (x) {
-				return []
-			}
-			
-			var candidates = []
-
-			for (var property in value) {
-				if (typeof value[property] == 'function') {
-					candidates.push(property + '(')
-				}
-				else {
-					candidates.push(property)
-				}
-			}
-
-			return candidates
-		}
-	})
-
-	var terminal = TerminalFactory.create()
-	var console = new ConsoleReader()
-	var showIndent = false, showMax = 20, showAll = false, showStackTrace = false
-	out = console
-
-	var commands = ['exit', 'help', 'help(', 'show(', 'use(', 'db.', 'client.', 'showIndent', 'showMax', 'showAll', 'showStackTrace']
-	console.addCompleter(new InitialCompleter(commands))
-	console.addCompleter(evalPropertyCompleter)
-
-	console.handleUserInterrupt = true
-	console.prompt = '> '
-
-	// REPL
-	while (true) {
-		try {
-			var line = console.readLine()
-			r = eval(line)
-			var type = typeof r
-
-			if (r instanceof MongoCursor) {
-				try {
-					var count = 0
-					while (r.hasNext()) {
-						out.println(String(Sincerity.JSON.to(r.next(), showIndent)))
-						if (++count == showMax) {
-							if (r.hasNext()) {
-								out.println('...')
-							}
-							break
-						}
-					}
-				}
-				finally {
-					r.close()
-				}
-			}
-			else if (type == 'function') {
-				// Call all functions (they are commands)
-				r()
-			}
-			else if (MongoUtil.isString(r) || (type == 'boolean') || (type == 'number')) {
-				// Print all primitives
-				out.println(String(r))
-			}
-			else if (MongoUtil.exists(r)) {
-				// Print dicts that are purely data
-				var printable = true
-				for (var k in r) {
-					if (typeof r[k] == 'function') {
-						// TODO Recursive
-						printable = false
-						break
-					}
-				}
-				if (printable || showAll) {
-					out.println(String(Sincerity.JSON.to(r), showIndent))					
-				}
-			}
-		}
-		catch (x) {
-			if ((x instanceof UserInterruptException) || (x.javaException instanceof UserInterruptException)) {
-				exit()
-			}
-			out.println(MongoError.represent(x, showStackTrace))
-		}
-	}
-	
-	function exit() {
-		out.println('Bye!')
-		client.close()
-		terminal.reset()
-		java.lang.System.exit(0)
-	}
-	
-	function show(o, indent) {
-		if (!MongoUtil.exists(indent)) {
-			indent = showIndent
-		}
-		if (MongoUtil.exists(o)) {
-			out.println(String(Sincerity.JSON.to(o, indent)))
-		}
-	}
-	
-	function help(o) {
-		if (MongoUtil.exists(o)) {
-			for (var k in o) {
-				if (typeof o[k] == 'function') {
-					out.println('.' + k + '()')
-				}
-				else {
-					out.println('.' + k)
-				}
-			}
-		}
-		else {
-			out.println('Commands:')
-			out.println(' exit: exits the shell')
-			out.println(' help or help(o): shows this help, or shows specific help about an object')
-			out.println(' show(o) or show(o, true): shows the object by encoding it into JSON')
-			out.println(' use(name): use a different database for this client')
-			out.println()
-			out.println('Objects:')
-			out.println(' db: access the current MongoDatabase')
-			out.println(' client: access the current MongoClient; its current MongoCollections are available as properties')
-			out.println()
-			out.println('Options:')
-			out.println(' showIndent = ' + showIndent + ': whether to indent encoded JSON')
-			out.println(' showMax = ' + showMax + ': how many entries to show from returned cursors')
-			out.println(' showAll = ' + showAll + ': whether to force showing of all returned results, even those that are not JSON-friendly')
-			out.println(' showStackTrace = ' + showStackTrace + ': whether to show the stack trace in case of errors')
-		}
-	}
-	
-	function use(name) {
-		db = client.database(name)
-		db.collectionsToProperties()
-		out.println('Using database: ' + db.name)
-	}
-}
-
-function mongotest(command) {
-	command.sincerity.out.println('Testing MongoDB driver')
-	
-	try {
-		// Connections
-		command.sincerity.out.println('Connections:')
-		
-		application.globals.put('mongoDb.client', new MongoClient('mongodb://localhost', {description: 'global'}))
-
-		var global = MongoClient.global()
-		if (Sincerity.Objects.exists(global)) {
-			command.sincerity.out.println(' Global client: ' + global.description)
-		}
-		else {
-			command.sincerity.out.println(' No global client set')
-		}
-		global.close()
-		
-		var client = new MongoClient('mongodb://localhost', {description: 'local'})
-		command.sincerity.out.println(' Local client: ' + client.description)
-
-		var db = new MongoDatabase('mongodb://localhost/test', {description: 'database'})
-		command.sincerity.out.println(' Database: ' + db.name)
-		db.client.close()
-		db = client.database('test')
-		command.sincerity.out.println(' Database: ' + db.name)
-
-		var collection = new MongoCollection('mongodb://localhost/test.test', {description: 'collection'})
-		command.sincerity.out.println(' Collection: ' + collection.fullName)
-		collection.client.close()
-		collection = client.collection('test.test')
-		command.sincerity.out.println(' Collection: ' + collection.fullName)
-		collection = db.collection('test')
-		command.sincerity.out.println(' Collection: ' + collection.fullName)
-
-		// BSON
-		command.sincerity.out.println('\nBSON:')
-
-		var bson = BSON.to({greeting: 'hello'})
-		command.sincerity.out.println(' To: ' + bson)
-		command.sincerity.out.println(' From: ' + Sincerity.JSON.to(BSON.from(bson)))
-
-
-		// Databases
-		command.sincerity.out.println('\nDatabases:')
-
-		var databases = client.databases()
-		for (var d in databases) {
-			command.sincerity.out.println(' ' + databases[d].name)
-		}
-
-		// Collections
-		command.sincerity.out.println('\nCollections:')
-
-		command.sincerity.out.println(' In ' + db.name + ':')
-		var collections = db.collections()
-		for (var c in collections) {
-			command.sincerity.out.println('  ' + collections[c].name)
-		}
-		
-		// Commands
-		command.sincerity.out.println('\nCommands:')
-		command.sincerity.out.println(' Ping: ' + Sincerity.JSON.to(db.ping()))
-		
-		// Create collection
-		try {
-			db.createCollection('test2', {maxDocuments: 10})
-		}
-		catch (x) {
-			if (!x.hasCode(MongoError.COLLECTION_ALREADY_EXISTS)) {
-				throw x
-			}
-		}
-
-		// Indexes
-		command.sincerity.out.println('\nIndexes:')
-				
-		collection.createIndex('name', {unique: true})
-		command.sincerity.out.println(' In ' + collection.fullName + ':')
-		var indexes = collection.indexes()
-		for (var i in indexes) {
-			command.sincerity.out.println('  ' + Sincerity.JSON.to(indexes[i]))
-		}
-		
-		// Deletion
-		//collection.deleteMany({name: {$exists: true}})
-				
-		// Create documents
-		command.sincerity.out.println('\nCreate documents:')
-
-		try {
-			collection.insertOne({name: 'Lennart'})
-		}
-		catch (x) {
-			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
-				throw x
-			}
-		}
-		try {
-			collection.insertMany([{name: 'Linus'}, {name: 'Richard'}])
-		}
-		catch (x) {
-			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
-				throw x
-			}
-		}
-		try {
-			collection.save({name: 'Mark'})
-		}
-		catch (x) {
-			if (!x.hasCode(MongoError.DUPLICATE_KEY)) {
-				throw x
-			}
-		}
-		
-		// Find
-		command.sincerity.out.println('\nFind:')
-
-		command.sincerity.out.println(' With name:')
-		var cursor = collection.find({name: {$exists: true}}, {sort: {name: -1}})
-		try {
-			while (cursor.hasNext()) {
-				command.sincerity.out.println('  ' + Sincerity.JSON.to(cursor.next()))
-			}
-		}
-		finally {
-			cursor.close()
-		}
-		
-		// Group
-		command.sincerity.out.println('\nGroup:')
-
-		var group = {key: {name: 1}, reduce: function(c, r) { r.first = c.name[0] }, filter: {name: {$exists: true}}}
-		command.sincerity.out.println(' By names:' + Sincerity.JSON.to(collection.group(group)))
-
-		// Map-reduce
-		command.sincerity.out.println('\nMap-reduce:')
-		var map = function() { emit(this.name[0], 1) }
-		var reduce = function(name, amounts) { return Array.sum(amounts) }
-		command.sincerity.out.println(' How many names per first letter:' + Sincerity.JSON.to(collection.mapReduce({map: map, reduce: reduce, filter: {name: {$exists: true}}})))
-
-		// Explain
-		command.sincerity.out.println('\nExplain:')
-		
-		command.sincerity.out.println(' Find: ' + Sincerity.JSON.to(collection.explain.find()))
-		command.sincerity.out.println('\n Count: ' + Sincerity.JSON.to(collection.explain.count({name: {$exists: true}})))
-		command.sincerity.out.println('\n Group: ' + Sincerity.JSON.to(collection.explain.group(group)))
-		command.sincerity.out.println('\n Delete one: ' + Sincerity.JSON.to(collection.explain.deleteOne({name: 'Linus'})))
-		command.sincerity.out.println('\n Delete many: ' + Sincerity.JSON.to(collection.explain.deleteMany({name: {$exists: true}})))
-		command.sincerity.out.println('\n Update one: ' + Sincerity.JSON.to(collection.explain.updateOne({name: 'Linus'}, {$set: {name: 'Alex'}})))
-		command.sincerity.out.println('\n Update many: ' + Sincerity.JSON.to(collection.explain.updateOne({name: 'Linus'}, {$set: {name: 'Alex'}})))
-		
-		// Closing
-		client.close()
-		
-		command.sincerity.out.println('\nAll tests succeeded!')
-	}
-	catch (x) {
-		command.sincerity.err.println(MongoError.represent(x, true))
-	}
+	var repl = new Mongo()
+	repl.run()
 }
