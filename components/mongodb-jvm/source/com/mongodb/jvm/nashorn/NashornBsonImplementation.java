@@ -45,9 +45,9 @@ import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
  * For BSON, recognizes both the high-level Document types and the low-level
  * BsonValue types.
  * <p>
- * Also recognizes <a
- * href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/"
- * >MongoDB's extended JSON notation</a> via {@link MongoNashornJsonExtender}.
+ * Also recognizes
+ * <a href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/" >
+ * MongoDB's extended JSON notation</a> via {@link MongoNashornJsonExtender}.
  * 
  * @author Tal Liron
  */
@@ -77,13 +77,11 @@ public class NashornBsonImplementation implements BsonImplementation
 			String[] regExp = NashornNativeUtil.from( (NativeRegExp) object );
 
 			// Note: We are not using the JVM's Pattern class because: it does
-			// not support a "g" flag,
-			// and initializing it would cause a regex compilation, which is not
-			// what we want during
-			// simple data conversion. In short, better to use a DBObject than a
-			// Pattern, even though
-			// the MongoDB does driver support Pattern instances (which we think
-			// is a bad idea).
+			// not support a "g" flag, and initializing it would cause a regex
+			// compilation, which is not what we want during simple data
+			// conversion. In short, better to use a DBObject than a Pattern,
+			// even though the MongoDB does driver support Pattern instances
+			// (which we think is a bad idea).
 
 			Document bson = new Document();
 			bson.put( "$regex", regExp[0] );

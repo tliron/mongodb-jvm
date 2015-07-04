@@ -214,31 +214,31 @@ Settings:\n\
  this.showAll = ' + this.showAll + ': whether to force showing of all returned results, even those that are not JSON-friendly\n\
  this.showStackTrace = ' + this.showStackTrace + ': whether to show the stack trace in case of errors')
 			}
+		}
 
-			Public.show = function(o, indent) {
-				if (o instanceof MongoCursor) {
-					try {
-						var count = 0
-						if (!Sincerity.Objects.exists(indent)) {
-							indent = this.showIndent
-						}
-						while (o.hasNext()) {
-							this.out.println(String(Sincerity.JSON.to(o.next(), indent)))
-							if (++count == this.showMax) {
-								if (o.hasNext()) {
-									this.out.println('...')
-								}
-								break
+		Public.show = function(o, indent) {
+			if (o instanceof MongoCursor) {
+				try {
+					var count = 0
+					if (!Sincerity.Objects.exists(indent)) {
+						indent = this.showIndent
+					}
+					while (o.hasNext()) {
+						this.out.println(String(Sincerity.JSON.to(o.next(), indent)))
+						if (++count == this.showMax) {
+							if (o.hasNext()) {
+								this.out.println('...')
 							}
+							break
 						}
 					}
-					finally {
-						o.close()
-					}
 				}
-				else {
-					return arguments.callee.overridden.call(this, o, indent)
+				finally {
+					o.close()
 				}
+			}
+			else {
+				return arguments.callee.overridden.call(this, o, indent)
 			}
 		}
 

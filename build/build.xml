@@ -28,6 +28,16 @@
 
 	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${dependencies}/libraries/jars/org.apache.ivy/ivy/${ivy.version}/ivy.jar" />
 
+	<macrodef name="packages">
+		<attribute name="suffix" />
+		<sequential>
+			<copy
+				file="${distribution}/${component}-${component.version}${component.version.postfix}@{suffix}"
+				todir="${packages.repo}/${packages.section}/${component.version}${component.version.postfix}"
+				failonerror="false" />
+		</sequential>
+	</macrodef>
+
 	<target name="ivy" description="Settings for Ivy">
 		<ivy:settings file="${root}/build/ivy/settings.xml" />
 	</target>
@@ -154,7 +164,18 @@
 			<zipfileset dir="${distribution.content}" includes="sincerity" filemode="755" />
 		</zip>
 	</target>
-	
+
+	<target name="package" depends="package-zip" description="Create all packages and installers" />
+
+	<target name="deploy-packages" if="packages.repo" description="Deploy to packages repository">
+		<packages suffix="-installer.jar" />
+		<packages suffix=".zip" />
+		<packages suffix=".rpm" />
+		<packages suffix=".deb" />
+		<packages suffix="-osx-installer.zip" />
+		<packages suffix="-windows-installer.exe" />
+	</target>
+
 	<target name="build" depends="distribution" description="Build distribution" />
 	
 	<target name="clean" description="Clean">

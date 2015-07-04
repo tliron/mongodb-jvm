@@ -154,7 +154,7 @@ var MongoClient = function(uri, options) {
 	 */
 	this.collection = function(fullName) {
 		try {
-			if(!(fullName instanceof com.mongodb.MongoNamespace)) {
+			if (!(fullName instanceof com.mongodb.MongoNamespace)) {
 				fullName = new com.mongodb.MongoNamespace(fullName)
 			}
 			var database = this.database(fullName.databaseName)
@@ -467,14 +467,14 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	this.command = function(command) {
 		try {
 			var result
-			command = BSON.to(command)
+			command = com.mongodb.jvm.Bson.to(command)
 			if (!MongoUtil.exists(this.commandReadPreference)) {
 				result = this.database.runCommand(command)				
 			}
 			else {
 				result = this.database.runCommand(command, this.commandReadPreference)
 			}
-			return BSON.from(result)
+			return result
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -490,7 +490,8 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 */
 	this.collection = function(name) {
 		try {
-			var collection = this.database.getCollection(name)
+			// This will convert native JavaScript types
+			var collection = this.database.getCollection(name, com.mongodb.jvm.Bson.documentClass)
 			return new MongoCollection(collection, this)
 		}
 		catch (x) {
@@ -963,7 +964,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			else {
 				spec = fieldOrSpec
 			}
-			spec = BSON.to(spec)
+			spec = com.mongodb.jvm.Bson.to(spec)
 			if (!MongoUtil.exists(options)) {
 				return this.collection.createIndex(spec)
 			}
@@ -999,7 +1000,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				this.collection.dropIndex(fieldOrSpec)
 			}
 			else {
-				this.collection.dropIndex(BSON.to(fieldOrSpec))
+				fieldOrSpec = com.mongodb.jvm.Bson.to(fieldOrSpec)
+				this.collection.dropIndex(fieldOrSpec)
 			}
 		}
 		catch (x) {
@@ -1030,7 +1032,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 					MongoUtil.listIndexesIterable(i, options)
 				}
 				while (i.hasNext()) {
-					indexes.push(BSON.from(i.next()))
+					indexes.push(i.next())
 				}
 			}
 			finally {
@@ -1090,7 +1092,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				i = this.collection.find()
 			}
 			else {
-				i = this.collection.find(BSON.to(filter))
+				filter = com.mongodb.jvm.Bson.to(filter)
+				i = this.collection.find(filter)
 			}
 			if (MongoUtil.exists(options)) {
 				MongoUtil.findIterable(i, options)
@@ -1144,7 +1147,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				return this.collection.count()
 			}
 			else {
-				filter = BSON.to(filter)
+				filter = com.mongodb.jvm.Bson.to(filter)
 				if (!MongoUtil.exists(options)) {
 					return this.collection.count(filter)
 				}
@@ -1188,7 +1191,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	this.aggregate = function(pipeline, options) {
 		try {
 			pipeline = MongoUtil.documentList(pipeline)
-			var i = this.collection.aggregate(BSON.to(pipeline))
+			pipeline = com.mongodb.jvm.Bson.to(pipline)
+			var i = this.collection.aggregate(pipeline)
 			if (MongoUtil.exists(options)) {
 				MongoUtil.aggregateIterable(i, options)
 			}
@@ -1338,7 +1342,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.insertOne = function(doc) {
 		try {
-			this.collection.insertOne(BSON.to(doc))
+			this.collection.insertOne(doc)
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1354,7 +1358,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.deleteMany = function(filter) {
 		try {
-			var result = this.collection.deleteMany(BSON.to(filter))
+			filter = com.mongodb.jvm.Bson.to(filter)
+			var result = this.collection.deleteMany(filter)
 			return MongoUtil.deleteResult(result)
 		}
 		catch (x) {
@@ -1364,7 +1369,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 
 	this.deleteOne = function(filter) {
 		try {
-			var result = this.collection.deleteOne(BSON.to(filter))
+			filter = com.mongodb.jvm.Bson.to(filter)
+			var result = this.collection.deleteOne(filter)
 			return MongoUtil.deleteResult(result)
 		}
 		catch (x) {
@@ -1380,7 +1386,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.findOneAndDelete = function(filter, options) {
 		try {
-			filter = BSON.to(filter)
+			filter = com.mongodb.jvm.Bson.to(filter)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.findOneAndDelete(filter)
 			}
@@ -1388,7 +1394,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				options = MongoUtil.findOneAndDeleteOptions(options)
 				result = this.collection.findOneAndDelete(filter, options)
 			}
-			return BSON.from(result)
+			return result
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1407,8 +1413,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.replaceOne = function(filter, replacement, options) {
 		try {
-			filter = BSON.to(filter)
-			replacement = BSON.to(replacement)
+			filter = com.mongodb.jvm.Bson.to(filter)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.replaceOne(filter, replacement)
 			}
@@ -1433,8 +1438,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.findOneAndReplace = function(filter, replacement, options) {
 		try {
-			filter = BSON.to(filter)
-			replacement = BSON.to(replacement)
+			filter = com.mongodb.jvm.Bson.to(filter)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.findOneAndReplace(filter, replacement)
 			}
@@ -1442,7 +1446,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				options = MongoUtil.findOneAndReplaceOptions(options)
 				result = this.collection.findOneAndReplace(filter, replacement, options)
 			}
-			return BSON.from(result)
+			return result
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1461,8 +1465,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.updateMany = function(filter, update, options) {
 		try {
-			filter = BSON.to(filter)
-			update = BSON.to(update)
+			filter = com.mongodb.jvm.Bson.to(filter)
+			update = com.mongodb.jvm.Bson.to(update)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.updateMany(filter, update)
 			}
@@ -1485,8 +1489,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.updateOne = function(filter, update, options) {
 		try {
-			filter = BSON.to(filter)
-			update = BSON.to(update)
+			filter = com.mongodb.jvm.Bson.to(filter)
+			update = com.mongodb.jvm.Bson.to(update)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.updateOne(filter, update)
 			}
@@ -1511,8 +1515,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.findOneAndUpdate = function(filter, update, options) {
 		try {
-			filter = BSON.to(filter)
-			update = BSON.to(update)
+			filter = com.mongodb.jvm.Bson.to(filter)
+			update = com.mongodb.jvm.Bson.to(update)
 			if (!MongoUtil.exists(options)) {
 				result = this.collection.findOneAndUpdate(filter, update)
 			}
@@ -1520,7 +1524,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				options = MongoUtil.findOneAndUpdateOptions(options)
 				result = this.collection.findOneAndUpdate(filter, update, options)
 			}
-			return BSON.from(result)
+			return result
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1741,8 +1745,7 @@ var MongoCursor = function(iterable, collection, filter) {
 	 */
 	this.first = function() {
 		try {
-			var first = this.iterable.first()
-			return BSON.from(first)
+			return this.iterable.first()
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1781,7 +1784,7 @@ var MongoCursor = function(iterable, collection, filter) {
 			if (null === this.cursor) {
 				this.cursor = iterable.iterator()
 			}
-			return BSON.from(this.cursor.next())
+			return this.cursor.next()
 		}
 		catch (x) {
 			throw new MongoError(x)
@@ -1815,7 +1818,7 @@ var MongoError = function(x) {
 		this.code = x.code
 		this.message = x.message
 		this.serverAddress = String(x.serverAddress)
-		this.response = BSON.from(x.response)
+		this.response = x.response
 	}
 	else if (x instanceof com.mongodb.MongoBulkWriteException) {
 		this.code = x.code
@@ -1826,7 +1829,7 @@ var MongoError = function(x) {
 			this.writeConcern = {
 				code: writeConcern.code,
 				message: writeConcern.message,
-				details: BSON.from(writeConcern.details)
+				details: writeConcern.details
 			}
 		}
 		var writeErrors = x.writeErrors
@@ -1840,7 +1843,7 @@ var MongoError = function(x) {
 					code: writeError.code,
 					message: writeError.message,
 					category: String(writeError.category),
-					details: BSON.from(writeError.details)
+					details: writeError.details
 				})
 			}
 		}
@@ -2132,7 +2135,7 @@ var MongoUtil = function() {
 		}
 		var connection = Public.connectDatabase(uri)
 		try {
-			connection.collection = connection.database.getCollection(uri.collection)
+			connection.collection = connection.database.getCollection(uri.collection, com.mongodb.jvm.Bson.documentClass)
 			return connection
 		}
 		catch (x) {
@@ -2164,11 +2167,10 @@ var MongoUtil = function() {
 	}
 
 	Public.documentList = function(array) {
+		// TODO: is this really necessary?
 		var list = new java.util.ArrayList(array.length)
 		for (var a in array) {
-			var entry = array[a]
-			entry = BSON.to(entry)
-			list.add(entry)
+			list.add(array[a])
 		}
 		return list
 	}
@@ -2182,7 +2184,6 @@ var MongoUtil = function() {
 				spec[fieldOrSpec] = 1
 				fieldOrSpec = spec
 			}
-			fieldOrSpec = BSON.to(fieldOrSpec)
 			list.add(fieldOrSpec)
 		}
 		return list
@@ -2212,6 +2213,10 @@ var MongoUtil = function() {
 			}
 			options = clientOptions
 		}
+		
+		// This will convert native JavaScript types
+		options.codecRegistry(com.mongodb.jvm.Bson.codecRegistry)
+		
 		return options
 	}
 	
@@ -2260,7 +2265,7 @@ var MongoUtil = function() {
 			var createCollectionOptions = new com.mongodb.client.model.CreateCollectionOptions()
 			Public.applyOptions(createCollectionOptions, options, ['autoIndex', 'capped', 'maxDocuments', 'sizeInBytes', 'usePowerOf2Sizes'])
 			if (Public.exists(options.storageEngineOptions)) {
-				createCollectionOptions.storageEngineOptions(BSON.to(options.storageEngineOptions))
+				createCollectionOptions.storageEngineOptions(com.mongodb.jvm.Bson.to(options.storageEngineOptions))
 			}
 			options = createCollectionOptions
 		}
@@ -2272,7 +2277,7 @@ var MongoUtil = function() {
 			var countOptions = new com.mongodb.client.model.CountOptions()
 			Public.applyOptions(countOptions, options, ['hintString', 'limit', 'skip'])
 			if (Public.exists(options.hint)) {
-				countOptions.hint(BSON.to(options.hint))
+				countOptions.hint(com.mongodb.jvm.Bson.to(options.hint))
 			}
 			if (Public.exists(options.maxTime)) {
 				countOptions.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -2290,10 +2295,10 @@ var MongoUtil = function() {
 				indexOptions.expireAfter(options.expireAfter, java.util.concurrent.TimeUnit.MILLISECONDS)
 			}
 			if (Public.exists(options.storageEngine)) {
-				indexOptions.storageEngine(BSON.to(options.expireAfter))
+				indexOptions.storageEngine(com.mongodb.jvm.Bson.to(options.expireAfter))
 			}
 			if (Public.exists(options.weights)) {
-				indexOptions.weights(BSON.to(options.weights))
+				indexOptions.weights(com.mongodb.jvm.Bson.to(options.weights))
 			}
 			options = indexOptions
 		}
@@ -2307,10 +2312,10 @@ var MongoUtil = function() {
 				findOneAndDeleteOptions.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
 			}
 			if (Public.exists(options.projection)) {
-				findOneAndDeleteOptions.projection(BSON.to(options.projection))
+				findOneAndDeleteOptions.projection(com.mongodb.jvm.Bson.to(options.projection))
 			}
 			if (Public.exists(options.sort)) {
-				findOneAndDeleteOptions.sort(BSON.to(options.sort))
+				findOneAndDeleteOptions.sort(com.mongodb.jvm.Bson.to(options.sort))
 			}
 			options = findOneAndDeleteOptions
 		}
@@ -2325,7 +2330,7 @@ var MongoUtil = function() {
 				findOneAndReplaceOptions.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
 			}
 			if (Public.exists(options.projection)) {
-				findOneAndReplaceOptions.projection(BSON.to(options.projection))
+				findOneAndReplaceOptions.projection(com.mongodb.jvm.Bson.to(options.projection))
 			}
 			if (Public.exists(options.returnDocument)) {
 				if (options.returnDocument instanceof com.mongodb.client.model.ReturnDocument) {
@@ -2345,7 +2350,7 @@ var MongoUtil = function() {
 				}
 			}
 			if (Public.exists(options.sort)) {
-				findOneAndReplaceOptions.sort(BSON.to(options.sort))
+				findOneAndReplaceOptions.sort(com.mongodb.jvm.Bson.to(options.sort))
 			}
 			options = findOneAndReplaceOptions
 		}
@@ -2360,7 +2365,7 @@ var MongoUtil = function() {
 				findOneAndUpdateOptions.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
 			}
 			if (Public.exists(options.projection)) {
-				findOneAndUpdateOptions.projection(BSON.to(options.projection))
+				findOneAndUpdateOptions.projection(com.mongodb.jvm.Bson.to(options.projection))
 			}
 			if (Public.exists(options.returnDocument)) {
 				if (options.returnDocument instanceof com.mongodb.client.model.ReturnDocument) {
@@ -2380,7 +2385,7 @@ var MongoUtil = function() {
 				}
 			}
 			if (Public.exists(options.sort)) {
-				findOneAndUpdateOptions.sort(BSON.to(options.sort))
+				findOneAndUpdateOptions.sort(com.mongodb.jvm.Bson.to(options.sort))
 			}
 			options = findOneAndUpdateOptions
 		}
@@ -2462,17 +2467,17 @@ var MongoUtil = function() {
 		if (!(model instanceof com.mongodb.client.model.WriteModel)) {
 			switch (model.type) {
 			case 'deleteMany':
-				model = new com.mongodb.client.model.DeleteManyModel(BSON.to(model.filter))
+				model = new com.mongodb.client.model.DeleteManyModel(model.filter)
 				break
 			case 'deleteOne':
-				model = new com.mongodb.client.model.DeleteOneModel(BSON.to(model.filter))
+				model = new com.mongodb.client.model.DeleteOneModel(model.filter)
 				break
 			case 'insertOne':
-				model = new com.mongodb.client.model.InsertOneModel(BSON.to(model.document))
+				model = new com.mongodb.client.model.InsertOneModel(model.document)
 				break
 			case 'replaceOne':
-				var filter = BSON.to(model.filter)
-				var replacement = BSON.to(model.replacement)
+				var filter = model.filter
+				var replacement = model.replacement
 				if (!Public.exists(model.options)) {
 					model = new com.mongodb.client.model.ReplaceOneModel(filter, replacement)
 				}
@@ -2482,8 +2487,8 @@ var MongoUtil = function() {
 				}
 				break
 			case 'updateMany':
-				var filter = BSON.to(model.filter)
-				var update = BSON.to(model.update)
+				var filter = model.filter
+				var update = model.update
 				if (!Public.exists(model.options)) {
 					model = new com.mongodb.client.model.UpdateManyModel(filter, update)
 				}
@@ -2493,8 +2498,8 @@ var MongoUtil = function() {
 				}
 				break
 			case 'updateOne':
-				var filter = BSON.to(model.filter)
-				var update = BSON.to(model.update)
+				var filter = model.filter
+				var update = model.update
 				if (!Public.exists(model.options)) {
 					model = new com.mongodb.client.model.UpdateOneModel(filter, update)
 				}
@@ -2532,7 +2537,7 @@ var MongoUtil = function() {
 				updateResult.modifiedCount = result.modifiedCount
 			}
 			updateResult.matchedCount = result.matchedCount
-			updateResult.upsertedId = BSON.from(result.upsertedId)
+			updateResult.upsertedId = result.upsertedId
 		}
 		return updateResult
 	}
@@ -2555,7 +2560,7 @@ var MongoUtil = function() {
 				while (i.hasNext()) {
 					var upsert = i.next()
 					bulkWriteResult.upserts.push({
-						id: BSON.from(upsert.id),
+						id: upsert.id,
 						index: upsert.index
 					})
 				}
@@ -2569,7 +2574,7 @@ var MongoUtil = function() {
 	Public.distinctIterable = function(i, options) {
 		Public.applyOptions(i, options, ['batchSize'])
 		if (Public.exists(options.filter)) {
-			i.filter(BSON.to(options.filter))
+			i.filter(com.mongodb.jvm.Bson.to(options.filter))
 		}
 		if (Public.exists(options.maxTime)) {
 			i.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -2599,19 +2604,19 @@ var MongoUtil = function() {
 			}
 		}
 		if (Public.exists(options.filter)) {
-			i.filter(BSON.to(options.filter))
+			i.filter(com.mongodb.jvm.Bson.to(options.filter))
 		}
 		if (Public.exists(options.maxTime)) {
 			i.maxTime(options.maxTime, java.util.concurrent.TimeUnit.MILLISECONDS)
 		}
 		if (Public.exists(options.modifiers)) {
-			i.modifiers(BSON.to(options.modifiers))
+			i.modifiers(com.mongodb.jvm.Bson.to(options.modifiers))
 		}
 		if (Public.exists(options.projection)) {
-			i.projection(BSON.to(options.projection))
+			i.projection(com.mongodb.jvm.Bson.to(options.projection))
 		}
 		if (Public.exists(options.sort)) {
-			i.sort(BSON.to(options.sort))
+			i.sort(com.mongodb.jvm.Bson.to(options.sort))
 		}
 	}
 
@@ -2645,7 +2650,5 @@ else {
 	com.mongodb.jvm.BSON.implementation = new com.mongodb.jvm.nashorn.NashornBsonImplementation()
 	com.threecrickets.jvm.json.JSON.implementation = new com.mongodb.jvm.nashorn.MongoNashornJsonImplementation()
 }
-
-var BSON = com.mongodb.jvm.BSON
 
 }

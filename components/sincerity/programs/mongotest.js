@@ -41,9 +41,9 @@ try {
 	// BSON
 	println('\nBSON:')
 
-	var bson = BSON.to({greeting: 'hello'})
-	println(' To: ' + bson)
-	println(' From: ' + Sincerity.JSON.to(BSON.from(bson)))
+	var data = {greeting: 'hello'}
+	println(' To: ' + com.mongodb.jvm.Bson.to(data))
+	//println(' From: ' + Sincerity.JSON.to(BSON.from(bson)))
 
 
 	// Databases
@@ -136,13 +136,13 @@ try {
 	println('\nGroup:')
 
 	var group = {key: {name: 1}, reduce: function(c, r) { r.first = c.name[0] }, filter: {name: {$exists: true}}}
-	println(' By names:' + Sincerity.JSON.to(collection.group(group)))
+	println(' By names: ' + Sincerity.JSON.to(collection.group(group)))
 
 	// Map-reduce
 	println('\nMap-reduce:')
 	var map = function() { emit(this.name[0], 1) }
 	var reduce = function(name, amounts) { return Array.sum(amounts) }
-	println(' How many names per first letter:' + Sincerity.JSON.to(collection.mapReduce({map: map, reduce: reduce, filter: {name: {$exists: true}}})))
+	println(' How many names per first letter: ' + Sincerity.JSON.to(collection.mapReduce({map: map, reduce: reduce, filter: {name: {$exists: true}}})))
 
 	// Explain
 	println('\nExplain:')
