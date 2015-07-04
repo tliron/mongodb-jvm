@@ -35,9 +35,9 @@ public class NativeBooleanCodec implements Codec<NativeBoolean>
 		return NativeBoolean.class;
 	}
 
-	public void encode( BsonWriter writer, NativeBoolean value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, NativeBoolean nativeBoolean, EncoderContext encoderContext )
 	{
-		writer.writeBoolean( value.getValue() );
+		writer.writeBoolean( nativeBoolean.getValue() );
 	}
 
 	public NativeBoolean decode( BsonReader reader, DecoderContext decoderContext )

@@ -18,8 +18,6 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 
-import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
-
 import jdk.nashorn.internal.objects.NativeRegExp;
 
 /**
@@ -38,23 +36,29 @@ public class NativeRegExpCodec implements Codec<NativeRegExp>
 		return NativeRegExp.class;
 	}
 
-	public void encode( BsonWriter writer, NativeRegExp value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, NativeRegExp nativeRegExp, EncoderContext encoderContext )
 	{
-		String[] regExp = NashornNativeUtil.from( (NativeRegExp) value );
+		String source = nativeRegExp.get( "source" ).toString();
 
-		BsonRegularExpression bson = new BsonRegularExpression( regExp[0], regExp[1] );
-		writer.writeRegularExpression( bson );
+		Object isGlobal = nativeRegExp.get( "global" );
+		Object isIgnoreCase = nativeRegExp.get( "ignoreCase" );
+		Object isMultiLine = nativeRegExp.get( "multiline" );
+
+		String options = "";
+		if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
+			options += "g";
+		if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
+			options += "i";
+		if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
+			options += "m";
+
+		BsonRegularExpression bsonRegularExpression = new BsonRegularExpression( source, options );
+		writer.writeRegularExpression( bsonRegularExpression );
 	}
 
 	public NativeRegExp decode( BsonReader reader, DecoderContext decoderContext )
 	{
-		// Note: We are not using the JVM's Pattern class because: it does
-		// not support a "g" flag, and initializing it would cause a regex
-		// compilation, which is not what we want during simple data
-		// conversion. In short, better to use a ??? than a Pattern,
-		// even though the MongoDB does driver support Pattern instances
-		// (which we think is a bad idea).
-
-		throw new UnsupportedOperationException( "NativeRegExpCodec.decode" );
+		BsonRegularExpression bsonRegularExpression = reader.readRegularExpression();
+		return (NativeRegExp) NativeRegExp.constructor( true, null, bsonRegularExpression.getPattern(), bsonRegularExpression.getOptions() );
 	}
 }

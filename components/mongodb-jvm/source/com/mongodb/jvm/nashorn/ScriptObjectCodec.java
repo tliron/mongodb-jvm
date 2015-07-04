@@ -23,7 +23,6 @@ import org.bson.codecs.configuration.CodecRegistry;
 import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
 
 import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
 
 /**
  * A BSON codec for a Nashorn {@link ScriptObject}.
@@ -51,14 +50,14 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 		return ScriptObject.class;
 	}
 
-	public void encode( BsonWriter writer, ScriptObject value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, ScriptObject scriptObject, EncoderContext encoderContext )
 	{
 		writer.writeStartDocument();
-		for( String key : value.getOwnKeys( true ) )
+		for( String key : scriptObject.getOwnKeys( true ) )
 		{
+			Object value = scriptObject.get( key );
 			writer.writeName( key );
-			Object entry = getProperty( value, key );
-			BsonUtil.encodeChild( entry, writer, encoderContext, codecRegistry );
+			BsonUtil.encodeChild( value, writer, encoderContext, codecRegistry );
 		}
 		writer.writeEndDocument();
 	}
@@ -71,7 +70,8 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 		while( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
 		{
 			String key = reader.readName();
-			object.put( key, BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap ), false );
+			Object value = BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap );
+			object.put( key, value, false );
 		}
 		reader.readEndDocument();
 
@@ -84,12 +84,4 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 	private final CodecRegistry codecRegistry;
 
 	private final BsonTypeClassMap bsonTypeClassMap;
-
-	private static Object getProperty( ScriptObject scriptObject, String key )
-	{
-		Object value = scriptObject.get( key );
-		if( value instanceof Undefined )
-			return null;
-		return value;
-	}
 }

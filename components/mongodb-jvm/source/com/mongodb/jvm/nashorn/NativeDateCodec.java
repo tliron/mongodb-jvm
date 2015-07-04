@@ -35,9 +35,9 @@ public class NativeDateCodec implements Codec<NativeDate>
 		return NativeDate.class;
 	}
 
-	public void encode( BsonWriter writer, NativeDate value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, NativeDate nativeDate, EncoderContext encoderContext )
 	{
-		writer.writeDateTime( (long) NativeDate.getTime( value ) );
+		writer.writeDateTime( (long) NativeDate.getTime( nativeDate ) );
 	}
 
 	public NativeDate decode( BsonReader reader, DecoderContext decoderContext )

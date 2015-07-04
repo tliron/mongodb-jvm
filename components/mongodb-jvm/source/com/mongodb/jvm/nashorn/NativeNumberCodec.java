@@ -35,9 +35,9 @@ public class NativeNumberCodec implements Codec<NativeNumber>
 		return NativeNumber.class;
 	}
 
-	public void encode( BsonWriter writer, NativeNumber value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, NativeNumber nativeNumber, EncoderContext encoderContext )
 	{
-		writer.writeDouble( value.getValue() );
+		writer.writeDouble( nativeNumber.getValue() );
 	}
 
 	public NativeNumber decode( BsonReader reader, DecoderContext decoderContext )

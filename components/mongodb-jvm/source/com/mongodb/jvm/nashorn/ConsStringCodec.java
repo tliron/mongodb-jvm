@@ -35,13 +35,13 @@ public class ConsStringCodec implements Codec<ConsString>
 		return ConsString.class;
 	}
 
-	public void encode( BsonWriter writer, ConsString value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, ConsString constString, EncoderContext encoderContext )
 	{
-		writer.writeString( value.toString() );
+		writer.writeString( constString.toString() );
 	}
 
 	public ConsString decode( BsonReader reader, DecoderContext decoderContext )
 	{
-		throw new UnsupportedOperationException( "ConsStringCodec.decode" );
+		throw new UnsupportedOperationException( ConsStringCodec.class.getCanonicalName() + ".decode" );
 	}
 }

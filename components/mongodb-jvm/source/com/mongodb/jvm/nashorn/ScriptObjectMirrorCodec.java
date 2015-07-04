@@ -19,7 +19,6 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
-import jdk.nashorn.internal.runtime.Undefined;
 
 /**
  * A BSON codec for a Nashorn {@link ScriptObjectMirror}.
@@ -46,27 +45,27 @@ public class ScriptObjectMirrorCodec implements Codec<ScriptObjectMirror>
 		return ScriptObjectMirror.class;
 	}
 
-	public void encode( BsonWriter writer, ScriptObjectMirror value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, ScriptObjectMirror scriptObjectMirror, EncoderContext encoderContext )
 	{
-		if( value.isArray() )
+		if( scriptObjectMirror.isArray() )
 		{
 			writer.writeStartArray();
-			int length = value.size();
+			int length = scriptObjectMirror.size();
 			for( int i = 0; i < length; i++ )
 			{
-				Object entry = value.getSlot( i );
-				BsonUtil.encodeChild( entry, writer, encoderContext, codecRegistry );
+				Object item = scriptObjectMirror.getSlot( i );
+				BsonUtil.encodeChild( item, writer, encoderContext, codecRegistry );
 			}
 			writer.writeEndArray();
 		}
 		else
 		{
 			writer.writeStartDocument();
-			for( String key : value.getOwnKeys( true ) )
+			for( String key : scriptObjectMirror.getOwnKeys( true ) )
 			{
+				Object value = scriptObjectMirror.get( key );
 				writer.writeName( key );
-				Object entry = getProperty( value, key );
-				BsonUtil.encodeChild( entry, writer, encoderContext, codecRegistry );
+				BsonUtil.encodeChild( value, writer, encoderContext, codecRegistry );
 			}
 			writer.writeEndDocument();
 		}
@@ -74,19 +73,11 @@ public class ScriptObjectMirrorCodec implements Codec<ScriptObjectMirror>
 
 	public ScriptObjectMirror decode( BsonReader reader, DecoderContext decoderContext )
 	{
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException( ScriptObjectMirrorCodec.class.getCanonicalName() + ".decode" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
 	private final CodecRegistry codecRegistry;
-
-	private static Object getProperty( ScriptObjectMirror scriptObject, String key )
-	{
-		Object value = scriptObject.get( key );
-		if( value instanceof Undefined )
-			return null;
-		return value;
-	}
 }

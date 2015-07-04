@@ -54,16 +54,16 @@ public class NativeArrayCodec implements Codec<NativeArray>
 		return NativeArray.class;
 	}
 
-	public void encode( BsonWriter writer, NativeArray value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, NativeArray nativeArray, EncoderContext encoderContext )
 	{
-		ArrayData array = value.getArray();
-		int length = (int) array.length();
+		ArrayData data = nativeArray.getArray();
+		int length = (int) data.length();
 
 		writer.writeStartArray();
 		for( int i = 0; i < length; i++ )
 		{
-			Object entry = array.getObject( i );
-			BsonUtil.encodeChild( entry, writer, encoderContext, codecRegistry );
+			Object item = data.getObject( i );
+			BsonUtil.encodeChild( item, writer, encoderContext, codecRegistry );
 		}
 		writer.writeEndArray();
 	}
@@ -74,14 +74,17 @@ public class NativeArrayCodec implements Codec<NativeArray>
 
 		reader.readStartArray();
 		while( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
-			list.add( BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap ) );
+		{
+			Object item = BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap );
+			list.add( item );
+		}
 		reader.readEndArray();
 
-		NativeArray array = NashornNativeUtil.newArray( list.size() );
+		NativeArray nativeArray = NashornNativeUtil.newArray( list.size() );
 		int index = 0;
 		for( Object entry : list )
-			array.set( index++, entry, 0 );
-		return array;
+			nativeArray.set( index++, entry, 0 );
+		return nativeArray;
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
