@@ -35,7 +35,7 @@ public class UndefinedCodec implements Codec<Undefined>
 		return Undefined.class;
 	}
 
-	public void encode( BsonWriter writer, Undefined value, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, Undefined undefined, EncoderContext encoderContext )
 	{
 		writer.writeUndefined();
 	}

@@ -16,9 +16,11 @@ import org.bson.BsonWriter;
 import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
+import org.bson.codecs.configuration.CodecConfigurationException;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import jdk.nashorn.internal.runtime.Context;
 
 /**
  * A BSON codec for a Nashorn {@link ScriptObjectMirror}.
@@ -47,6 +49,22 @@ public class ScriptObjectMirrorCodec implements Codec<ScriptObjectMirror>
 
 	public void encode( BsonWriter writer, ScriptObjectMirror scriptObjectMirror, EncoderContext encoderContext )
 	{
+		Object wrapped = ScriptObjectMirror.unwrap( scriptObjectMirror, Context.getGlobal() );
+		if( !( wrapped instanceof ScriptObjectMirror ) )
+		{
+			// Attempt to encode the wrapped object
+			try
+			{
+				@SuppressWarnings("unchecked")
+				Codec<Object> codec = (Codec<Object>) codecRegistry.get( wrapped.getClass() );
+				codec.encode( writer, wrapped, encoderContext );
+				return;
+			}
+			catch( CodecConfigurationException x )
+			{
+			}
+		}
+
 		if( scriptObjectMirror.isArray() )
 		{
 			writer.writeStartArray();
