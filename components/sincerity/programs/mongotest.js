@@ -41,7 +41,7 @@ try {
 	// BSON
 	println('\nBSON:')
 
-	var data = {greeting: 'hello'}
+	var data = {greeting: 'hello', now: new Date(), regular: /[c]+/g, array: ['fish', 123]}
 	println(' To: ' + com.mongodb.jvm.Bson.to(data))
 	//println(' From: ' + Sincerity.JSON.to(BSON.from(bson)))
 

@@ -55,8 +55,6 @@ public class NashornCodecProvider implements CodecProvider
 		replacements.put( BsonType.DATE_TIME, NativeDate.class );
 		replacements.put( BsonType.DOCUMENT, ScriptObject.class );
 		replacements.put( BsonType.DOUBLE, NativeNumber.class );
-		// replacements.put( BsonType.INT32, NativeNumber.class );
-		// replacements.put( BsonType.INT64, NativeNumber.class );
 		replacements.put( BsonType.REGULAR_EXPRESSION, NativeRegExp.class );
 		replacements.put( BsonType.STRING, NativeString.class );
 		replacements.put( BsonType.UNDEFINED, Undefined.class );
@@ -76,7 +74,8 @@ public class NashornCodecProvider implements CodecProvider
 			return (Codec<T>) new DBObjectCodec( registry, bsonTypeClassMap );
 		else if( clazz == NativeArray.class )
 			return (Codec<T>) new NativeArrayCodec( registry, bsonTypeClassMap );
-		else if( clazz == ScriptObject.class )
+		// Nashorn uses subclasses of ScriptObject, such as JO4
+		else if( ScriptObject.class.isAssignableFrom( clazz ) )
 			return (Codec<T>) new ScriptObjectCodec( registry, bsonTypeClassMap );
 		else if( clazz == ScriptObjectMirror.class )
 			return (Codec<T>) new ScriptObjectMirrorCodec( registry );

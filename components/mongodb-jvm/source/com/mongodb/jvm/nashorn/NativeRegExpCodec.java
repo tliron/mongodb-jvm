@@ -52,8 +52,7 @@ public class NativeRegExpCodec implements Codec<NativeRegExp>
 		if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
 			options += "m";
 
-		BsonRegularExpression bsonRegularExpression = new BsonRegularExpression( source, options );
-		writer.writeRegularExpression( bsonRegularExpression );
+		writer.writeRegularExpression( new BsonRegularExpression( source, options ) );
 	}
 
 	public NativeRegExp decode( BsonReader reader, DecoderContext decoderContext )

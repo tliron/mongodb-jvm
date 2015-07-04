@@ -25,15 +25,14 @@ import org.bson.codecs.configuration.CodecRegistry;
  */
 public class BsonUtil
 {
-	@SuppressWarnings("unchecked")
-	public static void encodeChild( Object value, BsonWriter writer, EncoderContext encoderContext, CodecRegistry codecRegistry )
+	public static void writeChild( Object value, BsonWriter writer, EncoderContext encoderContext, CodecRegistry codecRegistry )
 	{
-		@SuppressWarnings("rawtypes")
-		Codec codec = codecRegistry.get( value.getClass() );
+		@SuppressWarnings("unchecked")
+		Codec<Object> codec = (Codec<Object>) codecRegistry.get( value.getClass() );
 		encoderContext.encodeWithChildContext( codec, writer, value );
 	}
 
-	public static Object decode( BsonReader reader, DecoderContext decoderContext, CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
+	public static Object read( BsonReader reader, DecoderContext decoderContext, CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		BsonType type = reader.getCurrentBsonType();
 		Class<?> clazz = bsonTypeClassMap.get( type );

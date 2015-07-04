@@ -57,7 +57,7 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 		{
 			Object value = scriptObject.get( key );
 			writer.writeName( key );
-			BsonUtil.encodeChild( value, writer, encoderContext, codecRegistry );
+			BsonUtil.writeChild( value, writer, encoderContext, codecRegistry );
 		}
 		writer.writeEndDocument();
 	}
@@ -70,7 +70,7 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 		while( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
 		{
 			String key = reader.readName();
-			Object value = BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap );
+			Object value = BsonUtil.read( reader, decoderContext, codecRegistry, bsonTypeClassMap );
 			object.put( key, value, false );
 		}
 		reader.readEndDocument();

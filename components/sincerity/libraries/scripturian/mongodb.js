@@ -1814,6 +1814,9 @@ var MongoError = function(x) {
 		// For Rhino, unwrap
 		x = x.javaException
 	}
+	
+	this.exception = x
+	
 	if (x instanceof com.mongodb.MongoCommandException) {
 		this.code = x.code
 		this.message = x.message
@@ -1897,7 +1900,7 @@ var MongoError = function(x) {
 	}
 	
 	this.clean = function() {
-		return MongoUtil.prune(this, ['code', 'message', 'serverAddress', 'response', 'writeConcern', 'writeErrors', 'writeResult', 'cause'])
+		return MongoUtil.prune(this, ['code', 'message', 'serverAddress', 'response', 'writeConcern', 'writeErrors', 'writeResult'])
 	}
 }
 
@@ -1907,6 +1910,9 @@ MongoError.represent = function(x, full) {
 	if (x instanceof MongoError) {
 		out.println('MongoDB error:')
 		out.println(String(Sincerity.JSON.to(x.clean(), true)))
+		if (full) {
+			x.exception.printStackTrace(out)
+		}
 	}
 	else if (x instanceof java.lang.Throwable) {
 		out.println('JVM error:')

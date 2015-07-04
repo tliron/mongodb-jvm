@@ -57,13 +57,12 @@ public class NativeArrayCodec implements Codec<NativeArray>
 	public void encode( BsonWriter writer, NativeArray nativeArray, EncoderContext encoderContext )
 	{
 		ArrayData data = nativeArray.getArray();
-		int length = (int) data.length();
 
 		writer.writeStartArray();
-		for( int i = 0; i < length; i++ )
+		for( int i = 0, length = (int) data.length(); i < length; i++ )
 		{
 			Object item = data.getObject( i );
-			BsonUtil.encodeChild( item, writer, encoderContext, codecRegistry );
+			BsonUtil.writeChild( item, writer, encoderContext, codecRegistry );
 		}
 		writer.writeEndArray();
 	}
@@ -75,7 +74,7 @@ public class NativeArrayCodec implements Codec<NativeArray>
 		reader.readStartArray();
 		while( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
 		{
-			Object item = BsonUtil.decode( reader, decoderContext, codecRegistry, bsonTypeClassMap );
+			Object item = BsonUtil.read( reader, decoderContext, codecRegistry, bsonTypeClassMap );
 			list.add( item );
 		}
 		reader.readEndArray();
