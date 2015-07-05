@@ -11,23 +11,20 @@
 
 package com.mongodb.jvm;
 
-import org.bson.BsonDocument;
-import org.bson.BsonDocumentReader;
-import org.bson.Document;
-import org.bson.codecs.DecoderContext;
-import org.bson.codecs.DocumentCodec;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ServiceLoader;
 
-import com.mongodb.jvm.nashorn.MongoNashornJsonImplementation;
-import com.mongodb.jvm.nashorn.NashornBsonImplementation;
-import com.mongodb.jvm.rhino.MongoRhinoJsonImplementation;
-import com.mongodb.jvm.rhino.RhinoBsonImplementation;
-import com.threecrickets.jvm.json.JSON;
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentWrapper;
+import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.json.JsonWriterSettings;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 
 /**
- * Conversion between native JVM language objects and BSON.
- * <p>
- * This class can be used directly in JVM languages.
- * 
  * @author Tal Liron
  */
 public class BSON
@@ -36,14 +33,77 @@ public class BSON
 	// Static attributes
 	//
 
+	/**
+	 * The implementation used by the static methods in this class.
+	 * <p>
+	 * By default, it is the implementation for the current Scripturian
+	 * {@link com.threecrickets.scripturian.LanguageAdapter}. If there is none
+	 * available, the dummy {@link DefaultBsonImplementation} will be used.
+	 * <p>
+	 * You can override this behavior and set a specific implementation using
+	 * {@link #setImplementation(BsonImplementation)}.
+	 * 
+	 * @return The implementation
+	 */
 	public static BsonImplementation getImplementation()
 	{
-		return implementation;
+		BsonImplementation implementation = BSON.implementation;
+		if( implementation != null )
+			return implementation;
+		else
+		{
+			implementation = implementations.get( getLanguageAdapterName() );
+			if( implementation == null )
+				implementation = new DefaultBsonImplementation();
+			return implementation;
+		}
 	}
 
+	/**
+	 * Sets the implementation to be used by the static methods in this class.
+	 * If set to null (the default) will use the implementation for the current
+	 * Scripturian {@link com.threecrickets.scripturian.LanguageAdapter}
+	 * 
+	 * @param implementation
+	 *        The new implementation or null
+	 */
 	public static void setImplementation( BsonImplementation implementation )
 	{
 		BSON.implementation = implementation;
+	}
+
+	/**
+	 * The document class to be used for {@link MongoCollection}. It is likely a
+	 * native type of the language engine.
+	 * 
+	 * @return The document class
+	 */
+	public static Class<?> getDocumentClass()
+	{
+		return getImplementation().getDocumentClass();
+	}
+
+	/**
+	 * The codec registry to be used for {@link MongoClient}.
+	 * 
+	 * @param next
+	 *        The next codec registry to be used after ours
+	 * @return The codec registry
+	 */
+	public static CodecRegistry getCodecRegistry( CodecRegistry next )
+	{
+		return getImplementation().getCodecRegistry( next );
+	}
+
+	/**
+	 * The codec registry to be used for {@link MongoClient}. The driver's
+	 * default codec registry will be appended after ours.
+	 * 
+	 * @return The codec registry
+	 */
+	public static CodecRegistry getCodecRegistry()
+	{
+		return getCodecRegistry( MongoClient.getDefaultCodecRegistry() );
 	}
 
 	//
@@ -51,90 +111,54 @@ public class BSON
 	//
 
 	/**
-	 * Recursively convert from native to BSON-compatible values.
+	 * Convert any object to a {@link BsonDocument}, specifically supporting
+	 * native types of the language engine.
 	 * 
 	 * @param object
-	 *        A native object
-	 * @return A BSON-compatible object
+	 *        The object
+	 * @return A BSON document
 	 */
-	public static Object to( Object object )
+	public static BsonDocument to( Object object )
 	{
-		return getImplementation().to( object );
+		return BsonDocumentWrapper.asBsonDocument( object, getCodecRegistry() );
 	}
 
 	/**
-	 * Recursively convert from BSON to native JavaScript values.
-	 * <p>
-	 * Creates native dicts, arrays and primitives. The result is
-	 * JSON-compatible.
+	 * Convert JSON text to a {@link BsonDocument}.
 	 * 
-	 * @param object
-	 *        A BSON object
-	 * @return A JSON-compatible native object
+	 * @param json
+	 *        The JSON text
+	 * @return A BSON document
 	 */
-	public static Object from( Object object )
+	public static BsonDocument fromJson( String json )
 	{
-		return getImplementation().from( object );
+		return BsonDocument.parse( json );
 	}
 
 	/**
-	 * Recursively convert from BSON to native JavaScript values.
-	 * <p>
-	 * Creates native dicts, arrays and primitives. The result is
-	 * JSON-compatible.
+	 * Convert a BSON object to JSON text. The result is in a native string type
+	 * of the language engine.
 	 * 
-	 * @param object
-	 *        A BSON object
-	 * @param extendedJSON
-	 *        Whether to convert extended JSON objects
-	 * @return A JSON-compatible native object
+	 * @param o
+	 *        A {@link Document} or a {@link BsonDocument}
+	 * @param indent
+	 *        Whether to indent the JSON text
+	 * @return A native string, or null if not converted
 	 */
-	public static Object from( Object object, boolean extendedJSON )
+	public static Object toJson( Object o, boolean indent )
 	{
-		return getImplementation().from( object, extendedJSON );
-	}
+		String r = null;
+		JsonWriterSettings settings = new JsonWriterSettings( indent );
 
-	/**
-	 * Utility method to convert low-level {@link BsonDocument} to high-level
-	 * {@link Document}.
-	 * 
-	 * @param bsonDocument
-	 *        The BsonDocument
-	 * @return The document
-	 */
-	public static Document toDocument( BsonDocument bsonDocument )
-	{
-		BsonDocumentReader reader = new BsonDocumentReader( bsonDocument );
-		DocumentCodec codec = new DocumentCodec();
-		DecoderContext context = DecoderContext.builder().build();
-		return codec.decode( reader, context );
-	}
+		if( o instanceof Document )
+			r = ( (Document) o ).toJson( settings );
+		else if( o instanceof BsonDocument )
+			r = ( (BsonDocument) o ).toJson( settings );
 
-	/**
-	 * Enable extended JSON (if JSON is available).
-	 */
-	public static void enableExtendedJSON()
-	{
-		try
-		{
-			try
-			{
-				JSON.setImplementation( new MongoNashornJsonImplementation() );
-			}
-			catch( NoClassDefFoundError x )
-			{
-				// Nashorn not available
-				JSON.setImplementation( new MongoRhinoJsonImplementation() );
-			}
-			catch( UnsupportedClassVersionError x )
-			{
-				// Nashorn requires at least JVM 7
-				JSON.setImplementation( new MongoRhinoJsonImplementation() );
-			}
-		}
-		catch( Throwable x )
-		{
-		}
+		if( r == null )
+			return null;
+		else
+			return getImplementation().toNativeString( r );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
@@ -142,21 +166,38 @@ public class BSON
 
 	private static volatile BsonImplementation implementation;
 
-	static
+	private static final Map<String, BsonImplementation> implementations = new HashMap<String, BsonImplementation>();
+
+	/**
+	 * The name of the current Scripturian
+	 * {@link com.threecrickets.scripturian.LanguageAdapter}.
+	 * 
+	 * @return The language adapter name
+	 */
+	private static String getLanguageAdapterName()
 	{
 		try
 		{
-			implementation = new NashornBsonImplementation();
+			return (String) com.threecrickets.scripturian.ExecutionContext.getCurrent().getAdapter().getAttributes().get( com.threecrickets.scripturian.LanguageAdapter.NAME );
 		}
 		catch( NoClassDefFoundError x )
 		{
-			// Nashorn not available
-			implementation = new RhinoBsonImplementation();
+			return null;
 		}
-		catch( UnsupportedClassVersionError x )
+	}
+
+	static
+	{
+		ServiceLoader<BsonImplementation> implementationLoader = ServiceLoader.load( BsonImplementation.class, BSON.class.getClassLoader() );
+		for( BsonImplementation implementation : implementationLoader )
 		{
-			// Nashorn requires at least JVM 7
-			implementation = new RhinoBsonImplementation();
+			BsonImplementation existing = implementations.get( implementation.getName() );
+			if( ( existing == null ) || ( implementation.getPriority() > existing.getPriority() ) )
+				implementations.put( implementation.getName(), implementation );
 		}
+	}
+
+	private BSON()
+	{
 	}
 }

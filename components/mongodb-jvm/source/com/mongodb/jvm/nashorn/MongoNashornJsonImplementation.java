@@ -25,4 +25,13 @@ public class MongoNashornJsonImplementation extends NashornJsonImplementation
 	{
 		super( new MongoNashornJsonExtender() );
 	}
+
+	//
+	// JsonImplementation
+	//
+
+	public int getPriority()
+	{
+		return 1;
+	}
 }

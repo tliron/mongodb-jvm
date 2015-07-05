@@ -9,7 +9,7 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.nashorn;
+package com.mongodb.jvm.rhino;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,42 +21,38 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.Wrapper;
 
 import com.mongodb.DBObject;
 import com.mongodb.DBObjectCodec;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
-import jdk.nashorn.internal.objects.NativeArray;
-import jdk.nashorn.internal.objects.NativeBoolean;
-import jdk.nashorn.internal.objects.NativeDate;
-import jdk.nashorn.internal.objects.NativeNumber;
-import jdk.nashorn.internal.objects.NativeRegExp;
-import jdk.nashorn.internal.objects.NativeString;
-import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
-
 /**
- * Provides codecs for Nashorn types that require access to a
+ * Provides codecs for Rhino types that require access to a
  * {@link CodecRegistry} and {@link BsonTypeClassMap}.
  * 
  * @author Tal Liron
  */
-public class NashornCodecProvider implements CodecProvider
+public class RhinoCodecProvider implements CodecProvider
 {
 	//
 	// Construction
 	//
 
-	public NashornCodecProvider()
+	public RhinoCodecProvider()
 	{
+		// We are using codec classes for some of these here as placeholders,
+		// because the actual target classes in those cases are private in Rhino
 		Map<BsonType, Class<?>> replacements = new HashMap<BsonType, Class<?>>();
 		replacements.put( BsonType.ARRAY, NativeArray.class );
-		replacements.put( BsonType.BOOLEAN, NativeBoolean.class );
-		replacements.put( BsonType.DATE_TIME, NativeDate.class );
-		replacements.put( BsonType.DOCUMENT, ScriptObject.class );
-		replacements.put( BsonType.DOUBLE, NativeNumber.class );
-		replacements.put( BsonType.REGULAR_EXPRESSION, NativeRegExp.class );
-		replacements.put( BsonType.STRING, NativeString.class );
+		replacements.put( BsonType.BOOLEAN, NativeBooleanCodec.class );
+		replacements.put( BsonType.DATE_TIME, NativeDateCodec.class );
+		replacements.put( BsonType.DOCUMENT, Scriptable.class );
+		replacements.put( BsonType.DOUBLE, NativeNumberCodec.class );
+		replacements.put( BsonType.REGULAR_EXPRESSION, NativeRegExpCodec.class );
+		replacements.put( BsonType.STRING, NativeStringCodec.class );
 		replacements.put( BsonType.UNDEFINED, Undefined.class );
 		bsonTypeClassMap = new BsonTypeClassMap( replacements );
 	}
@@ -74,11 +70,10 @@ public class NashornCodecProvider implements CodecProvider
 			return (Codec<T>) new DBObjectCodec( registry, bsonTypeClassMap );
 		else if( clazz == NativeArray.class )
 			return (Codec<T>) new NativeArrayCodec( registry, bsonTypeClassMap );
-		// Nashorn uses subclasses of ScriptObject, such as JO4
-		else if( ScriptObject.class.isAssignableFrom( clazz ) )
-			return (Codec<T>) new ScriptObjectCodec( registry, bsonTypeClassMap );
-		else if( clazz == ScriptObjectMirror.class )
-			return (Codec<T>) new ScriptObjectMirrorCodec( registry );
+		else if( Wrapper.class.isAssignableFrom( clazz ) )
+			return (Codec<T>) new WrapperCodec( registry );
+		else if( Scriptable.class.isAssignableFrom( clazz ) )
+			return (Codec<T>) new ScriptableCodec( registry, bsonTypeClassMap );
 		return null;
 	}
 

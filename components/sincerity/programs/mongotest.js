@@ -39,11 +39,14 @@ try {
 	println(' Collection: ' + collection.fullName)
 
 	// BSON
-	println('\nBSON:')
+	println('\nConversions:')
 
 	var data = {greeting: 'hello', now: new Date(), regular: /[c]+/g, array: ['fish', 123]}
-	println(' To: ' + com.mongodb.jvm.Bson.to(data))
-	//println(' From: ' + Sincerity.JSON.to(BSON.from(bson)))
+	println(' To standard JSON: ' + JSON.stringify(data))
+	var extended = Sincerity.JSON.to(data)
+	println(' To extended JSON: ' + extended)
+	println(' From extended JSON: ' + Sincerity.JSON.to(Sincerity.JSON.from(extended)))
+	println(' To BSON: ' + BSON.to(data))
 
 
 	// Databases

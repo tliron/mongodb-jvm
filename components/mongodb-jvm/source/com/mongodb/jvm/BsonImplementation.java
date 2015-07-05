@@ -11,40 +11,56 @@
 
 package com.mongodb.jvm;
 
+import org.bson.codecs.configuration.CodecRegistry;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.threecrickets.scripturian.LanguageAdapter;
+
+/**
+ * @author Tal Liron
+ */
 public interface BsonImplementation
 {
 	/**
-	 * Recursively convert from native to BSON-compatible values.
+	 * The name of this implementation.
 	 * 
-	 * @param object
-	 *        A native object
-	 * @return A BSON-compatible object
+	 * @return The name of this implementation
 	 */
-	public abstract Object to( Object object );
+	public String getName();
 
 	/**
-	 * Recursively convert from BSON to native JavaScript values.
-	 * <p>
-	 * Creates native dicts, arrays and primitives. The result is
-	 * JSON-compatible.
+	 * The priority of this implementation. Higher numbers mean higher priority.
 	 * 
-	 * @param object
-	 *        A BSON object
-	 * @return A JSON-compatible native object
+	 * @return The priority of this implementation
 	 */
-	public abstract Object from( Object object );
+	public int getPriority();
 
 	/**
-	 * Recursively convert from BSON to native JavaScript values.
-	 * <p>
-	 * Creates native dicts, arrays and primitives. The result is
-	 * JSON-compatible.
+	 * The document class to be used for {@link MongoCollection}, as appropriate
+	 * for the current Scripturian {@link LanguageAdapter}. It is likely a
+	 * native type of the current language engine.
 	 * 
-	 * @param object
-	 *        A BSON object
-	 * @param extendedJSON
-	 *        Whether to convert extended JSON objects
-	 * @return A JSON-compatible native object
+	 * @return The document class
 	 */
-	public abstract Object from( Object object, boolean extendedJSON );
+	public Class<?> getDocumentClass();
+
+	/**
+	 * The codec registry to be used for {@link MongoClient} for the current
+	 * Scripturian {@link LanguageAdapter}. The driver's default codec registry
+	 * will be used after ours.
+	 * 
+	 * @return The codec registry
+	 */
+	public CodecRegistry getCodecRegistry( CodecRegistry next );
+
+	/**
+	 * Convert a JVM {@link String} to a native string type appropriate for the
+	 * current Scripturian {@link LanguageAdapter}.
+	 * 
+	 * @param string
+	 *        The JVM string
+	 * @return A native string
+	 */
+	public Object toNativeString( String string );
 }

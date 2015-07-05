@@ -24,4 +24,13 @@ public class MongoRhinoJsonImplementation extends RhinoJsonImplementation
 	{
 		super( new MongoRhinoJsonExtender() );
 	}
+
+	//
+	// JsonImplementation
+	//
+
+	public int getPriority()
+	{
+		return 1;
+	}
 }

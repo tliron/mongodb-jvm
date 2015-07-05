@@ -9,7 +9,7 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.nashorn;
+package com.mongodb.jvm.rhino;
 
 import org.bson.BsonReader;
 import org.bson.BsonType;
@@ -19,24 +19,25 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ScriptRuntime;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import com.mongodb.jvm.internal.BsonUtil;
 
-import jdk.nashorn.internal.objects.Global;
-import jdk.nashorn.internal.runtime.ScriptObject;
-
 /**
- * A BSON codec for a Nashorn {@link ScriptObject}.
+ * A BSON codec for a Rhino {@link Scriptable}.
  * 
  * @author Tal Liron
  */
-public class ScriptObjectCodec implements Codec<ScriptObject>
+public class ScriptableCodec implements Codec<Scriptable>
 {
 	//
 	// Construction
 	//
 
-	public ScriptObjectCodec( CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
+	public ScriptableCodec( CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		this.codecRegistry = codecRegistry;
 		this.bsonTypeClassMap = bsonTypeClassMap;
@@ -46,37 +47,56 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 	// Codec
 	//
 
-	public Class<ScriptObject> getEncoderClass()
+	public Class<Scriptable> getEncoderClass()
 	{
-		return ScriptObject.class;
+		return Scriptable.class;
 	}
 
-	public void encode( BsonWriter writer, ScriptObject scriptObject, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, Scriptable scriptable, EncoderContext encoderContext )
 	{
-		writer.writeStartDocument();
-		for( String key : scriptObject.getOwnKeys( true ) )
+		String className = scriptable.getClassName();
+		// System.out.println( ">>>>>>>>>>" + className + " " +
+		// scriptable.getClass() );
+
+		if( className.equals( "Date" ) )
 		{
-			Object value = scriptObject.get( key );
+			new NativeDateCodec().encode( writer, scriptable, encoderContext );
+			return;
+		}
+		else if( className.equals( "RegExp" ) )
+		{
+			new NativeRegExpCodec().encode( writer, scriptable, encoderContext );
+			return;
+		}
+
+		writer.writeStartDocument();
+		Object[] ids = scriptable.getIds();
+		for( Object id : ids )
+		{
+			String key = id.toString();
+			Object value = ScriptableObject.getProperty( scriptable, key );
 			writer.writeName( key );
 			BsonUtil.writeChild( value, writer, encoderContext, codecRegistry );
 		}
 		writer.writeEndDocument();
 	}
 
-	public ScriptObject decode( BsonReader reader, DecoderContext decoderContext )
+	public Scriptable decode( BsonReader reader, DecoderContext decoderContext )
 	{
-		ScriptObject scriptObject = Global.newEmptyInstance();
+		Context context = Context.getCurrentContext();
+		Scriptable scope = ScriptRuntime.getTopCallScope( context );
+		Scriptable scriptable = context.newObject( scope );
 
 		reader.readStartDocument();
 		while( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
 		{
 			String key = reader.readName();
 			Object value = BsonUtil.read( reader, decoderContext, codecRegistry, bsonTypeClassMap );
-			scriptObject.put( key, value, false );
+			ScriptableObject.putProperty( scriptable, key, value );
 		}
 		reader.readEndDocument();
 
-		return scriptObject;
+		return scriptable;
 	}
 
 	// //////////////////////////////////////////////////////////////////////////

@@ -29,7 +29,7 @@ import org.bson.types.Binary;
 import org.bson.types.ObjectId;
 
 import com.mongodb.DBRef;
-import com.mongodb.jvm.BSON;
+import com.mongodb.jvm.BSONOld;
 import com.mongodb.jvm.internal.Base64;
 import com.threecrickets.jvm.json.nashorn.NashornJsonExtender;
 import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
@@ -511,7 +511,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			DBRef ref = (DBRef) object;
 			String collection = ref.getCollectionName();
-			Object id = BSON.from( ref.getId(), true );
+			Object id = BSONOld.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )
 				idString = ( (ObjectId) id ).toHexString();

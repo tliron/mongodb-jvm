@@ -9,7 +9,7 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.nashorn;
+package com.mongodb.jvm.internal;
 
 import org.bson.BsonReader;
 import org.bson.BsonType;
@@ -27,9 +27,14 @@ public class BsonUtil
 {
 	public static void writeChild( Object value, BsonWriter writer, EncoderContext encoderContext, CodecRegistry codecRegistry )
 	{
-		@SuppressWarnings("unchecked")
-		Codec<Object> codec = (Codec<Object>) codecRegistry.get( value.getClass() );
-		encoderContext.encodeWithChildContext( codec, writer, value );
+		if( value == null )
+			writer.writeNull();
+		else
+		{
+			@SuppressWarnings("unchecked")
+			Codec<Object> codec = (Codec<Object>) codecRegistry.get( value.getClass() );
+			encoderContext.encodeWithChildContext( codec, writer, value );
+		}
 	}
 
 	public static Object read( BsonReader reader, DecoderContext decoderContext, CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )

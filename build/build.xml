@@ -7,6 +7,7 @@
 	<property file="${root}/build/custom.properties" />
 	
 	<property name="component.source" location="${root}/components/${component}/source" />
+	<property name="component.resources" value="${root}/components/${component}/resources" />
 	<property name="component.notices" location="${root}/components/notices" />
 	
 	<property name="dependencies" location="${root}/dependencies" />
@@ -52,6 +53,9 @@
 		<javac srcdir="${component.source}" destdir="${cache.classes}" source="${compile.version}" target="${compile.version}" includeAntRuntime="no" debug="${compile.debug}" bootclasspath="${compile.boot}">
 			<classpath refid="dependencies" />
 		</javac>
+		<copy todir="${cache.classes}">
+			<fileset dir="${component.resources}" />
+		</copy>
 	</target>
 
 	<target name="javadocs" description="Create API documentation if not present">
@@ -69,6 +73,7 @@
 			
 			<link href="${documentation.jvm}" />
 			<link href="http://www.mozilla.org/rhino/apidocs/" />
+			<link href="http://threecrickets.com/api/java/scripturian/" />
 			<classpath refid="dependencies" />
 			<bottom>
 				<![CDATA[<i>${documentation.copyright}</i>]]>

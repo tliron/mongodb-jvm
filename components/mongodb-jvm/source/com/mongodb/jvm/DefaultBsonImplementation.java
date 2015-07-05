@@ -9,18 +9,15 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.rhino;
+package com.mongodb.jvm;
 
-import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.BsonDocument;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.mozilla.javascript.Scriptable;
-
-import com.mongodb.jvm.BsonImplementation;
 
 /**
  * @author Tal Liron
  */
-public class RhinoBsonImplementation implements BsonImplementation
+public class DefaultBsonImplementation implements BsonImplementation
 {
 	//
 	// BsonImplementation
@@ -28,7 +25,7 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 	public String getName()
 	{
-		return "Rhino";
+		return null;
 	}
 
 	public int getPriority()
@@ -38,14 +35,12 @@ public class RhinoBsonImplementation implements BsonImplementation
 
 	public Class<?> getDocumentClass()
 	{
-		return Scriptable.class;
+		return BsonDocument.class;
 	}
 
 	public CodecRegistry getCodecRegistry( CodecRegistry next )
 	{
-		return CodecRegistries.fromRegistries(
-			CodecRegistries.fromCodecs( new ConsStringCodec(), new NativeBooleanCodec(), new NativeDateCodec(), new NativeNumberCodec(), new NativeRegExpCodec(), new NativeStringCodec(), new UndefinedCodec() ),
-			CodecRegistries.fromProviders( new RhinoCodecProvider() ), next );
+		return next;
 	}
 
 	public Object toNativeString( String string )

@@ -28,7 +28,7 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.DBRef;
-import com.mongodb.jvm.BSON;
+import com.mongodb.jvm.BSONOld;
 import com.mongodb.jvm.internal.Base64;
 import com.threecrickets.jvm.json.rhino.RhinoJsonExtender;
 import com.threecrickets.jvm.json.rhino.util.RhinoNativeUtil;
@@ -513,7 +513,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 			DBRef ref = (DBRef) object;
 			String collection = ref.getCollectionName();
-			Object id = BSON.from( ref.getId(), true );
+			Object id = BSONOld.from( ref.getId(), true );
 			String idString;
 			if( id instanceof ObjectId )
 				idString = ( (ObjectId) id ).toHexString();
