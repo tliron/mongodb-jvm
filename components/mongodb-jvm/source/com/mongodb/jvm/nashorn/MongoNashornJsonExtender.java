@@ -15,6 +15,18 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
+import org.bson.BsonTimestamp;
+import org.bson.types.BSONTimestamp;
+import org.bson.types.Binary;
+import org.bson.types.ObjectId;
+
+import com.mongodb.DBRef;
+import com.mongodb.jvm.internal.Base64;
+import com.threecrickets.jvm.json.nashorn.NashornJsonExtender;
+import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
+import com.threecrickets.jvm.json.util.JavaScriptUtil;
+import com.threecrickets.jvm.json.util.Literal;
+
 import jdk.nashorn.internal.objects.NativeDate;
 import jdk.nashorn.internal.objects.NativeNumber;
 import jdk.nashorn.internal.objects.NativeRegExp;
@@ -23,23 +35,10 @@ import jdk.nashorn.internal.runtime.ScriptFunction;
 import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 
-import org.bson.BsonTimestamp;
-import org.bson.types.BSONTimestamp;
-import org.bson.types.Binary;
-import org.bson.types.ObjectId;
-
-import com.mongodb.DBRef;
-import com.mongodb.jvm.BSONOld;
-import com.mongodb.jvm.internal.Base64;
-import com.threecrickets.jvm.json.nashorn.NashornJsonExtender;
-import com.threecrickets.jvm.json.nashorn.util.NashornNativeUtil;
-import com.threecrickets.jvm.json.util.JavaScriptUtil;
-import com.threecrickets.jvm.json.util.Literal;
-
 /**
- * Conversion between native Nashorn values and <a
- * href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/"
- * >MongoDB's extended JSON notation</a>.
+ * Conversion between native Nashorn values and
+ * <a href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/" >
+ * MongoDB's extended JSON notation</a>.
  * <p>
  * Notations converted to org.bson.types: {$oid:'objectid'},
  * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
@@ -511,7 +510,7 @@ public class MongoNashornJsonExtender implements NashornJsonExtender
 
 			DBRef ref = (DBRef) object;
 			String collection = ref.getCollectionName();
-			Object id = BSONOld.from( ref.getId(), true );
+			Object id = ref.getId();
 			String idString;
 			if( id instanceof ObjectId )
 				idString = ( (ObjectId) id ).toHexString();

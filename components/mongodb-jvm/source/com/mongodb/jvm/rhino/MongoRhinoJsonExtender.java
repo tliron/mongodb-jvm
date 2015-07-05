@@ -28,7 +28,6 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.regexp.NativeRegExp;
 
 import com.mongodb.DBRef;
-import com.mongodb.jvm.BSONOld;
 import com.mongodb.jvm.internal.Base64;
 import com.threecrickets.jvm.json.rhino.RhinoJsonExtender;
 import com.threecrickets.jvm.json.rhino.util.RhinoNativeUtil;
@@ -36,9 +35,9 @@ import com.threecrickets.jvm.json.util.JavaScriptUtil;
 import com.threecrickets.jvm.json.util.Literal;
 
 /**
- * Conversion between native Rhino values and <a
- * href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/"
- * >MongoDB's extended JSON notation</a>.
+ * Conversion between native Rhino values and
+ * <a href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/" >
+ * MongoDB's extended JSON notation</a>.
  * <p>
  * Notations converted to org.bson.types: {$oid:'objectid'},
  * {$binary:'base64',$type:'hex'}, {$ref:'collection',$id:'objectid'}.
@@ -513,7 +512,7 @@ public class MongoRhinoJsonExtender implements RhinoJsonExtender
 
 			DBRef ref = (DBRef) object;
 			String collection = ref.getCollectionName();
-			Object id = BSONOld.from( ref.getId(), true );
+			Object id = ref.getId();
 			String idString;
 			if( id instanceof ObjectId )
 				idString = ( (ObjectId) id ).toHexString();
