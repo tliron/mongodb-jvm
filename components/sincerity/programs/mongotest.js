@@ -41,11 +41,16 @@ try {
 	// BSON
 	println('\nConversions:')
 
-	var data = {greeting: 'hello', now: new Date(), regular: /[c]+/g, array: ['fish', 123]}
-	println(' To standard JSON: ' + JSON.stringify(data))
-	var extended = Sincerity.JSON.to(data)
+	var data = {greeting: 'hello', now: new Date(), regular: /[c]+/g, array: ['fish', 123, MongoUtil.id(), {$numberLong: '1234567'}]}
+	try {
+		println(' To standard JSON: ' + JSON.stringify(data))
+	}
+	catch (x) {
+		// Rhino's built-in JSON support is unhappy with non-JavaScript objects, like ObjectId :(
+	}
+	var extended = Sincerity.JSON.to(data, true)
 	println(' To extended JSON: ' + extended)
-	println(' From extended JSON: ' + Sincerity.JSON.to(Sincerity.JSON.from(extended)))
+	println(' From extended JSON: ' + Sincerity.JSON.to(Sincerity.JSON.from(extended, true), true))
 	println(' To BSON: ' + BSON.to(data))
 
 

@@ -1,0 +1,2 @@
+org.bson.jvm.nashorn.NashornBsonImplementation
+org.bson.jvm.rhino.RhinoBsonImplementation

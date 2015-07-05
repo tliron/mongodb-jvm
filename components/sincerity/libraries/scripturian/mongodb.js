@@ -1972,6 +1972,11 @@ var MongoUtil = function() {
 	// MongoDB utilities
 	//
 	
+	Public.getVersion = function() {
+		return BSON.class.package.implementationVersion
+		//return java.lang.Thread.currentThread().contextClassLoader.loadClass('org.bson.jvm.Bson').package.implementationVersion
+	}
+	
 	/**
 	 * @param {String|byte[]} [raw]
 	 */
@@ -2647,6 +2652,6 @@ var MongoUtil = function() {
 	return Public
 }()
 
-var BSON = BSON || com.mongodb.jvm.BSON
+var BSON = BSON || org.bson.jvm.Bson
 
 }

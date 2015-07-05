@@ -49,7 +49,7 @@
 		<dependency>
 			<groupId>com.threecrickets.jvm</groupId>
 			<artifactId>json-jvm</artifactId>
-			<version>[1.1,1.2)</version>
+			<version>[2.0,2.1)</version>
 		</dependency>
 	</dependencies>
 

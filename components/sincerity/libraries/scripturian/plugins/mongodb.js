@@ -3,7 +3,6 @@ document.require(
 	'/mongodb/',
 	'/sincerity/repl/',
 	'/sincerity/json/',
-	'/sincerity/jvm/',
 	'/sincerity/files/',
 	'/sincerity/objects/')
 
@@ -31,7 +30,7 @@ function mongo(command) {
 	command.parse = true
 
 	// Welcome
-	command.sincerity.out.println('MongoDB JVM console ' + Sincerity.JVM.getClass('com.mongodb.jvm.BSON').package.implementationVersion)
+	command.sincerity.out.println('MongoDB JVM console ' + MongoUtil.getVersion())
 	var adapter = executable.context.adapter.attributes
 	command.sincerity.out.println('JavaScript engine: ' + adapter.get('name') + ' ' + adapter.get('version'))
 
