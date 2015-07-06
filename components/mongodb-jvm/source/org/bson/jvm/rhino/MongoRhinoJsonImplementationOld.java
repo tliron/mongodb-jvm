@@ -14,15 +14,16 @@ package org.bson.jvm.rhino;
 import com.threecrickets.jvm.json.rhino.RhinoJsonImplementationOld;
 
 /**
- * A {@link RhinoJsonImplementationOld} that uses {@link MongoRhinoJsonExtender}.
+ * A {@link RhinoJsonImplementationOld} that uses {@link MongoRhinoJsonExtenderOld}
+ * .
  * 
  * @author Tal Liron
  */
-public class MongoRhinoJsonImplementation extends RhinoJsonImplementationOld
+public class MongoRhinoJsonImplementationOld extends RhinoJsonImplementationOld
 {
-	public MongoRhinoJsonImplementation()
+	public MongoRhinoJsonImplementationOld()
 	{
-		super( new MongoRhinoJsonExtender() );
+		super( new MongoRhinoJsonExtenderOld() );
 	}
 
 	//

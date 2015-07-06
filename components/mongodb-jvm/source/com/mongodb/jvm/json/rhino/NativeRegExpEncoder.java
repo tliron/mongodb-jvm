@@ -9,42 +9,39 @@
  * at http://threecrickets.com/
  */
 
-package org.bson.jvm.rhino;
+package com.mongodb.jvm.json.rhino;
 
-import org.bson.BsonReader;
-import org.bson.BsonRegularExpression;
-import org.bson.BsonWriter;
-import org.bson.codecs.Codec;
-import org.bson.codecs.DecoderContext;
-import org.bson.codecs.EncoderContext;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ScriptRuntime;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+
 import org.mozilla.javascript.Scriptable;
 
+import com.threecrickets.jvm.json.JsonContext;
+import com.threecrickets.jvm.json.JsonEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
+
 /**
- * A BSON codec for a Rhino NativeRegExp (the class is private in Rhino).
+ * A JSON encoder for a Rhino NativeRegExp (the class is private in Rhino).
  * 
  * @author Tal Liron
  */
-@SuppressWarnings("rawtypes")
-public class NativeRegExpCodec implements Codec
+public class NativeRegExpEncoder implements JsonEncoder
 {
 	//
-	// Codec
+	// JsonEncoder
 	//
 
-	public Class getEncoderClass()
+	public boolean canEncode( Object object, JsonContext context )
 	{
-		// This is not actually our encoded class, but we need some kind of
-		// unique placeholder for BsonTypeClassMap
-		return NativeRegExpCodec.class;
+		return ( object instanceof Scriptable ) && ( (Scriptable) object ).getClassName().equals( "RegExp" );
 	}
 
-	public void encode( BsonWriter writer, Object object, EncoderContext encoderContext )
+	public void encode( Object object, JsonContext context ) throws IOException
 	{
 		Scriptable nativeRegExp = (Scriptable) object;
 
-		Object source = nativeRegExp.get( "source", nativeRegExp );
+		String source = nativeRegExp.get( "source", nativeRegExp ).toString();
+
 		Object isGlobal = nativeRegExp.get( "global", nativeRegExp );
 		Object isIgnoreCase = nativeRegExp.get( "ignoreCase", nativeRegExp );
 		Object isMultiLine = nativeRegExp.get( "multiline", nativeRegExp );
@@ -60,18 +57,9 @@ public class NativeRegExpCodec implements Codec
 			|| ( ( isMultiLine instanceof Scriptable ) && ( (Boolean) ( (Scriptable) isMultiLine ).getDefaultValue( Boolean.class ) ).booleanValue() ) )
 			options += "m";
 
-		writer.writeRegularExpression( new BsonRegularExpression( source.toString(), options ) );
-	}
-
-	public Object decode( BsonReader reader, DecoderContext decoderContext )
-	{
-		BsonRegularExpression bsonRegularExpression = reader.readRegularExpression();
-
-		Context context = Context.getCurrentContext();
-		Scriptable scope = ScriptRuntime.getTopCallScope( context );
-		return context.newObject( scope, "RegExp", new Object[]
-		{
-			bsonRegularExpression.getPattern(), bsonRegularExpression.getOptions()
-		} );
+		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+		map.put( "$regex", source );
+		map.put( "$options", options );
+		new MapEncoder().encode( map, context );
 	}
 }

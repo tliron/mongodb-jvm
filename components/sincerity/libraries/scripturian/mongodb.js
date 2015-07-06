@@ -469,10 +469,10 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			var result
 			command = BSON.to(command)
 			if (!MongoUtil.exists(this.commandReadPreference)) {
-				result = this.database.runCommand(command)				
+				result = this.database.runCommand(command, BSON.documentClass)				
 			}
 			else {
-				result = this.database.runCommand(command, this.commandReadPreference)
+				result = this.database.runCommand(command, this.commandReadPreference, BSON.documentClass)
 			}
 			return result
 		}
@@ -1973,8 +1973,14 @@ var MongoUtil = function() {
 	//
 	
 	Public.getVersion = function() {
-		return BSON.class.package.implementationVersion
-		//return java.lang.Thread.currentThread().contextClassLoader.loadClass('org.bson.jvm.Bson').package.implementationVersion
+		try {
+			// Nashorn
+			return BSON.class.package.implementationVersion
+		}
+		catch (x) {
+			// Rhino
+			return java.lang.Thread.currentThread().contextClassLoader.loadClass('org.bson.jvm.Bson').package.implementationVersion
+		}
 	}
 	
 	/**

@@ -9,19 +9,18 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
 
 import org.bson.jvm.internal.Base64;
 import org.bson.types.Binary;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.UniqueTag;
 
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
-
 /**
- * Transforms a Nashorn {@link ScriptObject} with a "$binary" key into a BSON
+ * Transforms a Rhino {@link Scriptable} with a "$binary" key into a BSON
  * {@link Binary}.
  * 
  * @author Tal Liron
@@ -34,15 +33,15 @@ public class BinaryTransformer implements JsonTransformer
 
 	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof ScriptObject )
+		if( object instanceof Scriptable )
 		{
-			ScriptObject scriptObject = (ScriptObject) object;
+			Scriptable scriptable = (Scriptable) object;
 
-			Object binary = scriptObject.get( "$binary" );
-			if( ( binary != null ) && ( binary.getClass() != Undefined.class ) )
+			Object binary = scriptable.get( "$binary", scriptable );
+			if( ( binary != null ) && ( binary.getClass() != UniqueTag.class ) )
 			{
-				Object type = scriptObject.get( "$type" );
-				byte typeNumber = ( ( type != null ) && ( type.getClass() != Undefined.class ) ) ? Byte.valueOf( type.toString(), 16 ) : 0;
+				Object type = scriptable.get( "$type", scriptable );
+				byte typeNumber = ( ( type != null ) && ( type.getClass() != UniqueTag.class ) ) ? Byte.valueOf( type.toString(), 16 ) : 0;
 				byte[] data = Base64.decodeFast( binary.toString() );
 				return new Binary( typeNumber, data );
 			}

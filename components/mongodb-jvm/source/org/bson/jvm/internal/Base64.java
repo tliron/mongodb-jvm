@@ -83,6 +83,7 @@ public class Base64
 	private static final char[] CA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
 
 	private static final int[] IA = new int[256];
+
 	static
 	{
 		Arrays.fill( IA, -1 );
@@ -547,7 +548,8 @@ public class Base64
 
 	/**
 	 * Decodes a BASE64 encoded <code>String</code>. All illegal characters will
-	 * be ignored and can handle both strings with and without line separators.<br>
+	 * be ignored and can handle both strings with and without line separators.
+	 * <br>
 	 * <b>Note!</b> It can be up to about 2x the speed to call
 	 * <code>decode(str.toCharArray())</code> instead. That will create a
 	 * temporary array though. This version will use <code>str.charAt(i)</code>

@@ -24,13 +24,19 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.UniqueTag;
+
+import com.mongodb.DBRef;
 
 /**
- * A BSON codec for a Rhino {@link Scriptable}.
+ * A BSON codec for a Rhino {@link Scriptable}. Delegates to
+ * {@link NativeDateCodec} and {@link NativeRegExpCodec} if necessary (those
+ * classes are private in Rhino).
  * 
  * @author Tal Liron
  */
-public class ScriptableCodec implements Codec<Scriptable>
+@SuppressWarnings("rawtypes")
+public class ScriptableCodec implements Codec
 {
 	//
 	// Construction
@@ -46,17 +52,16 @@ public class ScriptableCodec implements Codec<Scriptable>
 	// Codec
 	//
 
-	public Class<Scriptable> getEncoderClass()
+	public Class getEncoderClass()
 	{
 		return Scriptable.class;
 	}
 
-	public void encode( BsonWriter writer, Scriptable scriptable, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, Object object, EncoderContext encoderContext )
 	{
-		String className = scriptable.getClassName();
-		// System.out.println( ">>>>>>>>>>" + className + " " +
-		// scriptable.getClass() );
+		Scriptable scriptable = (Scriptable) object;
 
+		String className = scriptable.getClassName();
 		if( className.equals( "Date" ) )
 		{
 			new NativeDateCodec().encode( writer, scriptable, encoderContext );
@@ -80,7 +85,7 @@ public class ScriptableCodec implements Codec<Scriptable>
 		writer.writeEndDocument();
 	}
 
-	public Scriptable decode( BsonReader reader, DecoderContext decoderContext )
+	public Object decode( BsonReader reader, DecoderContext decoderContext )
 	{
 		Context context = Context.getCurrentContext();
 		Scriptable scope = ScriptRuntime.getTopCallScope( context );
@@ -91,9 +96,18 @@ public class ScriptableCodec implements Codec<Scriptable>
 		{
 			String key = reader.readName();
 			Object value = BsonUtil.read( reader, decoderContext, codecRegistry, bsonTypeClassMap );
-			ScriptableObject.putProperty( scriptable, key, value );
+			scriptable.put( key, scriptable, value );
 		}
 		reader.readEndDocument();
+
+		// The driver does not support decoding DBRef, so we'll do it here
+		Object ref = scriptable.get( "$ref", scriptable );
+		if( ( ref != null ) && ( ref.getClass() != UniqueTag.class ) )
+		{
+			Object id = scriptable.get( "$id", scriptable );
+			if( ( id != null ) && ( id.getClass() != UniqueTag.class ) )
+				return new DBRef( ref.toString(), id );
+		}
 
 		return scriptable;
 	}

@@ -12,18 +12,25 @@
 package com.mongodb.jvm.json.nashorn;
 
 import com.mongodb.DBRef;
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
 import jdk.nashorn.internal.runtime.ScriptObject;
 import jdk.nashorn.internal.runtime.Undefined;
 
+/**
+ * Transforms a Nashorn {@link ScriptObject} with a "$ref" key into a BSON
+ * {@link DBRef}.
+ * 
+ * @author Tal Liron
+ */
 public class DBRefTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
 		if( object instanceof ScriptObject )
 		{

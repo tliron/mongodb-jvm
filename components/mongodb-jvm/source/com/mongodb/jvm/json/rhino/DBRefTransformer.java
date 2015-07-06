@@ -9,23 +9,22 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
 
-import org.bson.types.ObjectId;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.UniqueTag;
 
+import com.mongodb.DBRef;
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
-
 /**
- * Transforms a Nashorn {@link ScriptObject} with a "$oid" key into a BSON
- * {@link ObjectId}.
+ * Transforms a Rhino {@link Scriptable} with a "$ref" key into a BSON
+ * {@link DBRef}.
  * 
  * @author Tal Liron
  */
-public class ObjectIdTransformer implements JsonTransformer
+public class DBRefTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
@@ -33,11 +32,17 @@ public class ObjectIdTransformer implements JsonTransformer
 
 	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof ScriptObject )
+		if( object instanceof Scriptable )
 		{
-			Object oid = ( (ScriptObject) object ).get( "$oid" );
-			if( ( oid != null ) && ( oid.getClass() != Undefined.class ) )
-				return new ObjectId( (String) oid );
+			Scriptable scriptable = (Scriptable) object;
+
+			Object ref = scriptable.get( "$ref", scriptable );
+			if( ( ref != null ) && ( ref.getClass() != UniqueTag.class ) )
+			{
+				Object id = scriptable.get( "$id", scriptable );
+				if( ( id != null ) && ( id.getClass() != UniqueTag.class ) )
+					return new DBRef( ref.toString(), id );
+			}
 		}
 
 		return null;

@@ -9,27 +9,34 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
-
-import java.util.Map;
+package com.mongodb.jvm.json.rhino;
 
 import org.bson.types.ObjectId;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.UniqueTag;
 
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
+/**
+ * Transforms a Rhino {@link Scriptable} with a "$oid" key into a BSON
+ * {@link ObjectId}.
+ * 
+ * @author Tal Liron
+ */
 public class ObjectIdTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof Map )
+		if( object instanceof Scriptable )
 		{
-			@SuppressWarnings("unchecked")
-			Object oid = ( (Map<String, Object>) object ).get( "$oid" );
-			if( oid != null )
+			Scriptable scriptable = (Scriptable) object;
+			Object oid = scriptable.get( "$oid", scriptable );
+			if( ( oid != null ) && ( oid.getClass() != UniqueTag.class ) )
 				return new ObjectId( (String) oid );
 		}
 

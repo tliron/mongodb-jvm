@@ -9,18 +9,22 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.bson.types.MinKey;
-
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
+import com.threecrickets.jvm.json.util.JsonUtil;
 
-public class MinKeyEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a JVM {@link Long}.
+ * 
+ * @author Tal Liron
+ */
+public class LongEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -28,13 +32,15 @@ public class MinKeyEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof MinKey;
+		return object instanceof Long;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
+		Long number = (Long) object;
+
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$minKey", 1 );
+		map.put( "$numberLong", JsonUtil.number( number ) );
 		new MapEncoder().encode( map, context );
 	}
 }

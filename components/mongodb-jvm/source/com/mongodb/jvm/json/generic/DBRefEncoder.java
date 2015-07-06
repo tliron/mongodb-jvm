@@ -9,23 +9,22 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
+import com.mongodb.DBRef;
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
 import com.threecrickets.jvm.json.generic.MapEncoder;
 
-import jdk.nashorn.internal.objects.NativeDate;
-
 /**
- * A JSON encoder for a Nashorn {@link NativeDate}.
+ * A JSON encoder for a BSON {@link DBRef}.
  * 
  * @author Tal Liron
  */
-public class NativeDateEncoder implements JsonEncoder
+public class DBRefEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -33,15 +32,16 @@ public class NativeDateEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof NativeDate;
+		return object instanceof DBRef;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		double date = NativeDate.getTime( object );
+		DBRef dbRef = (DBRef) object;
 
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$date", date );
+		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+		map.put( "$ref", dbRef.getCollectionName() );
+		map.put( "$id", dbRef.getId() );
 		new MapEncoder().encode( map, context );
 	}
 }

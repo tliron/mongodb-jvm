@@ -9,19 +9,23 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.rhino;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 
-import org.bson.jvm.internal.Base64;
-import org.bson.types.Binary;
+import org.mozilla.javascript.Undefined;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class BinaryEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a Rhino {@link Undefined}.
+ * 
+ * @author Tal Liron
+ */
+public class UndefinedEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -29,16 +33,13 @@ public class BinaryEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof Binary;
+		return object instanceof Undefined;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		Binary binary = (Binary) object;
-
-		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
-		map.put( "$binary", Base64.encodeToString( binary.getData(), false ) );
-		map.put( "$type", Integer.toHexString( binary.getType() ) );
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put( "$undefined", true );
 		new MapEncoder().encode( map, context );
 	}
 }

@@ -20,7 +20,8 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.mozilla.javascript.Wrapper;
 
 /**
- * A BSON codec for a Rhino {@link Wrapper}.
+ * A BSON codec for a Rhino {@link Wrapper}. Unwraps the object and delegates to
+ * the appropriate encoder.
  * 
  * @author Tal Liron
  */
@@ -46,11 +47,11 @@ public class WrapperCodec implements Codec<Wrapper>
 
 	public void encode( BsonWriter writer, Wrapper wrapper, EncoderContext encoderContext )
 	{
-		Object object = wrapper.unwrap();
+		Object wrapped = wrapper.unwrap();
 
 		@SuppressWarnings("unchecked")
-		Codec<Object> codec = (Codec<Object>) codecRegistry.get( object.getClass() );
-		codec.encode( writer, object, encoderContext );
+		Codec<Object> codec = (Codec<Object>) codecRegistry.get( wrapped.getClass() );
+		codec.encode( writer, wrapped, encoderContext );
 	}
 
 	public Wrapper decode( BsonReader reader, DecoderContext decoderContext )

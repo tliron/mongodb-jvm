@@ -217,6 +217,7 @@ Settings:\n\
 
 		Public.show = function(o, indent) {
 			if (o instanceof MongoCursor) {
+				this.out.println('Iterating MongoCursor:')
 				try {
 					var count = 0
 					if (!Sincerity.Objects.exists(indent)) {

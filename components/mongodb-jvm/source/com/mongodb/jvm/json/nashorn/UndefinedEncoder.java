@@ -16,10 +16,15 @@ import java.util.HashMap;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
 import jdk.nashorn.internal.runtime.Undefined;
 
+/**
+ * A JSON encoder for a Nashorn {@link Undefined}.
+ * 
+ * @author Tal Liron
+ */
 public class UndefinedEncoder implements JsonEncoder
 {
 	//

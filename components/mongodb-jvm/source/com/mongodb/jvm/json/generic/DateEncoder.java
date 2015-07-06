@@ -9,17 +9,22 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.Date;
+import java.util.HashMap;
 
-import com.mongodb.DBRef;
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class DBRefEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a JVM {@link Date}.
+ * 
+ * @author Tal Liron
+ */
+public class DateEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -27,16 +32,15 @@ public class DBRefEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof DBRef;
+		return object instanceof Date;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		DBRef dbRef = (DBRef) object;
+		Date date = (Date) object;
 
-		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
-		map.put( "$ref", dbRef.getCollectionName() );
-		map.put( "$id", dbRef.getId() );
+		HashMap<String, Object> map = new HashMap<String, Object>();
+		map.put( "$date", date.getTime() );
 		new MapEncoder().encode( map, context );
 	}
 }

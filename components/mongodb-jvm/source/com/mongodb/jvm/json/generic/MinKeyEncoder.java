@@ -9,18 +9,23 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.bson.BsonUndefined;
+import org.bson.types.MinKey;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class BsonUndefinedEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a BSON {@link MinKey}.
+ * 
+ * @author Tal Liron
+ */
+public class MinKeyEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -28,13 +33,13 @@ public class BsonUndefinedEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof BsonUndefined;
+		return object instanceof MinKey;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$undefined", true );
+		map.put( "$minKey", 1 );
 		new MapEncoder().encode( map, context );
 	}
 }

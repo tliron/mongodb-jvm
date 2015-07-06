@@ -9,7 +9,7 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
 
 import java.util.Collection;
 
@@ -17,18 +17,18 @@ import com.mongodb.jvm.json.generic.GenericExtendedJsonImplementation;
 import com.threecrickets.jvm.json.JsonEncoder;
 import com.threecrickets.jvm.json.JsonTransformer;
 import com.threecrickets.jvm.json.generic.GenericJsonImplementation;
-import com.threecrickets.jvm.json.nashorn.NashornJsonImplementation;
+import com.threecrickets.jvm.json.rhino.RhinoJsonImplementation;
 
 /**
  * A JSON implementation for the
- * <a href="http://openjdk.java.net/projects/nashorn/">Nashorn JavaScript
- * engine</a>, with support for
+ * <a href="https://github.com/mozilla/rhino">Rhino JavaScript engine</a>, with
+ * support for
  * <a href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/">
  * MongoDB's extended JSON</a>.
  * 
  * @author Tal Liron
  */
-public class NashornExtendedJsonImplementation extends NashornJsonImplementation
+public class RhinoExtendedJsonImplementation extends RhinoJsonImplementation
 {
 	//
 	// Static operations
@@ -59,11 +59,11 @@ public class NashornExtendedJsonImplementation extends NashornJsonImplementation
 	public void initialize()
 	{
 		addEncoders( encoders );
-		NashornJsonImplementation.addEncoders( encoders );
+		RhinoJsonImplementation.addEncoders( encoders );
 		GenericExtendedJsonImplementation.addEncoders( encoders );
 		GenericJsonImplementation.addEncoders( encoders );
 		addTransformers( transformers );
-		NashornJsonImplementation.addTransformers( transformers );
+		RhinoJsonImplementation.addTransformers( transformers );
 		GenericExtendedJsonImplementation.addTransformers( transformers );
 	}
 

@@ -9,36 +9,34 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.util.Map;
 
-import org.bson.jvm.internal.Base64;
-import org.bson.types.Binary;
+import org.bson.types.ObjectId;
 
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-public class BinaryTransformer implements JsonTransformer
+/**
+ * Transforms a JVM {@link Map} with a "$oid" key into a BSON {@link ObjectId}.
+ * 
+ * @author Tal Liron
+ */
+public class ObjectIdTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
 		if( object instanceof Map )
 		{
 			@SuppressWarnings("unchecked")
-			Map<String, Object> map = (Map<String, Object>) object;
-
-			Object binary = map.get( "$binary" );
-			if( binary != null )
-			{
-				Object type = map.get( "$type" );
-				byte typeNumber = type != null ? Byte.valueOf( type.toString(), 16 ) : 0;
-				byte[] data = Base64.decodeFast( binary.toString() );
-				return new Binary( typeNumber, data );
-			}
+			Object oid = ( (Map<String, Object>) object ).get( "$oid" );
+			if( oid != null )
+				return new ObjectId( (String) oid );
 		}
 
 		return null;

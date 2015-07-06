@@ -64,7 +64,7 @@ import com.threecrickets.jvm.json.util.Literal;
  * 
  * @author Tal Liron
  */
-public class MongoRhinoJsonExtender implements RhinoJsonExtenderOld
+public class MongoRhinoJsonExtenderOld implements RhinoJsonExtenderOld
 {
 	//
 	// RhinoJsonExtender

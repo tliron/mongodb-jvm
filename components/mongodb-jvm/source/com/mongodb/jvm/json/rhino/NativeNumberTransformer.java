@@ -9,20 +9,21 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
+
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ScriptRuntime;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.UniqueTag;
 
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 import com.threecrickets.jvm.json.util.JsonUtil;
 
-import jdk.nashorn.internal.objects.NativeNumber;
-import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
-
 /**
- * Transforms a Nashorn {@link ScriptObject} with a "$numberLong" key into a
- * Nashorn {@link NativeNumber}, but <i>only if it can be converted into a
- * double without losing precision</i>.
+ * Transforms a Rhino {@link Scriptable} with a "$numberLong" key into a Rhino
+ * NativeNumber (the class is private in Rhino), but <i>only if it can be
+ * converted into a double without losing precision</i>.
  * 
  * @author Tal Liron
  */
@@ -34,18 +35,26 @@ public class NativeNumberTransformer implements JsonTransformer
 
 	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof ScriptObject )
+		if( object instanceof Scriptable )
 		{
-			Object numberLong = ( (ScriptObject) object ).get( "$numberLong" );
-			if( ( numberLong != null ) && ( numberLong.getClass() != Undefined.class ) )
+			Scriptable scriptable = (Scriptable) object;
+			Object numberLong = scriptable.get( "$numberLong", scriptable );
+			if( ( numberLong != null ) && ( numberLong.getClass() != UniqueTag.class ) )
 			{
 				// Might throw a NumberFormatException
 				Long asLong = Long.parseLong( numberLong.toString() );
 				Double asDouble = asLong.doubleValue();
 
 				if( JsonUtil.number( asLong ).equals( JsonUtil.number( asDouble ) ) )
+				{
 					// Converting to double doesn't lose accuracy
-					return NativeNumber.constructor( true, null, asDouble );
+					Context context = Context.getCurrentContext();
+					Scriptable scope = ScriptRuntime.getTopCallScope( context );
+					return context.newObject( scope, "Number", new Object[]
+					{
+						asDouble
+					} );
+				}
 			}
 		}
 

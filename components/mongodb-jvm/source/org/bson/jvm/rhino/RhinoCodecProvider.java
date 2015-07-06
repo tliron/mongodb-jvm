@@ -70,6 +70,7 @@ public class RhinoCodecProvider implements CodecProvider
 			return (Codec<T>) new DBObjectCodec( registry, bsonTypeClassMap );
 		else if( clazz == NativeArray.class )
 			return (Codec<T>) new NativeArrayCodec( registry, bsonTypeClassMap );
+		// Wrapper should be before Scriptable
 		else if( Wrapper.class.isAssignableFrom( clazz ) )
 			return (Codec<T>) new WrapperCodec( registry );
 		else if( Scriptable.class.isAssignableFrom( clazz ) )

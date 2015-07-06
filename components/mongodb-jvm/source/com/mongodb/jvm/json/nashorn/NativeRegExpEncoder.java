@@ -16,10 +16,16 @@ import java.util.LinkedHashMap;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
+import jdk.nashorn.internal.objects.NativeBoolean;
 import jdk.nashorn.internal.objects.NativeRegExp;
 
+/**
+ * A JSON encoder for a Nashorn {@link NativeRegExp}.
+ * 
+ * @author Tal Liron
+ */
 public class NativeRegExpEncoder implements JsonEncoder
 {
 	//
@@ -42,11 +48,11 @@ public class NativeRegExpEncoder implements JsonEncoder
 		Object isMultiLine = nativeRegExp.get( "multiline" );
 
 		String options = "";
-		if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
+		if( ( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) ) || ( ( isGlobal instanceof NativeBoolean ) && ( (NativeBoolean) isGlobal ).booleanValue() ) )
 			options += "g";
-		if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
+		if( ( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) ) || ( ( isIgnoreCase instanceof NativeBoolean ) && ( (NativeBoolean) isIgnoreCase ).booleanValue() ) )
 			options += "i";
-		if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
+		if( ( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) ) || ( ( isMultiLine instanceof NativeBoolean ) && ( (NativeBoolean) isMultiLine ).booleanValue() ) )
 			options += "m";
 
 		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();

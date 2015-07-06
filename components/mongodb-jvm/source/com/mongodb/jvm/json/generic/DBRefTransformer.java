@@ -9,27 +9,39 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.util.Map;
 
+import com.mongodb.DBRef;
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-public class LongTransformer implements JsonTransformer
+/**
+ * Transforms a JVM {@link Map} with a "$ref" key into a BSON {@link DBRef}.
+ * 
+ * @author Tal Liron
+ */
+public class DBRefTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
 		if( object instanceof Map )
 		{
 			@SuppressWarnings("unchecked")
-			Object numberLong = ( (Map<String, Object>) object ).get( "$numberLong" );
-			if( numberLong != null )
-				// Might throw a NumberFormatException
-				return new Long( Long.parseLong( numberLong.toString() ) );
+			Map<String, Object> map = (Map<String, Object>) object;
+
+			Object ref = map.get( "$ref" );
+			if( ref != null )
+			{
+				Object id = map.get( "$id" );
+				if( id != null )
+					return new DBRef( ref.toString(), id );
+			}
 		}
 
 		return null;

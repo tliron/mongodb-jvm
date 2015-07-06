@@ -9,17 +9,24 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+
+import org.bson.jvm.internal.Base64;
+import org.bson.types.Binary;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class DateEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a BSON {@link Binary}.
+ * 
+ * @author Tal Liron
+ */
+public class BinaryEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -27,15 +34,16 @@ public class DateEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof Date;
+		return object instanceof Binary;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		Date date = (Date) object;
+		Binary binary = (Binary) object;
 
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$date", date.getTime() );
+		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
+		map.put( "$binary", Base64.encodeToString( binary.getData(), false ) );
+		map.put( "$type", Integer.toHexString( binary.getType() ) );
 		new MapEncoder().encode( map, context );
 	}
 }

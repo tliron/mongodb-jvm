@@ -9,23 +9,23 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
 import java.util.HashMap;
+
+import org.bson.BsonUndefined;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
 import com.threecrickets.jvm.json.generic.MapEncoder;
 
-import jdk.nashorn.internal.objects.NativeDate;
-
 /**
- * A JSON encoder for a Nashorn {@link NativeDate}.
+ * A JSON encoder for a {@link BsonUndefined}.
  * 
  * @author Tal Liron
  */
-public class NativeDateEncoder implements JsonEncoder
+public class BsonUndefinedEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -33,15 +33,13 @@ public class NativeDateEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof NativeDate;
+		return object instanceof BsonUndefined;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		double date = NativeDate.getTime( object );
-
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$date", date );
+		map.put( "$undefined", true );
 		new MapEncoder().encode( map, context );
 	}
 }

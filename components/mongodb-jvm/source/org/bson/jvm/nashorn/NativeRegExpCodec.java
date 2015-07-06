@@ -18,6 +18,7 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 
+import jdk.nashorn.internal.objects.NativeBoolean;
 import jdk.nashorn.internal.objects.NativeRegExp;
 
 /**
@@ -45,11 +46,11 @@ public class NativeRegExpCodec implements Codec<NativeRegExp>
 		Object isMultiLine = nativeRegExp.get( "multiline" );
 
 		String options = "";
-		if( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) )
+		if( ( ( isGlobal instanceof Boolean ) && ( ( (Boolean) isGlobal ).booleanValue() ) ) || ( ( isGlobal instanceof NativeBoolean ) && ( (NativeBoolean) isGlobal ).booleanValue() ) )
 			options += "g";
-		if( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) )
+		if( ( ( isIgnoreCase instanceof Boolean ) && ( ( (Boolean) isIgnoreCase ).booleanValue() ) ) || ( ( isIgnoreCase instanceof NativeBoolean ) && ( (NativeBoolean) isIgnoreCase ).booleanValue() ) )
 			options += "i";
-		if( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) )
+		if( ( ( isMultiLine instanceof Boolean ) && ( ( (Boolean) isMultiLine ).booleanValue() ) ) || ( ( isMultiLine instanceof NativeBoolean ) && ( (NativeBoolean) isMultiLine ).booleanValue() ) )
 			options += "m";
 
 		writer.writeRegularExpression( new BsonRegularExpression( source, options ) );

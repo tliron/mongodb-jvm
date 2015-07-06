@@ -15,8 +15,10 @@ JSON encoder/decoder, which supports MongoDB [extended JSON]
 (http://docs.mongodb.org/manual/reference/mongodb-extended-json/) for both
 directions.
 
-Currently, the project supports JavaScript via both the Nashorn and Rhino
-engines. The wrapper attempts to mimic the [Node.js MongoDB Driver]
+Currently the project supports JavaScript via both the [Nashorn]
+(http://openjdk.java.net/projects/nashorn/) and 
+[Rhino]
+(https://github.com/mozilla/rhino) engines. The wrapper attempts to mimic the [Node.js MongoDB Driver]
 (http://docs.mongodb.org/ecosystem/drivers/node-js/) while also being true to
 the feature set of the Java driver.
 

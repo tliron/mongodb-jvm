@@ -21,15 +21,19 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.jvm.internal.BsonUtil;
 
+import com.mongodb.DBRef;
+
 import jdk.nashorn.internal.objects.Global;
 import jdk.nashorn.internal.runtime.ScriptObject;
+import jdk.nashorn.internal.runtime.Undefined;
 
 /**
  * A BSON codec for a Nashorn {@link ScriptObject}.
  * 
  * @author Tal Liron
  */
-public class ScriptObjectCodec implements Codec<ScriptObject>
+@SuppressWarnings("rawtypes")
+public class ScriptObjectCodec implements Codec
 {
 	//
 	// Construction
@@ -45,13 +49,15 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 	// Codec
 	//
 
-	public Class<ScriptObject> getEncoderClass()
+	public Class getEncoderClass()
 	{
 		return ScriptObject.class;
 	}
 
-	public void encode( BsonWriter writer, ScriptObject scriptObject, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, Object object, EncoderContext encoderContext )
 	{
+		ScriptObject scriptObject = (ScriptObject) object;
+
 		writer.writeStartDocument();
 		for( String key : scriptObject.getOwnKeys( true ) )
 		{
@@ -62,7 +68,7 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 		writer.writeEndDocument();
 	}
 
-	public ScriptObject decode( BsonReader reader, DecoderContext decoderContext )
+	public Object decode( BsonReader reader, DecoderContext decoderContext )
 	{
 		ScriptObject scriptObject = Global.newEmptyInstance();
 
@@ -74,6 +80,15 @@ public class ScriptObjectCodec implements Codec<ScriptObject>
 			scriptObject.put( key, value, false );
 		}
 		reader.readEndDocument();
+
+		// The driver does not support decoding DBRef, so we'll do it here
+		Object ref = scriptObject.get( "$ref" );
+		if( ( ref != null ) && ( ref.getClass() != Undefined.class ) )
+		{
+			Object id = scriptObject.get( "$id" );
+			if( ( id != null ) && ( id.getClass() != Undefined.class ) )
+				return new DBRef( ref.toString(), id );
+		}
 
 		return scriptObject;
 	}

@@ -9,15 +9,22 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.util.Collection;
 
 import com.threecrickets.jvm.json.JsonEncoder;
 import com.threecrickets.jvm.json.JsonTransformer;
-import com.threecrickets.jvm.json.java.JavaJsonImplementation;
+import com.threecrickets.jvm.json.generic.GenericJsonImplementation;
 
-public class JavaExtendedJsonImplementation extends JavaJsonImplementation
+/**
+ * A JSON implementation using standard JVM types, with support for
+ * <a href="http://docs.mongodb.org/manual/reference/mongodb-extended-json/">
+ * MongoDB's extended JSON</a>.
+ * 
+ * @author Tal Liron
+ */
+public class GenericExtendedJsonImplementation extends GenericJsonImplementation
 {
 	//
 	// Static operations
@@ -49,10 +56,10 @@ public class JavaExtendedJsonImplementation extends JavaJsonImplementation
 	// Construction
 	//
 
-	public JavaExtendedJsonImplementation()
+	public GenericExtendedJsonImplementation()
 	{
 		addEncoders( encoders );
-		JavaJsonImplementation.addEncoders( encoders );
+		GenericJsonImplementation.addEncoders( encoders );
 		addTransformers( transformers );
 	}
 

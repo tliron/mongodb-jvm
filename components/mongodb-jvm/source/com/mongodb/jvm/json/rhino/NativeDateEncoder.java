@@ -9,18 +9,24 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.rhino;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.bson.types.MaxKey;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class MaxKeyEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a Rhino NativeDate (the class is private in Rhino).
+ * 
+ * @author Tal Liron
+ */
+public class NativeDateEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -28,13 +34,16 @@ public class MaxKeyEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof MaxKey;
+		return ( object instanceof Scriptable ) && ( (Scriptable) object ).getClassName().equals( "Date" );
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
+		Scriptable nativeDate = (Scriptable) object;
+		Object time = ScriptableObject.callMethod( nativeDate, "getTime", null );
+
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "maxKey", 1 );
+		map.put( "$date", time );
 		new MapEncoder().encode( map, context );
 	}
 }

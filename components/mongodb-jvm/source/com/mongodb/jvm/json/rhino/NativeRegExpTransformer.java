@@ -9,18 +9,19 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
+
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.UniqueTag;
 
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
 import jdk.nashorn.internal.objects.NativeRegExp;
-import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
 
 /**
- * Transforms a Nashorn {@link ScriptObject} with a "$regex" key into a Nashorn
- * {@link NativeRegExp}.
+ * Transforms a Rhino {@link Scriptable} with a "$regex" key into a Rhino
+ * NativeRegExp (the class is private in Rhino).
  * 
  * @author Tal Liron
  */
@@ -32,15 +33,15 @@ public class NativeRegExpTransformer implements JsonTransformer
 
 	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof ScriptObject )
+		if( object instanceof Scriptable )
 		{
-			ScriptObject scriptObject = (ScriptObject) object;
+			Scriptable scriptable = (Scriptable) object;
 
-			Object regex = scriptObject.get( "$regex" );
-			if( ( regex != null ) && ( regex.getClass() != Undefined.class ) )
+			Object regex = scriptable.get( "$regex", scriptable );
+			if( ( regex != null ) && ( regex.getClass() != UniqueTag.class ) )
 			{
-				Object options = scriptObject.get( "$options" );
-				if( ( options != null ) && ( options.getClass() != Undefined.class ) )
+				Object options = scriptable.get( "$options", scriptable );
+				if( ( options != null ) && ( options.getClass() != UniqueTag.class ) )
 					NativeRegExp.constructor( true, null, regex.toString(), options.toString() );
 				else
 					NativeRegExp.constructor( true, null, regex.toString() );

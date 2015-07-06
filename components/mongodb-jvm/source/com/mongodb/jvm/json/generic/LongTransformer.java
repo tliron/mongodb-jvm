@@ -9,27 +9,34 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
-import java.util.Date;
 import java.util.Map;
 
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-public class DateTransformer implements JsonTransformer
+/**
+ * Transforms a JVM {@link Map} with a "$numberLong" key into a JVM {@link Long}
+ * .
+ * 
+ * @author Tal Liron
+ */
+public class LongTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
 		if( object instanceof Map )
 		{
 			@SuppressWarnings("unchecked")
-			Object date = ( (Map<String, Object>) object ).get( "$date" );
-			if( date instanceof Number )
-				return new Date( ( (Number) date ).longValue() );
+			Object numberLong = ( (Map<String, Object>) object ).get( "$numberLong" );
+			if( numberLong != null )
+				// Might throw a NumberFormatException
+				return new Long( Long.parseLong( numberLong.toString() ) );
 		}
 
 		return null;

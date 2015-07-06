@@ -27,7 +27,6 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * A BSON codec for a Rhino {@link NativeArray}.
@@ -84,7 +83,7 @@ public class NativeArrayCodec implements Codec<NativeArray>
 
 		int index = 0;
 		for( Object item : list )
-			ScriptableObject.putProperty( nativeArray, index++, item );
+			nativeArray.put( index++, nativeArray, item );
 		return nativeArray;
 	}
 

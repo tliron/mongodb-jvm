@@ -9,17 +9,23 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.bson.types.ObjectId;
+
 import com.threecrickets.jvm.json.JsonContext;
 import com.threecrickets.jvm.json.JsonEncoder;
-import com.threecrickets.jvm.json.java.MapEncoder;
-import com.threecrickets.jvm.json.util.JsonUtil;
+import com.threecrickets.jvm.json.generic.MapEncoder;
 
-public class LongEncoder implements JsonEncoder
+/**
+ * A JSON encoder for a BSON {@link ObjectId}.
+ * 
+ * @author Tal Liron
+ */
+public class ObjectIdEncoder implements JsonEncoder
 {
 	//
 	// JsonEncoder
@@ -27,15 +33,15 @@ public class LongEncoder implements JsonEncoder
 
 	public boolean canEncode( Object object, JsonContext context )
 	{
-		return object instanceof Long;
+		return object instanceof ObjectId;
 	}
 
 	public void encode( Object object, JsonContext context ) throws IOException
 	{
-		Long number = (Long) object;
+		ObjectId objectId = (ObjectId) object;
 
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$numberLong", JsonUtil.number( number ) );
+		map.put( "$oid", objectId.toHexString() );
 		new MapEncoder().encode( map, context );
 	}
 }

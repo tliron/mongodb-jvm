@@ -1,1 +1,2 @@
 com.mongodb.jvm.json.nashorn.NashornExtendedJsonImplementation
+com.mongodb.jvm.json.rhino.RhinoExtendedJsonImplementation

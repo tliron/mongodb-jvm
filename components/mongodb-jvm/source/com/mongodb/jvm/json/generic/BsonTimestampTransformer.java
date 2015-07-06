@@ -9,21 +9,28 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.java;
+package com.mongodb.jvm.json.generic;
 
 import java.util.Map;
 
 import org.bson.BsonTimestamp;
 
+import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
+/**
+ * Transforms a JVM {@link Map} with a "$timestamp" key into a
+ * {@link BsonTimestamp}.
+ * 
+ * @author Tal Liron
+ */
 public class BsonTimestampTransformer implements JsonTransformer
 {
 	//
 	// JsonTransformer
 	//
 
-	public Object transform( Object object )
+	public Object transform( Object object, JsonImplementation implementation )
 	{
 		if( object instanceof Map )
 		{

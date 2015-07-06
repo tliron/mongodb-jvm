@@ -9,18 +9,16 @@
  * at http://threecrickets.com/
  */
 
-package com.mongodb.jvm.json.nashorn;
+package com.mongodb.jvm.json.rhino;
 
 import org.bson.BsonTimestamp;
+import org.mozilla.javascript.Scriptable;
 
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
 
-import jdk.nashorn.internal.objects.NativeNumber;
-import jdk.nashorn.internal.runtime.ScriptObject;
-
 /**
- * Transforms a Nashorn {@link ScriptObject} with a "$timestamp" key into a
+ * Transforms a Rhino {@link Scriptable} with a "$timestamp" key into a
  * {@link BsonTimestamp}.
  * 
  * @author Tal Liron
@@ -33,21 +31,21 @@ public class BsonTimestampTransformer implements JsonTransformer
 
 	public Object transform( Object object, JsonImplementation implementation )
 	{
-		if( object instanceof ScriptObject )
+		if( object instanceof Scriptable )
 		{
-			ScriptObject scriptObject = (ScriptObject) object;
+			Scriptable scriptable = (Scriptable) object;
 
-			Object timestamp = scriptObject.get( "$timestamp" );
-			if( timestamp instanceof ScriptObject )
+			Object timestamp = scriptable.get( "$timestamp", scriptable );
+			if( timestamp instanceof Scriptable )
 			{
-				ScriptObject timestampScriptObject = (ScriptObject) timestamp;
+				Scriptable timestampScriptable = (Scriptable) timestamp;
 
-				Object time = timestampScriptObject.get( "t" );
-				Object inc = timestampScriptObject.get( "i" );
-				if( time instanceof NativeNumber )
-					time = ( (NativeNumber) time ).getValue();
-				if( inc instanceof NativeNumber )
-					inc = ( (NativeNumber) inc ).getValue();
+				Object time = timestampScriptable.get( "t", timestampScriptable );
+				Object inc = timestampScriptable.get( "i", timestampScriptable );
+				if( ( time instanceof Scriptable ) && ( (Scriptable) time ).getClassName().equals( "Number" ) )
+					time = ( (Scriptable) time ).getDefaultValue( Double.class );
+				if( ( inc instanceof Scriptable ) && ( (Scriptable) inc ).getClassName().equals( "Number" ) )
+					inc = ( (Scriptable) inc ).getDefaultValue( Double.class );
 				if( ( time instanceof Number ) && ( inc instanceof Number ) )
 					return new BsonTimestamp( ( (Number) time ).intValue(), ( (Number) inc ).intValue() );
 			}
