@@ -22,7 +22,7 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 
 /**
- * A BSON codec for a Rhino NativeRegExp (the class is private in Rhino).
+ * A BSON codec for Rhino's NativeRegExp (the class is private in Rhino).
  * 
  * @author Tal Liron
  */

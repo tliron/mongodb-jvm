@@ -21,7 +21,7 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 
 /**
- * A BSON codec for a Rhino NativeNumber (the class is private in Rhino).
+ * A BSON codec for Rhino's NativeNumber (the class is private in Rhino).
  * 
  * @author Tal Liron
  */

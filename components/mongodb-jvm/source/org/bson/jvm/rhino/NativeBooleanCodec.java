@@ -21,7 +21,7 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 
 /**
- * A BSON codec for a Rhino NativeBoolean (the class is private in Rhino).
+ * A BSON codec for Rhino's NativeBoolean (the class is private in Rhino).
  * 
  * @author Tal Liron
  */

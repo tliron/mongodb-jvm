@@ -28,7 +28,7 @@ import jdk.nashorn.internal.objects.NativeArray;
 import jdk.nashorn.internal.runtime.arrays.ArrayData;
 
 /**
- * A BSON codec for a Nashorn {@link NativeArray}.
+ * A BSON codec for Nashorn's {@link NativeArray}.
  * 
  * @author Tal Liron
  */

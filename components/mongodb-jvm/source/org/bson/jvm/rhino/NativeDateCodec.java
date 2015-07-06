@@ -22,7 +22,7 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
- * A BSON codec for a Rhino NativeDate (the class is private in Rhino).
+ * A BSON codec for Rhino's NativeDate (the class is private in Rhino).
  * 
  * @author Tal Liron
  */

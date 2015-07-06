@@ -20,7 +20,7 @@ import org.bson.codecs.EncoderContext;
 import jdk.nashorn.internal.objects.NativeDate;
 
 /**
- * A BSON codec for a Nashorn {@link NativeDate}.
+ * A BSON codec for Nashorn's {@link NativeDate}.
  * 
  * @author Tal Liron
  */

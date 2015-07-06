@@ -22,7 +22,7 @@ import jdk.nashorn.internal.objects.NativeBoolean;
 import jdk.nashorn.internal.objects.NativeRegExp;
 
 /**
- * A BSON codec for a Nashorn {@link NativeRegExp}.
+ * A BSON codec for Nashorn's {@link NativeRegExp}.
  * 
  * @author Tal Liron
  */

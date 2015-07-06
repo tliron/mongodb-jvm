@@ -20,7 +20,7 @@ import org.bson.codecs.EncoderContext;
 import jdk.nashorn.internal.objects.NativeString;
 
 /**
- * A BSON codec for a Nashorn {@link NativeString}.
+ * A BSON codec for Nashorn's {@link NativeString}.
  * 
  * @author Tal Liron
  */

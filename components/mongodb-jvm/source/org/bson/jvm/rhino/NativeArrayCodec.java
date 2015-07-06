@@ -29,7 +29,7 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 
 /**
- * A BSON codec for a Rhino {@link NativeArray}.
+ * A BSON codec for Rhino's {@link NativeArray}.
  * 
  * @author Tal Liron
  */
