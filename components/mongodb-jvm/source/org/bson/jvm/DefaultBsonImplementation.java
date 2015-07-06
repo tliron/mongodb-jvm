@@ -15,6 +15,9 @@ import org.bson.BsonDocument;
 import org.bson.codecs.configuration.CodecRegistry;
 
 /**
+ * A BSON implementation using the default BSON types, such as
+ * {@link BsonDocument} for documents.
+ * 
  * @author Tal Liron
  */
 public class DefaultBsonImplementation implements BsonImplementation
@@ -43,7 +46,7 @@ public class DefaultBsonImplementation implements BsonImplementation
 		return next;
 	}
 
-	public Object toNativeString( String string )
+	public Object createString( String string )
 	{
 		return string;
 	}

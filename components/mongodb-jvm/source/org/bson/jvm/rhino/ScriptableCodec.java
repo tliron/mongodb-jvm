@@ -24,12 +24,11 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.UniqueTag;
 
-import com.mongodb.DBRef;
+import com.mongodb.jvm.json.rhino.DBRefTransformer;
 
 /**
- * A BSON codec for a Rhino {@link Scriptable}. Delegates to
+ * A BSON codec for Rhino's native {@link Scriptable}. Delegates to
  * {@link NativeDateCodec} and {@link NativeRegExpCodec} if necessary (those
  * classes are private in Rhino).
  * 
@@ -101,13 +100,10 @@ public class ScriptableCodec implements Codec
 		reader.readEndDocument();
 
 		// The driver does not support decoding DBRef, so we'll do it here
-		Object ref = scriptable.get( "$ref", scriptable );
-		if( ( ref != null ) && ( ref.getClass() != UniqueTag.class ) )
-		{
-			Object id = scriptable.get( "$id", scriptable );
-			if( ( id != null ) && ( id.getClass() != UniqueTag.class ) )
-				return new DBRef( ref.toString(), id );
-		}
+		Object dbRef = new DBRefTransformer().transform( scriptable, null );
+		if( dbRef != null )
+			return dbRef;
+		
 
 		return scriptable;
 	}

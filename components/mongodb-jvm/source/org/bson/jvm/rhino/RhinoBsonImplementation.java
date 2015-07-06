@@ -14,9 +14,16 @@ package org.bson.jvm.rhino;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.jvm.BsonImplementation;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 /**
+ * A BSON implementation supporting the
+ * <a href="https://github.com/mozilla/rhino">Rhino JavaScript engine</a> types,
+ * such as {@link ScriptableObject} for BSON documents and {@link NativeArray}
+ * for BSON arrays.
+ * 
  * @author Tal Liron
  */
 public class RhinoBsonImplementation implements BsonImplementation
@@ -47,7 +54,7 @@ public class RhinoBsonImplementation implements BsonImplementation
 			CodecRegistries.fromProviders( new RhinoCodecProvider() ), next );
 	}
 
-	public Object toNativeString( String string )
+	public Object createString( String string )
 	{
 		return string;
 	}

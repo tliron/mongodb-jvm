@@ -16,10 +16,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.bson.BsonDocument;
-import org.bson.BsonDocumentWrapper;
+import org.bson.BsonDocumentWriter;
 import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.json.JsonWriterSettings;
 
@@ -27,6 +31,8 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 
 /**
+ * Conversion to and from BSON and native objects.
+ * 
  * @author Tal Liron
  */
 public class Bson
@@ -85,8 +91,8 @@ public class Bson
 	}
 
 	/**
-	 * The document class to be used for {@link MongoCollection}. It is likely a
-	 * native type of the language engine.
+	 * The implementation-specific document class to be used for
+	 * {@link MongoCollection}.
 	 * 
 	 * @return The document class
 	 */
@@ -110,12 +116,24 @@ public class Bson
 	/**
 	 * The codec registry to be used for {@link MongoClient}. The driver's
 	 * default codec registry will be appended after ours.
+	 * <p>
+	 * Note that the results of this method are cached, unlike
+	 * {@link #getCodecRegistry(CodecRegistry)}.
 	 * 
 	 * @return The codec registry
 	 */
 	public static CodecRegistry getCodecRegistry()
 	{
-		return getCodecRegistry( MongoClient.getDefaultCodecRegistry() );
+		BsonImplementation implementation = getImplementation();
+		CodecRegistry codecRegistry = codecRegistries.get( implementation );
+		if( codecRegistry == null )
+		{
+			codecRegistry = getCodecRegistry( MongoClient.getDefaultCodecRegistry() );
+			CodecRegistry existing = codecRegistries.putIfAbsent( implementation, codecRegistry );
+			if( existing != null )
+				codecRegistry = existing;
+		}
+		return codecRegistry;
 	}
 
 	//
@@ -124,7 +142,7 @@ public class Bson
 
 	/**
 	 * Convert any object to a {@link BsonDocument}, specifically supporting
-	 * native types of the language engine.
+	 * implementation-specific types.
 	 * 
 	 * @param object
 	 *        The object
@@ -132,7 +150,14 @@ public class Bson
 	 */
 	public static BsonDocument to( Object object )
 	{
-		return BsonDocumentWrapper.asBsonDocument( object, getCodecRegistry() );
+		if( object == null )
+			return null;
+
+		@SuppressWarnings("unchecked")
+		Codec<Object> codec = (Codec<Object>) getCodecRegistry().get( object.getClass() );
+		BsonDocument bson = new BsonDocument();
+		codec.encode( new BsonDocumentWriter( bson ), object, EncoderContext.builder().build() );
+		return bson;
 	}
 
 	/**
@@ -148,29 +173,29 @@ public class Bson
 	}
 
 	/**
-	 * Convert a BSON object to JSON text. The result is in a native string type
-	 * of the language engine.
+	 * Convert a BSON object to JSON text. The result is in an
+	 * implementation-specific string type.
 	 * 
 	 * @param o
-	 *        A {@link Document} or a {@link BsonDocument}
+	 *        A {@link BsonDocument} or a {@link Document}
 	 * @param indent
 	 *        Whether to indent the JSON text
-	 * @return A native string, or null if not converted
+	 * @return An implementation-specific string, or null if not converted
 	 */
 	public static Object toJson( Object o, boolean indent )
 	{
 		String r = null;
 		JsonWriterSettings settings = new JsonWriterSettings( indent );
 
-		if( o instanceof Document )
-			r = ( (Document) o ).toJson( settings );
-		else if( o instanceof BsonDocument )
+		if( o instanceof BsonDocument )
 			r = ( (BsonDocument) o ).toJson( settings );
+		else if( o instanceof Document )
+			r = ( (Document) o ).toJson( settings );
 
 		if( r == null )
 			return null;
 		else
-			return getImplementation().toNativeString( r );
+			return getImplementation().createString( r );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
@@ -179,6 +204,8 @@ public class Bson
 	private static volatile BsonImplementation implementation;
 
 	private static final Map<String, BsonImplementation> implementations = new HashMap<String, BsonImplementation>();
+
+	private static final ConcurrentMap<BsonImplementation, CodecRegistry> codecRegistries = new ConcurrentHashMap<BsonImplementation, CodecRegistry>();
 
 	/**
 	 * The name of the current Scripturian

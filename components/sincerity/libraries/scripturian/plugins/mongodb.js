@@ -136,7 +136,7 @@ function mongo(command) {
 	
 	    Public.initialize = function() {
 	    	arguments.callee.overridden.call(this)
-	    	var commands = ['exit', 'help', 'help(', 'use(', 'show(', 'db.', 'admin.', 'client.', 'this.showIndent', 'this.showMax', 'this.showAll', 'this.showStackTrace']
+	    	var commands = ['exit', 'help', 'help(', 'use(', 'show(', 'db.', 'admin.', 'client.', 'this.showIndent', 'this.showMax', 'this.showStackTrace']
 
 	    	var evalPropertyCompleter = new JavaAdapter(PropertyCompleter, {
 	    		getCandidatesFor: function(value) {
@@ -210,7 +210,6 @@ Objects:\n\
 Settings:\n\
  this.showIndent = ' + this.showIndent + ': whether to indent encoded JSON\n\
  this.showMax = ' + this.showMax + ': how many entries to show from returned cursors\n\
- this.showAll = ' + this.showAll + ': whether to force showing of all returned results, even those that are not JSON-friendly\n\
  this.showStackTrace = ' + this.showStackTrace + ': whether to show the stack trace in case of errors')
 			}
 		}

@@ -11,6 +11,11 @@
 
 package com.mongodb.jvm.json.nashorn;
 
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.jvm.Bson;
+import org.bson.jvm.BsonImplementation;
+
 import com.mongodb.DBRef;
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
@@ -21,6 +26,9 @@ import jdk.nashorn.internal.runtime.Undefined;
 /**
  * Transforms a Nashorn {@link ScriptObject} with a "$ref" key into a BSON
  * {@link DBRef}.
+ * <p>
+ * For this to work, you need a compatible {@link BsonImplementation} installed
+ * in {@link Bson}.
  * 
  * @author Tal Liron
  */
@@ -39,8 +47,10 @@ public class DBRefTransformer implements JsonTransformer
 			Object ref = scriptObject.get( "$ref" );
 			if( ( ref != null ) && ( ref.getClass() != Undefined.class ) )
 			{
-				Object id = scriptObject.get( "$id" );
-				if( ( id != null ) && ( id.getClass() != Undefined.class ) )
+				BsonDocument dbRef = Bson.to( scriptObject );
+				BsonValue id = dbRef.get( "$id" );
+				if( id != null )
+					// Note: the id must be in BSON types!
 					return new DBRef( ref.toString(), id );
 			}
 		}

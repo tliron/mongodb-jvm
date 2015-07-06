@@ -40,6 +40,8 @@ public class GenericExtendedJsonImplementation extends GenericJsonImplementation
 		encoders.add( new MaxKeyEncoder() );
 		encoders.add( new MinKeyEncoder() );
 		encoders.add( new ObjectIdEncoder() );
+		// Make sure BsonValueEncoder is last
+		encoders.add( new BsonValueEncoder() );
 	}
 
 	public static void addTransformers( Collection<JsonTransformer> transformers )

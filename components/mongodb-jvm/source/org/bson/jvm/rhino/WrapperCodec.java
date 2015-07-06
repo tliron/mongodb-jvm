@@ -20,8 +20,8 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.mozilla.javascript.Wrapper;
 
 /**
- * A BSON codec for a Rhino {@link Wrapper}. Unwraps the object and delegates to
- * the appropriate encoder.
+ * A BSON codec for Rhino's native {@link Wrapper}. Unwraps the object and
+ * delegates to the appropriate encoder.
  * 
  * @author Tal Liron
  */

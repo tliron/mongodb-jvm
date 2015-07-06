@@ -20,7 +20,7 @@ import org.bson.codecs.EncoderContext;
 import jdk.nashorn.internal.runtime.Undefined;
 
 /**
- * A BSON codec for a Nashorn {@link Undefined}.
+ * A BSON codec for Nashorn's native {@link Undefined}.
  * 
  * @author Tal Liron
  */

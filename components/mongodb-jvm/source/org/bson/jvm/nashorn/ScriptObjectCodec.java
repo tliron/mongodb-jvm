@@ -21,14 +21,13 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.jvm.internal.BsonUtil;
 
-import com.mongodb.DBRef;
+import com.mongodb.jvm.json.nashorn.DBRefTransformer;
 
 import jdk.nashorn.internal.objects.Global;
 import jdk.nashorn.internal.runtime.ScriptObject;
-import jdk.nashorn.internal.runtime.Undefined;
 
 /**
- * A BSON codec for a Nashorn {@link ScriptObject}.
+ * A BSON codec for Nashorn's native {@link ScriptObject}.
  * 
  * @author Tal Liron
  */
@@ -82,13 +81,9 @@ public class ScriptObjectCodec implements Codec
 		reader.readEndDocument();
 
 		// The driver does not support decoding DBRef, so we'll do it here
-		Object ref = scriptObject.get( "$ref" );
-		if( ( ref != null ) && ( ref.getClass() != Undefined.class ) )
-		{
-			Object id = scriptObject.get( "$id" );
-			if( ( id != null ) && ( id.getClass() != Undefined.class ) )
-				return new DBRef( ref.toString(), id );
-		}
+		Object dbRef = new DBRefTransformer().transform( scriptObject, null );
+		if( dbRef != null )
+			return dbRef;
 
 		return scriptObject;
 	}

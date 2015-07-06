@@ -15,10 +15,16 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.jvm.BsonImplementation;
 
+import jdk.nashorn.internal.objects.NativeArray;
 import jdk.nashorn.internal.objects.NativeString;
 import jdk.nashorn.internal.runtime.ScriptObject;
 
 /**
+ * A BSON implementation supporting the
+ * <a href="http://openjdk.java.net/projects/nashorn/">Nashorn JavaScript
+ * engine</a> types, such as {@link ScriptObject} for BSON documents and
+ * {@link NativeArray} for BSON arrays.
+ * 
  * @author Tal Liron
  */
 public class NashornBsonImplementation implements BsonImplementation
@@ -49,7 +55,7 @@ public class NashornBsonImplementation implements BsonImplementation
 			CodecRegistries.fromProviders( new NashornCodecProvider() ), next );
 	}
 
-	public Object toNativeString( String string )
+	public Object createString( String string )
 	{
 		return NativeString.constructor( true, null, string );
 	}

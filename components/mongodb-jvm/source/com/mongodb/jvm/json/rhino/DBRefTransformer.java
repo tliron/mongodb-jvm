@@ -11,6 +11,10 @@
 
 package com.mongodb.jvm.json.rhino;
 
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.bson.jvm.Bson;
+import org.bson.jvm.BsonImplementation;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.UniqueTag;
 
@@ -21,6 +25,9 @@ import com.threecrickets.jvm.json.JsonTransformer;
 /**
  * Transforms a Rhino {@link Scriptable} with a "$ref" key into a BSON
  * {@link DBRef}.
+ * <p>
+ * For this to work, you need a compatible {@link BsonImplementation} installed
+ * in {@link Bson}.
  * 
  * @author Tal Liron
  */
@@ -39,8 +46,10 @@ public class DBRefTransformer implements JsonTransformer
 			Object ref = scriptable.get( "$ref", scriptable );
 			if( ( ref != null ) && ( ref.getClass() != UniqueTag.class ) )
 			{
-				Object id = scriptable.get( "$id", scriptable );
-				if( ( id != null ) && ( id.getClass() != UniqueTag.class ) )
+				BsonDocument dbRef = Bson.to( scriptable );
+				BsonValue id = dbRef.get( "$id" );
+				if( id != null )
+					// Note: the id must be in BSON types!
 					return new DBRef( ref.toString(), id );
 			}
 		}

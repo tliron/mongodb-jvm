@@ -15,10 +15,12 @@ import org.bson.codecs.configuration.CodecRegistry;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
-import com.threecrickets.scripturian.LanguageAdapter;
 
 /**
+ * Implements BSON conversion for a specific environment.
+ * 
  * @author Tal Liron
+ * @see Bson
  */
 public interface BsonImplementation
 {
@@ -37,30 +39,26 @@ public interface BsonImplementation
 	public int getPriority();
 
 	/**
-	 * The document class to be used for {@link MongoCollection}, as appropriate
-	 * for the current Scripturian {@link LanguageAdapter}. It is likely a
-	 * native type of the current language engine.
+	 * An implementation-specific document class to be used for
+	 * {@link MongoCollection}.
 	 * 
 	 * @return The document class
 	 */
 	public Class<?> getDocumentClass();
 
 	/**
-	 * The codec registry to be used for {@link MongoClient} for the current
-	 * Scripturian {@link LanguageAdapter}. The driver's default codec registry
-	 * will be used after ours.
+	 * The codec registry to be used for {@link MongoClient}.
 	 * 
 	 * @return The codec registry
 	 */
 	public CodecRegistry getCodecRegistry( CodecRegistry next );
 
 	/**
-	 * Convert a JVM {@link String} to a native string type appropriate for the
-	 * current Scripturian {@link LanguageAdapter}.
+	 * Convert a JVM {@link String} to an implementation-specific string type.
 	 * 
 	 * @param string
 	 *        The JVM string
-	 * @return A native string
+	 * @return An implementation-specific string
 	 */
-	public Object toNativeString( String string );
+	public Object createString( String string );
 }

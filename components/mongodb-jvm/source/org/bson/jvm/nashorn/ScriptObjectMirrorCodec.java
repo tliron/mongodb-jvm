@@ -24,7 +24,7 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import jdk.nashorn.internal.runtime.Context;
 
 /**
- * A BSON codec for a Nashorn {@link ScriptObjectMirror}.
+ * A BSON codec for Nashorn's native {@link ScriptObjectMirror}.
  * 
  * @author Tal Liron
  */

@@ -19,7 +19,7 @@ import org.bson.codecs.EncoderContext;
 import org.mozilla.javascript.Undefined;
 
 /**
- * A BSON codec for a Rhino {@link Undefined}.
+ * A BSON codec for Rhino's native {@link Undefined}.
  * 
  * @author Tal Liron
  */
