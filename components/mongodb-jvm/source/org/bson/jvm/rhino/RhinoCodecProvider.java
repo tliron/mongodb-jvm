@@ -31,7 +31,8 @@ import com.mongodb.DBObjectCodec;
 
 /**
  * Provides codecs for Rhino types that require access to a
- * {@link CodecRegistry} and {@link BsonTypeClassMap}.
+ * {@link CodecRegistry} and {@link BsonTypeClassMap}, or that are private
+ * classes in Rhino.
  * 
  * @author Tal Liron
  */
@@ -72,15 +73,17 @@ public class RhinoCodecProvider implements CodecProvider
 			return (Codec<T>) new NativeArrayCodec( registry, bsonTypeClassMap );
 		else if( Wrapper.class.isAssignableFrom( clazz ) )
 			return (Codec<T>) new WrapperCodec( registry );
-		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeBoolean" ) )
+		// Handle private classes
+		String name = clazz.getCanonicalName();
+		if( name.equals( "org.mozilla.javascript.NativeBoolean" ) )
 			return new NativeBooleanCodec();
-		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeDate" ) )
+		else if( name.equals( "org.mozilla.javascript.NativeDate" ) )
 			return new NativeDateCodec();
-		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeNumber" ) )
+		else if( name.equals( "org.mozilla.javascript.NativeNumber" ) )
 			return new NativeNumberCodec();
-		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.regexp.NativeRegExp" ) )
+		else if( name.equals( "org.mozilla.javascript.regexp.NativeRegExp" ) )
 			return new NativeRegExpCodec();
-		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeString" ) )
+		else if( name.equals( "org.mozilla.javascript.NativeString" ) )
 			return new NativeStringCodec();
 		// Make sure Scriptable is last
 		else if( Scriptable.class.isAssignableFrom( clazz ) )
