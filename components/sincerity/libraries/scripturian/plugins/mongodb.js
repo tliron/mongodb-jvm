@@ -130,13 +130,18 @@ function mongo(command) {
 	    Public._inherit = Sincerity.REPL
 	
 	    Public._construct = function() {
-	    	arguments.callee.overridden.call(this)
+	    	try {
+	    		arguments.callee.overridden.call(this, command.sincerity.container.getCacheFile(['mongodb', 'mongo.history']))
+	    	}
+	    	catch (x) {
+	    		arguments.callee.overridden.call(this)
+	    	}
 	    	this.showMax = 20
 	    }
 	
 	    Public.initialize = function() {
 	    	arguments.callee.overridden.call(this)
-	    	var commands = ['exit', 'help', 'help(', 'use(', 'show(', 'db.', 'admin.', 'client.', 'this.showIndent', 'this.showMax', 'this.showStackTrace']
+	    	var commands = ['exit', 'help', 'help(', 'use(', 'show(', 'reset', 'db.', 'admin.', 'client.', 'this.showIndent', 'this.showMax', 'this.showStackTrace']
 
 	    	var evalPropertyCompleter = new JavaAdapter(PropertyCompleter, {
 	    		getCandidatesFor: function(value) {
@@ -201,6 +206,7 @@ Commands:\n\
  help or help(o): shows this help, or shows specific help about an object\n\
  use(name): use a different database for this client\n\
  show(o) or show(o, true): shows the object by encoding it into JSON\n\
+ reset: reset command history\n\
 \n\
 Objects:\n\
  db: the current MongoDatabase; its current MongoCollections are available as properties\n\
@@ -259,7 +265,11 @@ Settings:\n\
 	function show(o, indent) {
 		repl.show(o, indent)
 	}
-	
+
+	function reset() {
+		repl.reset()
+	}
+
 	function helpCommandLine() {
 		command.sincerity.out.println('\
 Usage: mongo [uri] [options]\n\

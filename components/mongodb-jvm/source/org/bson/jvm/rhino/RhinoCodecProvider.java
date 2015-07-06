@@ -70,9 +70,19 @@ public class RhinoCodecProvider implements CodecProvider
 			return (Codec<T>) new DBObjectCodec( registry, bsonTypeClassMap );
 		else if( clazz == NativeArray.class )
 			return (Codec<T>) new NativeArrayCodec( registry, bsonTypeClassMap );
-		// Wrapper should be before Scriptable
 		else if( Wrapper.class.isAssignableFrom( clazz ) )
 			return (Codec<T>) new WrapperCodec( registry );
+		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeBoolean" ) )
+			return new NativeBooleanCodec();
+		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeDate" ) )
+			return new NativeDateCodec();
+		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeNumber" ) )
+			return new NativeNumberCodec();
+		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.regexp.NativeRegExp" ) )
+			return new NativeRegExpCodec();
+		else if( clazz.getCanonicalName().equals( "org.mozilla.javascript.NativeString" ) )
+			return new NativeStringCodec();
+		// Make sure Scriptable is last
 		else if( Scriptable.class.isAssignableFrom( clazz ) )
 			return (Codec<T>) new ScriptableCodec( registry, bsonTypeClassMap );
 		return null;
