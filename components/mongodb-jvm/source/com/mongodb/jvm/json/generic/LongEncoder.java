@@ -40,7 +40,7 @@ public class LongEncoder implements JsonEncoder
 		Long number = (Long) object;
 
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put( "$numberLong", JsonUtil.number( number ) );
+		map.put( "$numberLong", JsonUtil.numberToString( number ) );
 		new MapEncoder().encode( map, context );
 	}
 }

@@ -16,8 +16,7 @@ JSON encoder/decoder, which supports MongoDB [extended JSON]
 directions.
 
 Currently the project supports JavaScript via both the [Nashorn]
-(http://openjdk.java.net/projects/nashorn/) and 
-[Rhino]
+(http://openjdk.java.net/projects/nashorn/) and [Rhino]
 (https://github.com/mozilla/rhino) engines. The wrapper attempts to mimic the [Node.js MongoDB Driver]
 (http://docs.mongodb.org/ecosystem/drivers/node-js/) while also being true to
 the feature set of the Java driver.
@@ -34,37 +33,42 @@ To run the shell:
 	./sincerity mongo
 
 Add "--help" to see command-line options, and run "help" from within the shell
-to see the commands. The shell supports basic TAB-key completion.
+to see the commands. The shell supports basic TAB-key completion and UP/DOWN-key
+persistent history.
 
 You may also be interested in [MongoVision]
-(https://github.com/tliron/mongovision), a web-based MongoDB administrative
+(https://github.com/tliron/mongovision), a web-based MongoDB administration
 interface, which is written in JavaScript using this wrapper.
 
-[![Download]
-(http://threecrickets.com/media/download.png)](https://drive.google.com/folderview?id=0B5XU4AmCevRXUnNkeWR2TkVCV2M&usp=sharing)
+[![Download](http://threecrickets.com/media/download.png "Download")](https://drive.google.com/folderview?id=0B5XU4AmCevRXUnNkeWR2TkVCV2M)
 
 
 Building MongoDB JVM
 --------------------
 
-To build MongoDB JVM you need [Ant] (http://ant.apache.org/) for the basic build
-script, 
-[Maven] (http://maven.apache.org/) if you want to publish it via the
-"deploy-maven" target, and [Sincerity] (http://threecrickets.com/sincerity/) if
-you want to create the final distribution (the "distribution" target).
+To *completely* build MongoDB JVM you need [Ant] (http://ant.apache.org/), [Maven]
+(http://maven.apache.org/) and [Sincerity] (http://threecrickets.com/sincerity/).
 
 You may need to create a file named "/build/private.properties" (see below) and
 override the default locations for Maven and Sincerity.
 
 Then, simply change to the "/build/" directory and run "ant".
 
+Your JDK should be at least version 8 in order to support the Nashorn
+implementation, although there is a workaround for earlier JDK versions (see
+comment in "/build/custom.properties".)
+
 During the build process, build and distribution dependencies will be
 downloaded from an online repository at http://repository.threecrickets.com/, so
 you will need Internet access.
 
-The result of the build will go into the "/build/distribution/conent/"
-directory. Temporary files used during the build process will go into
-"/build/cache/", which you are free to delete.
+The result of the build will go into the "/build/distribution/" directory.
+Temporary files used during the build process will go into "/build/cache/",
+which you are free to delete.
+
+If you *only* want to build the MongoDB JVM Jar, then you only need Ant (you
+don't need Maven and Sincerity). Run the "libraries" Ant target instead of the
+default one.
 
 
 Configuring the Build
@@ -75,3 +79,7 @@ some commentary on what they are used for. You are free to edit that file,
 however to avoid git conflicts, it would be better to create your own
 "/build/private.properties" instead, in which you can override any of the
 settings. That file will be ignored by git.
+
+To avoid the "bootstrap class path not set" warning during compilation
+(harmless), configure the "compile.boot" setting in "private.properties" to the
+location of an "rt.jar" file belonging to JVM version 7.

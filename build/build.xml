@@ -52,6 +52,8 @@
 		<mkdir dir="${cache.classes}" />
 		<javac srcdir="${component.source}" destdir="${cache.classes}" source="${compile.version}" target="${compile.version}" includeAntRuntime="no" debug="${compile.debug}" bootclasspath="${compile.boot}">
 			<classpath refid="dependencies" />
+			<exclude name="${compile.exclude.nashorn1}" />
+			<exclude name="${compile.exclude.nashorn2}" />
 		</javac>
 		<copy todir="${cache.classes}">
 			<fileset dir="${component.resources}" />

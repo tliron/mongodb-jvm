@@ -43,7 +43,7 @@ public class NativeNumberTransformer implements JsonTransformer
 				Long asLong = Long.parseLong( numberLong.toString() );
 				Double asDouble = asLong.doubleValue();
 
-				if( JsonUtil.number( asLong ).equals( JsonUtil.number( asDouble ) ) )
+				if( JsonUtil.numberToString( asLong ).equals( JsonUtil.numberToString( asDouble ) ) )
 					// Converting to double doesn't lose accuracy
 					return NativeNumber.constructor( true, null, asDouble );
 			}

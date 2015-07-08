@@ -339,9 +339,9 @@ public class MongoNashornJsonExtenderOld implements NashornJsonExtenderOld
 			if( javaScript )
 			{
 				if( ( regExp[1] != null ) && ( regExp[1].length() > 0 ) )
-					return new Literal( "new RegExp(\"" + JsonUtil.escape( regExp[0] ) + "\", \"" + JsonUtil.escape( regExp[1] ) + "\")" );
+					return new Literal( "new RegExp(\"" + JsonUtil.escapeCharSequence( regExp[0] ) + "\", \"" + JsonUtil.escapeCharSequence( regExp[1] ) + "\")" );
 				else
-					return new Literal( "new RegExp(\"" + JsonUtil.escape( regExp[0] ) + "\")" );
+					return new Literal( "new RegExp(\"" + JsonUtil.escapeCharSequence( regExp[0] ) + "\")" );
 			}
 			else if( nashorn )
 			{
@@ -423,9 +423,9 @@ public class MongoNashornJsonExtenderOld implements NashornJsonExtenderOld
 			if( javaScript )
 			{
 				if( options.length() > 0 )
-					return new Literal( "new RegExp(\"" + JsonUtil.escape( regex ) + "\", \"" + JsonUtil.escape( options ) + "\")" );
+					return new Literal( "new RegExp(\"" + JsonUtil.escapeCharSequence( regex ) + "\", \"" + JsonUtil.escapeCharSequence( options ) + "\")" );
 				else
-					return new Literal( "new RegExp(\"" + JsonUtil.escape( regex ) + "\")" );
+					return new Literal( "new RegExp(\"" + JsonUtil.escapeCharSequence( regex ) + "\")" );
 			}
 			else if( nashorn )
 			{
