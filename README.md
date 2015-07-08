@@ -42,6 +42,18 @@ interface, which is written in JavaScript using this wrapper.
 
 [![Download](http://threecrickets.com/media/download.png "Download")](https://drive.google.com/folderview?id=0B5XU4AmCevRXUnNkeWR2TkVCV2M)
 
+Maven (for BSON/JSON conversion only):
+
+    <repository>
+        <id>threecrickets</id>
+        <name>Three Crickets Repository</name>
+        <url>http://repository.threecrickets.com/maven/</url>
+    </repository>
+    <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-jvm-driver</artifactId>
+    </dependency>
+
 
 Building MongoDB JVM
 --------------------
