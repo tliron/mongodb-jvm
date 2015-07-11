@@ -50,6 +50,10 @@ interface, which is written in JavaScript using this wrapper.
 
 [![Download](http://threecrickets.com/media/download.png "Download")](https://drive.google.com/folderview?id=0B5XU4AmCevRXUnNkeWR2TkVCV2M)
 
+Full install via Sincerity:
+
+    sincerity create mycontainer : attach public three-crickets maven http://repository.threecrickets.com/maven/ : add com.threecrickets.sincerity.library sincerity-mongodb : install
+
 Maven (for BSON/JSON conversion only):
 
     <repository>
