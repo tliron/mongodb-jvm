@@ -21,6 +21,14 @@ Currently the project supports JavaScript via both the [Nashorn]
 (http://docs.mongodb.org/ecosystem/drivers/node-js/) while also being true to
 the feature set of the Java driver.
 
+Documentation for the JavaScript classes: [MongoClient]
+(http://threecrickets.com/api/javascript/?namespace=MongoClient), [MongoDatabase]
+(http://threecrickets.com/api/javascript/?namespace=MongoDatabase), [MongoCollection]
+(http://threecrickets.com/api/javascript/?namespace=MongoCollection), [MongoCursor]
+(http://threecrickets.com/api/javascript/?namespace=MongoCursor), [MongoError]
+(http://threecrickets.com/api/javascript/?namespace=MongoError), and [MongoUtil]
+(http://threecrickets.com/api/javascript/?namespace=MongoUtil).
+
 As an added bonus, the project comes with a powerful JavaScript shell,
 essentially a clone for the JVM of the [mongo shell]
 (http://docs.mongodb.org/manual/administration/scripting/) that comes with

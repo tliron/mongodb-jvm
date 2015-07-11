@@ -147,7 +147,7 @@ var MongoClient = function(uri, options) {
 	 * from this client, but these defaults can be changed by calling
 	 * {@link MongoCollection#withReadPreference} and {@link MongoCollection#withWriteConcern}.
 	 * 
-	 * @param {String|com.mongodb.MongoNamespace) fullName
+	 * @param {String|com.mongodb.MongoNamespace} fullName
 	 *  The full name of the collection. For example, the collection 'mycollection'
 	 *  in database 'mydatabase' would be 'mydatabase.mycollection' 
 	 * @returns {MongoCollection}
