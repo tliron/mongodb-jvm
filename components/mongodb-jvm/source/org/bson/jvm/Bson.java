@@ -14,6 +14,7 @@ package org.bson.jvm;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
@@ -228,8 +229,18 @@ public class Bson
 	static
 	{
 		ServiceLoader<BsonImplementation> implementationLoader = ServiceLoader.load( BsonImplementation.class, Bson.class.getClassLoader() );
-		for( BsonImplementation implementation : implementationLoader )
+		for( Iterator<BsonImplementation> i = implementationLoader.iterator(); i.hasNext(); )
 		{
+			BsonImplementation implementation;
+			try
+			{
+				implementation = i.next();
+			}
+			catch( Throwable x )
+			{
+				// Probably a ClassNotFoundException
+				continue;
+			}
 			BsonImplementation existing = implementations.get( implementation.getName() );
 			if( ( existing == null ) || ( implementation.getPriority() > existing.getPriority() ) )
 				implementations.put( implementation.getName(), implementation );
