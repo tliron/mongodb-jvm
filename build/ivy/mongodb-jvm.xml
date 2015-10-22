@@ -13,7 +13,7 @@
 		<dependency org="com.threecrickets.scripturian" name="scripturian" rev="1.1+" />
 		<dependency org="org.mozilla" name="rhino" rev="1.7+" />
 		<dependency org="com.threecrickets.jvm" name="json-jvm" rev="2.0+" />
-		<dependency org="org.mongodb" name="mongodb-driver" rev="3.0.2+" />
+		<dependency org="org.mongodb" name="mongodb-driver" rev="3.1.0+" />
 		<dependency org="jline" name="jline" rev="2.12+" />
 	</dependencies>
 </ivy-module>
