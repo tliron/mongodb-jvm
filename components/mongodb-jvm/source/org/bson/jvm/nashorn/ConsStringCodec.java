@@ -35,9 +35,9 @@ public class ConsStringCodec implements Codec<ConsString>
 		return ConsString.class;
 	}
 
-	public void encode( BsonWriter writer, ConsString constString, EncoderContext encoderContext )
+	public void encode( BsonWriter writer, ConsString consString, EncoderContext encoderContext )
 	{
-		writer.writeString( constString.toString() );
+		writer.writeString( consString.toString() );
 	}
 
 	public ConsString decode( BsonReader reader, DecoderContext decoderContext )
