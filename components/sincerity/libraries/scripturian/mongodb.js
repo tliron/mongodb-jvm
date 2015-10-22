@@ -18,6 +18,8 @@
 // at http://threecrickets.com/
 //
 
+// TODO: add builder support, http://mongodb.github.io/mongo-java-driver/3.1/whats-new/
+
 if (!MongoClient) {
 
 /**
@@ -38,12 +40,11 @@ if (!MongoClient) {
  * options, you cannot change these defaults after the client has been created, but
  * you can use the withReadPreference and withWriteConcern methods in
  * {@link MongoDatabase} and {@link MongoCollection} to change their default values.
- * 
- * http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html
  *
  * @class
  * @param [uri]
  * @param [options]
+ * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">Java API</a>
  */
 var MongoClient = function(uri, options) {
 
@@ -340,6 +341,7 @@ MongoClient.connect = function(uri, options) {
  * The client is set as 'mongoDb.client' in {@link applications.globals}. You can set it there
  * directly, or you can set 'mongoDb.uri' and optionally 'mongoDb.options' to support lazy
  * creation.
+ * <p>
  * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
  * all applications to have access the same client. Note that {@link applications.globals}
  * is checked first, so it has precedence.
@@ -358,9 +360,9 @@ MongoClient.global = function(applicationService) {
 }
 
 /**
- * http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoDatabase.html
  *
  * @class
+ * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoDatabase.html">Java API</a>
  */
 var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	var database, client
@@ -754,9 +756,34 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 }
 
 /**
- * http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCollection.html
+ * Fetches the global {@link MongoDatabase} singleton, or lazily creates and sets a new one if
+ * it hasn't yet been set.
+ * <p>
+ * The database is set as 'mongoDb.database' in {@link applications.globals}. You can set it there
+ * directly, or use a string (the database name) to support lazy creation. Lazy creation requires
+ * a global client to be set, too. (See {@link MongoClient#global}.) 
+ * <p>
+ * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
+ * all applications to have access the same client. Note that {@link applications.globals}
+ * is checked first, so it has precedence.
+ */
+MongoDatabase.global = function(applicationService) {
+	var database = MongoUtil.getGlobal('database', applicationService)
+	if (MongoUtil.isString(database)) {
+		var client = MongoClient.global()
+		if (!MongoUtil.exists(client)) {
+			return null
+		}
+		database = client.database(database)
+		database = MongoUtil.setGlobal('database', database)
+	}
+	return database
+}
+
+/**
  *
  * @class
+ * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCollection.html">Java API</a>
  */
 var MongoCollection = function(uri /* or collection */, options /* or database */, database) {
 	var collection, database, client
@@ -1301,6 +1328,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Boolean} [options.uniqueDocs]
 	 */
 	this.geoNear = function(x, y, options) {
+		// TODO
 	}
 
 	/**
@@ -1310,6 +1338,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.limit]
 	 */
 	this.geoHaystackSearch = function(x, y, options) {
+		// TODO
 	}
 
 	//
@@ -1354,7 +1383,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	//
 
 	/**
-	 * 
+	 * @param {Object} filter
+	 * @returns Object: .wasAcknowledged (Boolean), .deleteCount (Number)
 	 */
 	this.deleteMany = function(filter) {
 		try {
@@ -1367,6 +1397,10 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		}
 	}
 
+	/**
+	 * @param {Object} filter
+	 * @returns Object: .wasAcknowledged (Boolean), .deleteCount (Number)
+	 */
 	this.deleteOne = function(filter) {
 		try {
 			filter = BSON.to(filter)
@@ -1410,6 +1444,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [replacement]
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
+	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
 	 */
 	this.replaceOne = function(filter, replacement, options) {
 		try {
@@ -1462,6 +1497,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [update]
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
+	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
 	 */
 	this.updateMany = function(filter, update, options) {
 		try {
@@ -1486,6 +1522,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [update]
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
+	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
 	 */
 	this.updateOne = function(filter, update, options) {
 		try {
@@ -1708,11 +1745,11 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 }
 
 /**
- * This class does not exactly represent a cursor: it will create a cursor in the database only
+ * This class does not exactly represent a server cursor: it will create a cursor in the server only
  * when data is accessed, and will keep it open until {@link MongoCursor#close} is called.
  * <p>
  * Thus, you can access data again even <i>after</i> calling {@link MongoCursor#close}, which
- * would cause a fresh new cursor to be created.
+ * would cause a fresh new cursor to be created in the server.
  * <p>
  * It is recommended to use try/finally semantics when iterating a cursor, to ensure that it is
  * closed when finished, even if an exception is thrown:
@@ -1729,9 +1766,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
  * }
  * </pre>
  * 
- * http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCursor.html
- *
  * @class
+ * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCursor.html">Java API</a>
  */
 var MongoCursor = function(iterable, collection, filter) {
 	this.iterable = iterable
@@ -1805,9 +1841,9 @@ var MongoCursor = function(iterable, collection, filter) {
 }
 
 /**
- * http://api.mongodb.org/java/current/index.html?com/mongodb/MongoException.html
  *
  * @class
+ * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoException.html">Java API</a>
  */
 var MongoError = function(x) {
 	if (MongoUtil.exists(x.javaException)) {
@@ -1985,10 +2021,14 @@ var MongoUtil = function() {
 	
 	/**
 	 * @param {String|byte[]} [raw]
+	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?org/bson/types/ObjectId.html">org.bson.types.ObjectId</a>}
 	 */
 	Public.id = function(raw) {
 		if (!Public.exists(raw)) {
 			return new org.bson.types.ObjectId()
+		}
+		else if (raw instanceof org.bson.types.ObjectId) {
+			return raw
 		}
 		else {
 			return new org.bson.types.ObjectId(raw)
@@ -2235,46 +2275,6 @@ var MongoUtil = function() {
 		options.codecRegistry(BSON.codecRegistry)
 		
 		return options
-	}
-	
-	Public.clientOptionsFromStringMap = function(map, options) {
-		var json = ['readPreference.tags']
-		var boolean = ['writeConcern.j', 'writeConcern.fsync', 'cursorFinalizerEnabled', 'alwaysUseMBeans', 'sslEnabled', 'sslInvalidHostNameAllowed', 'socketKeepAlive']
-		var integer = ['writeConcern.w', 'writeConcern.wtimeout', 'localThreshold', 'serverSelectionTimeout', 'minConnectionsPerHost', 'connectionsPerHost', 'threadsAllowedToBlockForConnectionMultiplier', 'connectTimeout', 'maxWaitTime', 'maxConnectionIdleTime', 'maxConnectionLifeTime', 'minHeartbeatFrequency', 'heartbeatFrequency', 'heartbeatConnectTimeout', 'heartbeatSocketTimeout', 'socketTimeout']
-		
-		for (var i = map.entrySet().iterator(); i.hasNext(); ) {
-			var e = i.next()
-			var key = e.key, value = e.value
-			
-			for (var o in json) {
-				if (key == o) {
-					value = Sincerity.JSON.from(value)
-				}
-			}
-			for (var o in boolean) {
-				if (key == o) {
-					value = value == 'true' ? true : false
-				}
-			}
-			for (var o in integer) {
-				if (key == o) {
-					value = parseInt(value)
-				}
-			}
-			
-			var parts = key.split('.')
-			var location = options
-			for (var p in parts) {
-				var part = parts[p]
-				if (p == parts.length - 1) {
-					location[part] = value
-				}
-				else {
-					location[part] = location[part] || {}
-					location = location[part]
-				}
-			}
-		}
 	}
 	
 	Public.createCollectionOptions = function(options) {
