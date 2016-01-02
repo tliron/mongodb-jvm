@@ -1,7 +1,7 @@
 //
 // MongoDB API for Nashorn/Rhino in Scripturian
 //
-// Copyright 2010-2015 Three Crickets LLC.
+// Copyright 2010-2016 Three Crickets LLC.
 //
 // The contents of this file are subject to the terms of one of the following
 // open source licenses. You can select the license that you prefer but you may
@@ -45,6 +45,7 @@ if (!MongoClient) {
  * @param [uri]
  * @param [options]
  * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClient.html">Java API</a>
+ * @throws {MongoError}
  */
 var MongoClient = function(uri, options) {
 
@@ -74,12 +75,13 @@ var MongoClient = function(uri, options) {
 	
 	/**
 	 * @returns {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientOptions.html">com.mongodb.MongoClientOptions</a>}
+	 * @throws {MongoError}
 	 */
 	this.options = function() {
 		try {
 			return this.client.mongoClientOptions
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -88,20 +90,26 @@ var MongoClient = function(uri, options) {
 	// Behavior
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.readPreference = function() {
 		try {
 			return this.client.mongoClientOptions.readPreference
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.writeConcern = function() {
 		try {
 			return this.client.mongoClientOptions.writeConcern
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -110,11 +118,14 @@ var MongoClient = function(uri, options) {
 	// Operations
 	//
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	this.close = function() {
 		try {
 			this.client.close()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -131,12 +142,13 @@ var MongoClient = function(uri, options) {
 	 * {@link MongoDatabase#withReadPreference} and {@link MongoDatabase#withWriteConcern}.
 	 * 
 	 * @returns {MongoDatabase}
+	 * @throws {MongoError}
 	 */
 	this.database = this.db = function(name) {
 		try {
 			return new MongoDatabase(this.client.getDatabase(name), this)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -152,6 +164,7 @@ var MongoClient = function(uri, options) {
 	 *  The full name of the collection. For example, the collection 'mycollection'
 	 *  in database 'mydatabase' would be 'mydatabase.mycollection' 
 	 * @returns {MongoCollection}
+	 * @throws {MongoError}
 	 */
 	this.collection = function(fullName) {
 		try {
@@ -161,7 +174,7 @@ var MongoClient = function(uri, options) {
 			var database = this.database(fullName.databaseName)
 			return database.collection(fullName.collectionName)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -170,6 +183,7 @@ var MongoClient = function(uri, options) {
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @returns {MongoDatabase[]}
+	 * @throws {MongoError}
 	 */
 	this.databases = function(options) {
 		try {
@@ -188,7 +202,7 @@ var MongoClient = function(uri, options) {
 			}
 			return databases
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -197,6 +211,7 @@ var MongoClient = function(uri, options) {
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @returns {String[]}
+	 * @throws {MongoError}
 	 */
 	this.databaseNames = function(options) {
 		try {
@@ -215,7 +230,7 @@ var MongoClient = function(uri, options) {
 			}
 			return databaseNames
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -329,6 +344,7 @@ var MongoClient = function(uri, options) {
  * @param {Number} [options.socketTimeout=0]
  *  The socket timeout in milliseconds. It is used for I/O socket read and write operations. 0 means no timeout.
  * @returns {MongoClient}
+ * @throws {MongoError}
  */
 MongoClient.connect = function(uri, options) {
 	return new MongoClient(uri, options)
@@ -345,6 +361,8 @@ MongoClient.connect = function(uri, options) {
  * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
  * all applications to have access the same client. Note that {@link applications.globals}
  * is checked first, so it has precedence.
+ *
+ * @throws {MongoError}
  */
 MongoClient.global = function(applicationService) {
 	var client = MongoUtil.getGlobal('client', applicationService)
@@ -362,6 +380,7 @@ MongoClient.global = function(applicationService) {
 /**
  *
  * @class
+ * @throws {MongoError}
  * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoDatabase.html">Java API</a>
  */
 var MongoDatabase = function(uri /* or database */, options /* or client */) {
@@ -392,20 +411,26 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	// Behavior
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.readPreference = function() {
 		try {
 			return this.database.readPreference
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.writeConcern = function() {
 		try {
 			return this.database.writeConcern
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -414,13 +439,14 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Object} [options]
 	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
 	 * @param {Object} [options.tags]
+	 * @throws {MongoError}
 	 */
 	this.withReadPreference = function(options) {
 		try {
 			var readPreference = MongoUtil.readPreference(options)
 			return new MongoDatabase(this.database.withReadPreference(readPreference), this.client)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -431,13 +457,14 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Number} [options.wtimeout] Timeout for writes
 	 * @param {Boolean} [options.fsync] Whether writes should wait for fsync
 	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
+	 * @throws {MongoError}
 	 */
 	this.withWriteConcern = function(options) {
 		try {
 			var writeConcern = MongoUtil.writeConcern(options)
 			return new MongoDatabase(this.database.withWriteConcern(writeConcern), this.client)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -446,11 +473,14 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	// Operations
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.drop = function() {
 		try {
 			this.database.drop()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -461,11 +491,15 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Object} [options] Override the default readPreference for this {@link MongoDatabase}. See {@link MongoClient#connect}.
 	 * @param {String} [options.mode]
 	 * @param {Object} [options.tags]
+	 * @throws {MongoError}
 	 */
 	this.setCommandReadPreference = function(options) {
 		this.commandReadPreference = MongoUtil.readPreference(options)
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.command = function(command) {
 		try {
 			var result
@@ -478,7 +512,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			}
 			return result
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -489,6 +523,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 
 	/**
 	 * @param {String} name
+	 * @throws {MongoError}
 	 */
 	this.collection = function(name) {
 		try {
@@ -496,7 +531,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			var collection = this.database.getCollection(name, BSON.documentClass)
 			return new MongoCollection(collection, this)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -505,6 +540,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @returns {MongoCollection[]}
+	 * @throws {MongoError}
 	 */
 	this.collections = function(options) {
 		try {
@@ -523,7 +559,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			}
 			return collections
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -532,6 +568,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @returns {String[]}
+	 * @throws {MongoError}
 	 */
 	this.collectionNames = function(options) {
 		try {
@@ -550,7 +587,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			}
 			return collectionNames
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -563,6 +600,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	 * @param {Number} [options.sizeInBytes]
 	 * @param {Object} [options.storageEngineOptions]
 	 * @param {Boolean} [options.usePowerOf2Sizes]
+	 * @throws {MongoError}
 	 */
 	this.createCollection = function(name, options) {
 		try {
@@ -574,15 +612,24 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 				this.database.createCollection(name, options)
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 	
 	/**
+	 * Creates properties of type {@link MongoCollection} for every collection the database.
+	 * <p>
+	 * The property keys are the collection names. If there is conflict with an existing property,
+	 * then a "_" will be appended as a suffix. More "_" will be added for as long as there is conflict.
+	 * <p>
+	 * If there are "." in a collection name, then the collection will be put in a hierarchy of
+	 * objects. If a parent object does not exist, then an empty object will be inserted.
+	 * 
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @returns {String[]}
+	 * @throws {MongoError}
 	 */
 	this.collectionsToProperties = function(options) {
 		var PlaceHolder = function() {} // Empty class
@@ -607,7 +654,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 				}
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 
@@ -625,6 +672,9 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	// Diagnostics
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.stats = function(scale) {
 		if (!MongoUtil.exists(scale)) {
 			scale = 1024
@@ -636,15 +686,22 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 	// Server administration
 	//
 
+	/**
+	 * @namespace
+	 */
 	this.admin = function(database) {
 		var Public = {}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.ping = function() {
 			return database.command({ping: 1})
 		}
 
 		/**
 		 * @param {Object} [sections] Enable or suppress sections (for example 'repl', 'metrics', or 'locks') 
+		 * @throws {MongoError}
 		 */
 		Public.serverStatus = function(sections) {
 			var command = {serverStatus: 1}
@@ -656,42 +713,67 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			return database.command(command)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.connectionStatus = function() {
 			return database.command({connectionStatus: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.listCommands = function() {
 			return database.command({listCommands: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.buildInfo = function() {
 			return database.command({buildInfo: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.hostInfo = function() {
 			return database.command({hostInfo: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.connPoolStats = function() {
 			return database.command({connPoolStats: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.sharedConnPoolStats = function() {
 			return database.command({sharedConnPoolStats: 1})
 		}
 
 		// The following are available on the 'admin' database only
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.listDatabases = function() {
 			return database.command({listDatabases: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.top = function() {
 			return database.command({top: 1})
 		}
 
 		/**
 		 * @param {String} [log='global'] 'global', 'rs', 'startupWarnings', or '*'
+		 * @throws {MongoError}
 		 */
 		Public.getLog = function(log) {
 			if (!MongoUtil.exists(log)) {
@@ -700,34 +782,55 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 			return database.command({getLog: log})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.getCmdLineOpts = function() {
 			return database.command({getCmdLineOpts: 1})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.getParameter = function(option) {
 			var command = {getParameter: 1}
 			command[option] = 1
 			return database.command(command)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.setParameter = function(option, value) {
 			var command = {setParameter: 1}
 			command[option] = value
 			return database.command(command)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.fsync = function() {
 			return database.command({fsync: 1, async: true})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.fsyncLock = function() {
 			return database.command({fsync: 1, async: false, lock: true})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.fsyncUnlock = function() {
 			return database.command({fsync: 1, async: true, lock: false})
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.logRotate = function() {
 			return database.command({logRotate: 1})
 		}
@@ -735,6 +838,7 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
 		/**
 		 * @param {Boolean} [force=false]
 		 * @param {Number} [timeoutSecs]
+		 * @throws {MongoError}
 		 */
 		Public.shutdown = function(force, timeoutSecs) {
 			var command = {shutdown: 1}
@@ -766,6 +870,8 @@ var MongoDatabase = function(uri /* or database */, options /* or client */) {
  * In Prudence, you can also set the global in {@link application.sharedGlobals}, to allow
  * all applications to have access the same client. Note that {@link applications.globals}
  * is checked first, so it has precedence.
+ * 
+ * @throws {MongoError}
  */
 MongoDatabase.global = function(applicationService) {
 	var database = MongoUtil.getGlobal('database', applicationService)
@@ -783,6 +889,7 @@ MongoDatabase.global = function(applicationService) {
 /**
  *
  * @class
+ * @throws {MongoError}
  * @see See the <a href="http://api.mongodb.org/java/current/index.html?com/mongodb/client/MongoCollection.html">Java API</a>
  */
 var MongoCollection = function(uri /* or collection */, options /* or database */, database) {
@@ -824,20 +931,26 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	// Behavior
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.readPreference = function() {
 		try {
 			return this.collection.readPreference
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.writeConcern = function() {
 		try {
 			return this.collection.writeConcern
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -846,13 +959,14 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options]
 	 * @param {String} [options.mode] 'primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', or 'nearest'
 	 * @param {Object} [options.tags]
+	 * @throws {MongoError}
 	 */
 	this.withReadPreference = function(options) {
 		try {
 			var readPreference = MongoUtil.readPreference(options)
 			return new MongoCollection(this.collection.withReadPreference(readPreference), this.database)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -863,13 +977,14 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.wtimeout] Timeout for writes
 	 * @param {Boolean} [options.fsync] Whether writes should wait for fsync
 	 * @param {Boolean} [options.j] Whether writes should wait for a journaling group commit
+	 * @throws {MongoError}
 	 */
 	this.withWriteConcern = function(options) {
 		try {
 			var writeConcern = MongoUtil.writeConcern(options)
 			return new MongoCollection(this.collection.withWriteConcern(writeConcern), this.database)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -878,11 +993,14 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	// Operations
 	//
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.drop = function() {
 		try {
 			this.collection.drop()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -890,6 +1008,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.dropTarget]
+	 * @throws {MongoError}
 	 */
 	this.rename = function(newName, options) {
 		try {
@@ -905,7 +1024,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			this.databaseName = this.collection.namespace.databaseName
 			this.fullName = this.collection.namespace.fullName
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -913,6 +1032,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {Boolean} [data=false]
 	 * @param {Boolean} [index=false]
+	 * @throws {MongoError}
 	 */
 	this.touch = function(data, index) {
 		var command = {touch: this.name}
@@ -929,6 +1049,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Boolean} [force=false]
 	 * @param {Number} [paddingFactor]
 	 * @param {Number} [paddingBytes]
+	 * @throws {MongoError}
 	 */
 	this.compact = function(force, paddingFactor, paddingBytes) {
 		var command = {compact: this.name}
@@ -946,11 +1067,15 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	
 	/**
 	 * @param {Number} size
+	 * @throws {MongoError}
 	 */
 	this.convertToCapped = function(size) {
 		return this.database.command({convertToCapped: this.name, size: size})
 	}
-	
+
+	/**
+	 * @throws {MongoError}
+	 */
 	this.setFlag = function(flag, value) {
 		var command = {collMod: this.name}
 		command[flag] = value
@@ -980,6 +1105,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Boolean} [options.unique]
 	 * @param {Number} [options.version]
 	 * @param {Object} [options.weights]
+	 * @throws {MongoError}
 	 */
 	this.createIndex = function(fieldOrSpec, options) {
 		try {
@@ -1000,26 +1126,28 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				return this.collection.createIndex(spec, options)
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
 	/**
 	 * @param {Array} fieldsOrSpecs Strings or Objects
+	 * @throws {MongoError}
 	 */
 	this.createIndexes = function(fieldsOrSpecs) {
 		try {
 			var specs = MongoUtil.indexSpecsList(fieldsOrSpecs)
 			return this.collection.createIndexes(specs)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
 	/**
 	 * @param {String|Object} fieldOrSpec
+	 * @throws {MongoError}
 	 */
 	this.dropIndex = function(fieldOrSpec) {
 		try {
@@ -1031,16 +1159,19 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				this.collection.dropIndex(fieldOrSpec)
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.dropIndexes = function() {
 		try {
 			this.collection.dropIndexes()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1049,6 +1180,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options]
 	 * @param {Number} [options.batchSize]
 	 * @param {Number} [options.maxTime]
+	 * @throws {MongoError}
 	 */
 	this.indexes = function(options) {
 		try {
@@ -1067,17 +1199,22 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return indexes
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	this.reIndex = function() {
 		return this.database.command({reIndex: this.name})
 	}
 	
 	/**
 	 * Currently can only change expireAfterSeconds option.
+	 *
+	 * @throws {MongoError}
 	 */
 	this.modifyIndex = function(fieldOrSpec, options) {
 		if (MongoUtil.isString(fieldOrSpec)) {
@@ -1111,6 +1248,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options.projection]
 	 * @param {Number} [options.skip]
 	 * @param {Object} [options.sort]
+	 * @throws {MongoError}
 	 */
 	this.find = function(filter, options) {
 		try {
@@ -1127,7 +1265,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return new MongoCursor(i, this, filter)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1149,6 +1287,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options.projection]
 	 * @param {Number} [options.skip]
 	 * @param {Object} [options.sort]
+	 * @throws {MongoError}
 	 */
 	this.findOne = function(filter, options) {
 		var cursor = this.find(filter, options)
@@ -1167,6 +1306,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.limit]
 	 * @param {Number} [options.maxTime]
 	 * @param {Number} [options.skip]
+	 * @throws {MongoError}
 	 */
 	this.count = function(filter, options) {
 		try {
@@ -1184,7 +1324,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				}
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1193,6 +1333,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.batchSize]
 	 * @param {Object} [options.filter]
 	 * @param {Number} [options.maxTime]
+	 * @throws {MongoError}
 	 */
 	this.distinct = function(key, options) {
 		try {
@@ -1202,7 +1343,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			// TODO
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1214,6 +1355,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.batchSize]
 	 * @param {Number} [options.maxTime]
 	 * @param {Boolean} [options.useCursor]
+	 * @throws {MongoError}
 	 */
 	this.aggregate = function(pipeline, options) {
 		try {
@@ -1225,7 +1367,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return new MongoCursor(i, this)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1237,6 +1379,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Function} [args.keyf]
 	 * @param {Object} [args.filter]
 	 * @param {Function} [args.finalize]
+	 * @throws {MongoError}
 	 */
 	this.group = function(args) {
 		if (!MongoUtil.exists(args.initial)) {
@@ -1276,6 +1419,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Function} [args.finalize]
 	 * @param {Boolean} [args.jsMode=false]
 	 * @param {Boolean} [args.verbose=true]
+	 * @throws {MongoError}
 	 */
 	this.mapReduce = function(args) {
 		if (!MongoUtil.exists(args.out)) {
@@ -1316,6 +1460,8 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	//
 	
 	/**
+	 * @param {Number} x
+	 * @param {Number} y
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.spherical]
 	 * @param {Number} [options.distanceMultiplier]
@@ -1326,9 +1472,41 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.minDistance]
 	 * @param {Number} [options.num]
 	 * @param {Boolean} [options.uniqueDocs]
+	 * @throws {MongoError}
 	 */
 	this.geoNear = function(x, y, options) {
-		// TODO
+		var command = {
+			geoNear: this,name,
+			near: {type: 'Point', coordinates: [x, y]}
+		}
+		if (MongoUtil.exists(options.spherical)) {
+			command.spherical = options.spherical
+		}
+		if (MongoUtil.exists(options.distanceMultiplier)) {
+			command.distanceMultiplier = options.distanceMultiplier
+		}
+		if (MongoUtil.exists(options.filter)) {
+			command.filter = options.filter
+		}
+		if (MongoUtil.exists(options.includeLocations)) {
+			command.includeLocations = options.includeLocations
+		}
+		if (MongoUtil.exists(options.limit)) {
+			command.limit = options.limit
+		}
+		if (MongoUtil.exists(options.maxDistance)) {
+			command.maxDistance = options.maxDistance
+		}
+		if (MongoUtil.exists(options.minDistance)) {
+			command.minDistance = options.minDistance
+		}
+		if (MongoUtil.exists(options.num)) {
+			command.num = options.num
+		}
+		if (MongoUtil.exists(options.uniqueDocs)) {
+			command.uniqueDocs = options.uniqueDocs
+		}
+		return this.database.command(command)
 	}
 
 	/**
@@ -1336,9 +1514,23 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options.filter]
 	 * @param {Number} [options.maxDistance]
 	 * @param {Number} [options.limit]
+	 * @throws {MongoError}
 	 */
 	this.geoHaystackSearch = function(x, y, options) {
-		// TODO
+		var command = {
+			geoSearch: this,name,
+			near: {type: 'Point', coordinates: [x, y]}
+		}
+		if (MongoUtil.exists(options.filter)) {
+			command.search = options.filter // note: different name
+		}
+		if (MongoUtil.exists(options.maxDistance)) {
+			command.maxDistance = options.maxDistance
+		}
+		if (MongoUtil.exists(options.limit)) {
+			command.limit = options.limit
+		}
+		return this.database.command(command)
 	}
 
 	//
@@ -1349,6 +1541,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object[]} [docs]
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.ordered]
+	 * @throws {MongoError}
 	 */
 	this.insertMany = function(docs, options) {
 		try {
@@ -1361,19 +1554,20 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				this.collection.insertMany(docs, options)
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
 	/**
 	 * @param {Object} [doc]
+	 * @throws {MongoError}
 	 */
 	this.insertOne = function(doc) {
 		try {
 			this.collection.insertOne(doc)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1385,6 +1579,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {Object} filter
 	 * @returns Object: .wasAcknowledged (Boolean), .deleteCount (Number)
+	 * @throws {MongoError}
 	 */
 	this.deleteMany = function(filter) {
 		try {
@@ -1392,7 +1587,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			var result = this.collection.deleteMany(filter)
 			return MongoUtil.deleteResult(result)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1400,6 +1595,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {Object} filter
 	 * @returns Object: .wasAcknowledged (Boolean), .deleteCount (Number)
+	 * @throws {MongoError}
 	 */
 	this.deleteOne = function(filter) {
 		try {
@@ -1407,7 +1603,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			var result = this.collection.deleteOne(filter)
 			return MongoUtil.deleteResult(result)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1417,6 +1613,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Number} [options.maxTime]
 	 * @param {Object} [options.projection]
 	 * @param {Object} [options.sort]
+	 * @throws {MongoError}
 	 */
 	this.findOneAndDelete = function(filter, options) {
 		try {
@@ -1430,7 +1627,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return result
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1445,6 +1642,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
+	 * @throws {MongoError}
 	 */
 	this.replaceOne = function(filter, replacement, options) {
 		try {
@@ -1458,7 +1656,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1470,6 +1668,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {String|com.mongodb.client.model.ReturnDocument} [options.returnDocument] 'after' or 'before'
 	 * @param {Object} [options.sort]
 	 * @param {Boolean} [options.upsert]
+	 * @throws {MongoError}
 	 */
 	this.findOneAndReplace = function(filter, replacement, options) {
 		try {
@@ -1483,7 +1682,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return result
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1498,6 +1697,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
+	 * @throws {MongoError}
 	 */
 	this.updateMany = function(filter, update, options) {
 		try {
@@ -1512,7 +1712,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1523,6 +1723,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.upsert]
 	 * @returns Object: .wasAcknowledged (Boolean), .modifiedCountAvailable (Boolean), .modifiedCount (Number), .matchedCount (Number), .upsertedId (usually ObjectId)
+	 * @throws {MongoError}
 	 */
 	this.updateOne = function(filter, update, options) {
 		try {
@@ -1537,7 +1738,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return MongoUtil.updateResult(result)
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1549,6 +1750,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * @param {String|com.mongodb.client.model.ReturnDocument} [options.returnDocument] 'after' or 'before'
 	 * @param {Object} [options.sort]
 	 * @param {Boolean} [options.upsert]
+	 * @throws {MongoError}
 	 */
 	this.findOneAndUpdate = function(filter, update, options) {
 		try {
@@ -1563,7 +1765,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			}
 			return result
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1578,6 +1780,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 * 
 	 * @param {Object} [doc]
 	 * @param {Object} [options] Only used when updateOne is called
+	 * @throws {MongoError}
 	 */
 	this.save = function(doc, options) {
 		if (!MongoUtil.exists(doc._id)) {
@@ -1612,9 +1815,9 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * type can be 'deleteMany', 'deleteOne', 'insertOne', 'replaceOne', 'updateMany', 'updateOne'
 	 *
-	 *
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.ordered]
+	 * @throws {MongoError}
 	 */
 	this.bulkWrite = function(operations, options) {
 		try {
@@ -1627,7 +1830,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 				this.collection.bulkeWrite(operations, options)
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1639,6 +1842,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {Number} [scale]
 	 * @param {Boolean} [verbose]
+	 * @throws {MongoError}
 	 */
 	this.stats = function(scale, verbose) {
 		if (!MongoUtil.exists(scale)) {
@@ -1653,6 +1857,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	/**
 	 * @param {String} operation
 	 * @param {String} [verbosity='allPlansExecution'] 'queryPlanner', 'executionStats', or 'allPlansExecution'
+	 * @throws {MongoError}
 	 */
 	this.explainRaw = function(operation, args, verbosity) {
 		var command = {explain: {}}
@@ -1669,6 +1874,9 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		return this.database.command(command)
 	}
 
+	/**
+	 * @namespace
+	 */
 	this.explain = function(collection) {
 		var Public = {}
 		
@@ -1681,16 +1889,25 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 		 */
 		Public.verbosity = null
 		
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.find = function(filter) {
 			filter = filter || {}
 			return collection.explainRaw('find', {filter: filter}, this.verbosity)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.count = function(filter) {
 			filter = filter || {}
 			return collection.explainRaw('count', {query: filter}, this.verbosity)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.group = function(args) {
 			if (!MongoUtil.exists(args.initial)) {
 				args.initial = {}
@@ -1716,16 +1933,25 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			return collection.explainRaw('group', {group: group}, this.verbosity)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.deleteOne = function(filter) {
 			filter = filter || {}
 			return collection.explainRaw('delete', {deletes: [{q: filter, limit: 1}]}, this.verbosity)
 		}
 	
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.deleteMany = function(filter) {
 			filter = filter || {}
 			return collection.explainRaw('delete', {deletes: [{q: filter, limit: 0}]}, this.verbosity)
 		}
 	
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.updateMany = function(filter, update, options) {
 			filter = filter || {}
 			update = update || {}
@@ -1733,6 +1959,9 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 			return collection.explainRaw('update', {updates: [{q: filter, u: update, upsert: upsert, multi: true}]}, this.verbosity)
 		}
 
+		/**
+		 * @throws {MongoError}
+		 */
 		Public.updateOne = function(filter, update, options) {
 			filter = filter || {}
 			update = update || {}
@@ -1778,12 +2007,14 @@ var MongoCursor = function(iterable, collection, filter) {
 	/**
 	 * A convenience function to get the first entry in the cursor, after which it is immediately
 	 * closed.
+	 *
+	 * @throws {MongoError}
 	 */
 	this.first = function() {
 		try {
 			return this.iterable.first()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -1798,11 +2029,15 @@ var MongoCursor = function(iterable, collection, filter) {
 	 * @param {Number} [options.limit]
 	 * @param {Number} [options.maxTime]
 	 * @param {Number} [options.skip]
+	 * @throws {MongoError}
 	 */
 	this.count = function(options) {
 		return this.collection.count(this.filter, options)
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	this.hasNext = function() {
 		try {
 			if (null === this.cursor) {
@@ -1810,11 +2045,14 @@ var MongoCursor = function(iterable, collection, filter) {
 			}
 			return this.cursor.hasNext()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	this.next = function() {
 		try {
 			if (null === this.cursor) {
@@ -1822,11 +2060,14 @@ var MongoCursor = function(iterable, collection, filter) {
 			}
 			return this.cursor.next()
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	this.close = function() {
 		try {
 			if (null !== this.cursor) {
@@ -1834,7 +2075,7 @@ var MongoCursor = function(iterable, collection, filter) {
 				this.cursor = null
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -2146,7 +2387,10 @@ var MongoUtil = function() {
 	//
 	
 	// Connection
-	
+
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.connectClient = function(uri, options) {
 		if (!Public.exists(uri)) {
 			uri = 'mongodb://localhost/'
@@ -2159,43 +2403,49 @@ var MongoUtil = function() {
 				client: client
 			}
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.connectDatabase = function(uri, options) {
 		if (!Public.exists(uri)) {
 			uri = 'mongodb://localhost/default'
 		}
 		uri = Public.clientUri(uri, options)
 		if (!Public.exists(uri.database)) {
-			throw new MongoError('URI does not specify database')
+			throw new MongoError('URI does not specify database: ' + uri)
 		}
 		var connection = Public.connectClient(uri)
 		try {
 			connection.database = connection.client.getDatabase(uri.database)
 			return connection
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
 
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.connectCollection = function(uri, options) {
 		if (!Public.exists(uri)) {
 			uri = 'mongodb://localhost/default.default'
 		}
 		uri = Public.clientUri(uri, options)
 		if (!Public.exists(uri.collection)) {
-			throw new MongoError('URI does not specify collection')
+			throw new MongoError('URI does not specify collection:' + uri)
 		}
 		var connection = Public.connectDatabase(uri)
 		try {
 			connection.collection = connection.database.getCollection(uri.collection, BSON.documentClass)
 			return connection
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -2204,6 +2454,7 @@ var MongoUtil = function() {
 
 	/**
 	 * @return {<a href="http://api.mongodb.org/java/current/index.html?com/mongodb/MongoClientURI.html">com.mongodb.MongoClientURI</a>}
+	 * @throws {MongoError}
 	 */
 	Public.clientUri = function(uri, options) {
 		try {
@@ -2218,7 +2469,7 @@ var MongoUtil = function() {
 			}
 			return uri
 		}
-		catch (x) {
+		catch (x if !(x instanceof MongoError)) {
 			throw new MongoError(x)
 		}
 	}
@@ -2258,6 +2509,9 @@ var MongoUtil = function() {
 	
 	// Options
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.clientOptions = function(options) {
 		if (!(options instanceof com.mongodb.MongoClientOptions.Builder)) {
 			var clientOptions = com.mongodb.MongoClientOptions.builder()
@@ -2362,7 +2616,7 @@ var MongoUtil = function() {
 						findOneAndReplaceOptions.returnDocument(com.mongodb.client.model.ReturnDocument.BEFORE)
 						break
 					default:
-						throw new MongoException('Unsupported return document: ' + options.returnDocument)
+						throw new MongoError('Unsupported return document: ' + options.returnDocument)
 					}
 				}
 			}
@@ -2397,7 +2651,7 @@ var MongoUtil = function() {
 						findOneAndUpdateOptions.returnDocument(com.mongodb.client.model.ReturnDocument.BEFORE)
 						break
 					default:
-						throw new MongoException('Unsupported return document: ' + options.returnDocument)
+						throw new MongoError('Unsupported return document: ' + options.returnDocument)
 					}
 				}
 			}
@@ -2446,7 +2700,10 @@ var MongoUtil = function() {
 	}
 	
 	// Behavior
-	
+
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.readPreference = function(options) {
 		if ((options.mode != 'primary') && (options.mode != 'primaryPreferred') && (options.mode != 'secondary') && (options.mode != 'secondaryPreferred') && (options.mode != 'nearest')) {
 			throw new MongoError('Unsupported read preference: ' + options.mode)
@@ -2480,6 +2737,9 @@ var MongoUtil = function() {
 	
 	// Models
 
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.writeModel = function(model) {
 		if (!(model instanceof com.mongodb.client.model.WriteModel)) {
 			switch (model.type) {
@@ -2526,7 +2786,7 @@ var MongoUtil = function() {
 				}
 				break
 			default:
-				throw new MongoException('Unsupported write model type: ' + model.type)
+				throw new MongoError('Unsupported write model type: ' + model.type)
 			}
 		}
 		return model
@@ -2598,6 +2858,9 @@ var MongoUtil = function() {
 		}
 	}
 	
+	/**
+	 * @throws {MongoError}
+	 */
 	Public.findIterable = function(i, options) {
 		Public.applyOptions(i, options, ['batchSize', 'limit', 'noCursorTimeout', 'oplogReplay', 'partial', 'skip'])
 		if (Public.exists(options.cursorType)) {
@@ -2616,7 +2879,7 @@ var MongoUtil = function() {
 					i.cursorType(com.mongodb.CursorType.TailableAwait)
 					break
 				default:
-					throw new MongoException('Unsupported cursor type: ' + options.cursorType)
+					throw new MongoError('Unsupported cursor type: ' + options.cursorType)
 				}
 			}
 		}
