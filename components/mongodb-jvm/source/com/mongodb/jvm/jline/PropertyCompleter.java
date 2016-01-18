@@ -29,6 +29,13 @@ public abstract class PropertyCompleter implements Completer
 	// Operations
 	//
 
+	/**
+	 * Gets the candidates for a value.
+	 * 
+	 * @param value
+	 *        The value
+	 * @return The candidates
+	 */
 	public abstract String[] getCandidatesFor( String value );
 
 	//

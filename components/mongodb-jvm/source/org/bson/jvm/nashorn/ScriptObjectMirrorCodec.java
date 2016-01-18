@@ -34,6 +34,12 @@ public class ScriptObjectMirrorCodec implements Codec<ScriptObjectMirror>
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param codecRegistry
+	 *        The codec registry
+	 */
 	public ScriptObjectMirrorCodec( CodecRegistry codecRegistry )
 	{
 		this.codecRegistry = codecRegistry;

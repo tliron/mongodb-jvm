@@ -31,6 +31,12 @@ public class WrapperCodec implements Codec<Wrapper>
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param codecRegistry
+	 *        The codec registry
+	 */
 	public WrapperCodec( CodecRegistry codecRegistry )
 	{
 		this.codecRegistry = codecRegistry;

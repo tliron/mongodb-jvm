@@ -1476,7 +1476,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.geoNear = function(x, y, options) {
 		var command = {
-			geoNear: this,name,
+			geoNear: this.name,
 			near: {type: 'Point', coordinates: [x, y]}
 		}
 		if (MongoUtil.exists(options.spherical)) {
@@ -1518,7 +1518,7 @@ var MongoCollection = function(uri /* or collection */, options /* or database *
 	 */
 	this.geoHaystackSearch = function(x, y, options) {
 		var command = {
-			geoSearch: this,name,
+			geoSearch: this.name,
 			near: {type: 'Point', coordinates: [x, y]}
 		}
 		if (MongoUtil.exists(options.filter)) {

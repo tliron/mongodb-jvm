@@ -41,6 +41,14 @@ public class ScriptableCodec implements Codec
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param codecRegistry
+	 *        The codec registry
+	 * @param bsonTypeClassMap
+	 *        The BSON type class map
+	 */
 	public ScriptableCodec( CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		this.codecRegistry = codecRegistry;
@@ -103,7 +111,6 @@ public class ScriptableCodec implements Codec
 		Object dbRef = new DBRefTransformer().transform( scriptable, null );
 		if( dbRef != null )
 			return dbRef;
-		
 
 		return scriptable;
 	}

@@ -47,6 +47,9 @@ public class NashornCodecProvider implements CodecProvider
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 */
 	public NashornCodecProvider()
 	{
 		Map<BsonType, Class<?>> replacements = new HashMap<BsonType, Class<?>>();

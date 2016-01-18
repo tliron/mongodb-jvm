@@ -39,6 +39,14 @@ public class NativeArrayCodec implements Codec<NativeArray>
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param codecRegistry
+	 *        The codec registry
+	 * @param bsonTypeClassMap
+	 *        The BSON type class map
+	 */
 	public NativeArrayCodec( CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		this.codecRegistry = codecRegistry;

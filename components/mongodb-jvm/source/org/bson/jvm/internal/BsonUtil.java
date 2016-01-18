@@ -25,6 +25,18 @@ import org.bson.codecs.configuration.CodecRegistry;
  */
 public class BsonUtil
 {
+	/**
+	 * Encodes a value to a BSON writer with the appropriate codec.
+	 * 
+	 * @param value
+	 *        The value
+	 * @param writer
+	 *        The BSON writer
+	 * @param encoderContext
+	 *        The encoder context
+	 * @param codecRegistry
+	 *        The codec registry
+	 */
 	public static void writeChild( Object value, BsonWriter writer, EncoderContext encoderContext, CodecRegistry codecRegistry )
 	{
 		if( value == null )
@@ -37,6 +49,19 @@ public class BsonUtil
 		}
 	}
 
+	/**
+	 * Decodes a value from a BSON writer with the appopriate codec.
+	 * 
+	 * @param reader
+	 *        The BSON reader
+	 * @param decoderContext
+	 *        The decoder context
+	 * @param codecRegistry
+	 *        The codec registry
+	 * @param bsonTypeClassMap
+	 *        The BSON type class map
+	 * @return The value
+	 */
 	public static Object read( BsonReader reader, DecoderContext decoderContext, CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		BsonType type = reader.getCurrentBsonType();

@@ -38,6 +38,14 @@ public class ScriptObjectCodec implements Codec
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param codecRegistry
+	 *        The codec registry
+	 * @param bsonTypeClassMap
+	 *        The BSON type class map
+	 */
 	public ScriptObjectCodec( CodecRegistry codecRegistry, BsonTypeClassMap bsonTypeClassMap )
 	{
 		this.codecRegistry = codecRegistry;

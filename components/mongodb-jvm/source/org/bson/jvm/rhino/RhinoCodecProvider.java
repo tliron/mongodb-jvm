@@ -42,6 +42,9 @@ public class RhinoCodecProvider implements CodecProvider
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 */
 	public RhinoCodecProvider()
 	{
 		// We are using codec classes for some of these here as placeholders,

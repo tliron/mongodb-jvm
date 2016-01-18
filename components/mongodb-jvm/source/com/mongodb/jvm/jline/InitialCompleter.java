@@ -31,15 +31,30 @@ public class InitialCompleter implements Completer
 	// Construction
 	//
 
+	/**
+	 * Constructor.
+	 */
 	public InitialCompleter()
 	{
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param strings
+	 *        The strings
+	 */
 	public InitialCompleter( final String... strings )
 	{
 		this( Arrays.asList( strings ) );
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param strings
+	 *        The strings
+	 */
 	public InitialCompleter( final Collection<String> strings )
 	{
 		getStrings().addAll( strings );

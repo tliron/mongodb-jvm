@@ -48,7 +48,9 @@ public interface BsonImplementation
 
 	/**
 	 * The codec registry to be used for {@link MongoClient}.
-	 * 
+	 *
+	 * @param next
+	 *        The next codec registry in the chain
 	 * @return The codec registry
 	 */
 	public CodecRegistry getCodecRegistry( CodecRegistry next );
