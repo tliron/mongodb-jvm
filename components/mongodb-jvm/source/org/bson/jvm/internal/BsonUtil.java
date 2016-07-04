@@ -18,6 +18,7 @@ import org.bson.codecs.BsonTypeClassMap;
 import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
+import org.bson.codecs.configuration.CodecConfigurationException;
 import org.bson.codecs.configuration.CodecRegistry;
 
 /**
@@ -43,9 +44,16 @@ public class BsonUtil
 			writer.writeNull();
 		else
 		{
-			@SuppressWarnings("unchecked")
-			Codec<Object> codec = (Codec<Object>) codecRegistry.get( value.getClass() );
-			encoderContext.encodeWithChildContext( codec, writer, value );
+			try
+			{
+				@SuppressWarnings("unchecked")
+				Codec<Object> codec = (Codec<Object>) codecRegistry.get( value.getClass() );
+				encoderContext.encodeWithChildContext( codec, writer, value );
+			}
+			catch( CodecConfigurationException x )
+			{
+				writer.writeNull();
+			}
 		}
 	}
 

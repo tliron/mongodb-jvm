@@ -40,21 +40,21 @@ public class TestNashorn
 		fromJSON( object, ".children[3].name" );
 		fromJSON( object, ".children[5]" );
 		toFromJSON( object );
-		toBSON( array, "get(4).getClass()" );
-		toBSON( array, "get(5).getClass()" );
-		toBSON( array, "get(6)" );
-		toBSON( object, "get('children').getClass()" );
-		toBSON( object, "get('regular')" );
+		toBSON( array, "[4].getClass()" );
+		toBSON( array, "[5].getClass()" );
+		toBSON( array, "[6]" );
+		toBSON( object, "['children'].getClass()" );
+		toBSON( object, "['regular']" );
 		run( base + "x={name: {$regex: 'pattern'}};System.out.println(BSON.to(x));" );
 		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 		run( base + "x={s:'hello'};x.s += ' world';System.out.println(BSON.to(x));" );
-		run( base + "x=[{id:1},2,3];System.out.println(JSON.to(BSON.from(BSON.to(x))));" );
+		run( base + "x={id:1,y:[1,2,3]};System.out.println(BSON.fromJson(BSON.to(x).toJson()));" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); importClass(com.mongodb.jvm.BSON); importClass(com.threecrickets.jvm.json.JSON); BSON.enableExtendedJSON();";
+	private static final String base = "load('nashorn:mozilla_compat.js'); importClass(java.lang.System); BSON = org.bson.jvm.Bson; BSON.implementation = new org.bson.jvm.nashorn.NashornBsonImplementation(); JSON = com.threecrickets.jvm.json.Json; JSON.implementation = new com.mongodb.jvm.json.nashorn.NashornExtendedJsonImplementation(); JSON.implementation.initialize();";
 
 	private static void toJSON( String object )
 	{
@@ -73,7 +73,7 @@ public class TestNashorn
 
 	private static void toBSON( String object, String debug )
 	{
-		run( base + "System.out.println('To BSON: '+BSON.to(" + object + ")." + debug + ");" );
+		run( base + "System.out.println('To BSON: '+BSON.to({x: " + object + "}).x" + debug + ");" );
 	}
 
 	private static void run( String script )

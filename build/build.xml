@@ -44,8 +44,8 @@
 			<module group="com.threecrickets.scripturian" name="scripturian" version="1.1+" />
 			<module group="org.mozilla" name="rhino" version="1.7+" />
 			<module group="com.threecrickets.jvm" name="json-jvm" version="2.0+" />
-			<module group="org.mongodb" name="mongodb-driver" version="3.1.0+" />
-			<module group="jline" name="jline" version="2.12+" />
+			<module group="org.mongodb" name="mongodb-driver" version="3.2+" />
+			<module group="jline" name="jline" version="2.14+" />
 			<repository id="repo" url="${dependencies.repo}" />
 		</creel:run>
 	</target>

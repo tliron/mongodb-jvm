@@ -11,13 +11,13 @@
 
 package com.mongodb.jvm.json.rhino;
 
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.UniqueTag;
 
 import com.threecrickets.jvm.json.JsonImplementation;
 import com.threecrickets.jvm.json.JsonTransformer;
-
-import jdk.nashorn.internal.objects.NativeRegExp;
 
 /**
  * Transforms a Rhino {@link Scriptable} with a "$regex" key into a Rhino
@@ -41,10 +41,19 @@ public class NativeRegExpTransformer implements JsonTransformer
 			if( ( regex != null ) && ( regex.getClass() != UniqueTag.class ) )
 			{
 				Object options = scriptable.get( "$options", scriptable );
+
+				Context context = Context.getCurrentContext();
+				Scriptable scope = ScriptRuntime.getTopCallScope( context );
 				if( ( options != null ) && ( options.getClass() != UniqueTag.class ) )
-					NativeRegExp.constructor( true, null, regex.toString(), options.toString() );
+					return context.newObject( scope, "RegExp", new Object[]
+					{
+						regex.toString(), options.toString()
+					} );
 				else
-					NativeRegExp.constructor( true, null, regex.toString() );
+					return context.newObject( scope, "RegExp", new Object[]
+					{
+						regex.toString()
+					} );
 			}
 		}
 

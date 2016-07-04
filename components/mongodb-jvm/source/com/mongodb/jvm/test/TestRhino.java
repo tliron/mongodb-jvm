@@ -32,23 +32,23 @@ public class TestRhino
 		toJSON( array );
 		toJSON( object );
 		fromJSON( object, ".children[3].name" );
-		fromJSON( object, ".children[5].toString()" );
+		fromJSON( object, ".children[5]" );
 		toFromJSON( object );
-		toBSON( array, "get(4).getClass()" );
-		toBSON( array, "get(5).getClass()" );
-		toBSON( array, "get(6)" );
-		toBSON( object, "get('children').getClass()" );
-		toBSON( object, "get('regular')" );
+		toBSON( array, ".get(4).getClass()" );
+		toBSON( array, ".get(5).getClass()" );
+		toBSON( array, ".get(6)" );
+		toBSON( object, ".get('children').getClass()" );
+		toBSON( object, ".get('regular')" );
 		run( base + "x={name: {$regex: 'pattern'}};System.out.println(BSON.to(x));" );
 		run( base + "x=JSON.from('[1,2,3]');x.push(4);System.out.println(x[3]);" );
 		run( base + "x={s:'hello'};x.s += ' world';System.out.println(BSON.to(x));" );
-		run( base + "x=[{id:1},2,3];System.out.println(JSON.to(BSON.from(BSON.to(x))));" );
+		run( base + "x={id:1,y:[1,2,3]};System.out.println(BSON.fromJson(BSON.to(x).toJson()));" );
 	}
 
 	// //////////////////////////////////////////////////////////////////////////
 	// Private
 
-	private static final String base = "importClass(java.lang.System, com.mongodb.jvm.BSON); BSON.implementation = new com.mongodb.jvm.rhino.RhinoBsonImplementation(); JSON = com.threecrickets.jvm.json.JSON; JSON.implementation = new com.mongodb.jvm.rhino.MongoRhinoJsonImplementation();";
+	private static final String base = "importClass(java.lang.System); BSON = org.bson.jvm.Bson; BSON.implementation = new org.bson.jvm.rhino.RhinoBsonImplementation(); JSON = com.threecrickets.jvm.json.Json; JSON.implementation = new com.mongodb.jvm.json.rhino.RhinoExtendedJsonImplementation(); JSON.implementation.initialize();";
 
 	private static void toJSON( String object )
 	{
@@ -67,7 +67,7 @@ public class TestRhino
 
 	private static void toBSON( String object, String debug )
 	{
-		run( base + "System.out.println('To BSON: '+BSON.to(" + object + ")." + debug + ");" );
+		run( base + "System.out.println('To BSON: '+BSON.to({x: " + object + "}).get('x')" + debug + ");" );
 	}
 
 	private static void run( String script )
