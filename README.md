@@ -2,36 +2,35 @@
 MongoDB JVM
 ===========
 
-Though the JVM has the [Java MongoDB Driver]
-(http://docs.mongodb.org/ecosystem/drivers/java/), which can be used by any
-non-Java language running on the JVM, in practice it is designed for Java and
-awkward to use in other languages.
+Though the JVM has the [Java MongoDB Driver](http://docs.mongodb.org/ecosystem/drivers/java/),
+which can be used by any non-Java language running on the JVM, in practice it is designed for Java
+and awkward to use in other languages.
 
 The goal of this project is to supply "wrappers" that allow languages running
 on the JVM to use the Java driver with the culture and paradigms appropriate to
 that language. It also includes a library to translate directly between BSON and
 native language types without going through Java types, as well as an extensible
-JSON encoder/decoder, which supports MongoDB [extended JSON]
-(http://docs.mongodb.org/manual/reference/mongodb-extended-json/) for both
+JSON encoder/decoder, which supports MongoDB
+[extended JSON](http://docs.mongodb.org/manual/reference/mongodb-extended-json/) for both
 directions.
 
-Currently the project supports JavaScript via both the [Nashorn]
-(http://openjdk.java.net/projects/nashorn/) and [Rhino]
-(https://github.com/mozilla/rhino) engines. The wrapper attempts to mimic the [Node.js MongoDB Driver]
-(http://docs.mongodb.org/ecosystem/drivers/node-js/) while also being true to
-the feature set of the Java driver.
+Currently the project supports JavaScript via both the
+[Nashorn](http://openjdk.java.net/projects/nashorn/) and
+[Rhino](https://github.com/mozilla/rhino) engines. The wrapper attempts to mimic the
+[Node.js MongoDB Driver](http://docs.mongodb.org/ecosystem/drivers/node-js/) while also being true
+to the feature set of the Java driver.
 
-Documentation for the JavaScript classes: [MongoClient]
-(http://threecrickets.com/api/javascript/?namespace=MongoClient), [MongoDatabase]
-(http://threecrickets.com/api/javascript/?namespace=MongoDatabase), [MongoCollection]
-(http://threecrickets.com/api/javascript/?namespace=MongoCollection), [MongoCursor]
-(http://threecrickets.com/api/javascript/?namespace=MongoCursor), [MongoError]
-(http://threecrickets.com/api/javascript/?namespace=MongoError), and [MongoUtil]
-(http://threecrickets.com/api/javascript/?namespace=MongoUtil).
+Documentation for the JavaScript classes:
+[MongoClient](http://threecrickets.com/api/javascript/?namespace=MongoClient),
+[MongoDatabase](http://threecrickets.com/api/javascript/?namespace=MongoDatabase),
+[MongoCollection](http://threecrickets.com/api/javascript/?namespace=MongoCollection),
+[MongoCursor](http://threecrickets.com/api/javascript/?namespace=MongoCursor),
+[MongoError](http://threecrickets.com/api/javascript/?namespace=MongoError), and
+[MongoUtil](http://threecrickets.com/api/javascript/?namespace=MongoUtil).
 
 As an added bonus, the project comes with a powerful JavaScript shell,
-essentially a clone for the JVM of the [mongo shell]
-(http://docs.mongodb.org/manual/administration/scripting/) that comes with
+essentially a clone for the JVM of the
+[mongo shell](http://docs.mongodb.org/manual/administration/scripting/) that comes with
 MongoDB. It can do most anything that mongo can do, while also letting you use
 any JVM library from JavaScript. It is itself written in JavaScript, and as such
 is very easy to hack and adapt to your particular needs.
@@ -44,11 +43,10 @@ Add "--help" to see command-line options, and run "help" from within the shell
 to see the commands. The shell supports basic TAB-key completion and UP/DOWN-key
 persistent history.
 
-You may also be interested in [MongoVision]
-(https://github.com/tliron/mongovision), a web-based MongoDB administration
-interface, which is written in JavaScript using this wrapper.
+You may also be interested in [MongoVision](https://github.com/tliron/mongovision), a web-based
+MongoDB administration interface, which is written in JavaScript using this wrapper.
 
-[![Download](http://threecrickets.com/media/download.png "Download")](https://drive.google.com/folderview?id=0B5XU4AmCevRXUnNkeWR2TkVCV2M)
+[![Download](http://threecrickets.com/media/download.png "Download")](https://drive.google.com/uc?export=download&id=0B5XU4AmCevRXVWM1QmJPNlIwX1k)
 
 Full install via Sincerity:
 
@@ -70,8 +68,8 @@ Maven (for BSON/JSON conversion only):
 Building MongoDB JVM
 --------------------
 
-To *completely* build MongoDB JVM you need [Ant] (http://ant.apache.org/), [Maven]
-(http://maven.apache.org/) and [Sincerity] (http://threecrickets.com/sincerity/).
+To *completely* build MongoDB JVM you need [Ant](http://ant.apache.org/),
+[Maven](http://maven.apache.org/) and [Sincerity](http://threecrickets.com/sincerity/).
 
 You may need to create a file named "/build/private.properties" (see below) and
 override the default locations for Maven and Sincerity.
